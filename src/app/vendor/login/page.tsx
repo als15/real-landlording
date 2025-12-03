@@ -85,6 +85,10 @@ function VendorLoginForm() {
             />
           </Form.Item>
 
+          <div style={{ textAlign: 'right', marginBottom: 16 }}>
+            <Link href="/auth/forgot-password?type=vendor">Forgot Password?</Link>
+          </div>
+
           <Form.Item>
             <Button type="primary" htmlType="submit" loading={loading} block size="large">
               Sign In

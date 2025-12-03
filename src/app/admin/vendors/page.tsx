@@ -1,146 +1,116 @@
-'use client';
+'use client'
 
-import { useEffect, useState, useCallback } from 'react';
-import {
-  Table,
-  Card,
-  Tag,
-  Space,
-  Button,
-  Select,
-  Input,
-  Typography,
-  Drawer,
-  Descriptions,
-  Divider,
-  message,
-  Badge,
-  Modal,
-  Form,
-  Checkbox,
-  Rate,
-} from 'antd';
-import {
-  ReloadOutlined,
-  PlusOutlined,
-  EditOutlined,
-  EyeOutlined,
-  FilterOutlined,
-} from '@ant-design/icons';
-import {
-  Vendor,
-  VendorStatus,
-  VENDOR_STATUS_LABELS,
-  SERVICE_TYPE_LABELS,
-  ServiceType,
-} from '@/types/database';
-import type { ColumnsType } from 'antd/es/table';
+import { useEffect, useState, useCallback } from 'react'
+import { Table, Card, Tag, Space, Button, Select, Input, Typography, Drawer, Descriptions, Divider, message, Badge, Modal, Form, Checkbox, Rate } from 'antd'
+import { ReloadOutlined, PlusOutlined, EditOutlined, EyeOutlined, FilterOutlined } from '@ant-design/icons'
+import { Vendor, VendorStatus, VENDOR_STATUS_LABELS, SERVICE_TYPE_LABELS, ServiceType } from '@/types/database'
+import type { ColumnsType } from 'antd/es/table'
 
-const { Title, Text } = Typography;
-const { Search, TextArea } = Input;
+const { Title, Text } = Typography
+const { Search, TextArea } = Input
 
 const statusColors: Record<VendorStatus, string> = {
   active: 'green',
   inactive: 'default',
   pending_review: 'orange',
-  rejected: 'red',
-};
+  rejected: 'red'
+}
 
 export default function VendorsPage() {
-  const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [addModalOpen, setAddModalOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [form] = Form.useForm();
+  const [vendors, setVendors] = useState<Vendor[]>([])
+  const [loading, setLoading] = useState(true)
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
+  const [statusFilter, setStatusFilter] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [addModalOpen, setAddModalOpen] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [form] = Form.useForm()
 
   const fetchVendors = useCallback(async () => {
-    setLoading(true);
+    setLoading(true)
     try {
       const params = new URLSearchParams({
         limit: pageSize.toString(),
-        offset: ((page - 1) * pageSize).toString(),
-      });
+        offset: ((page - 1) * pageSize).toString()
+      })
 
       if (statusFilter) {
-        params.append('status', statusFilter);
+        params.append('status', statusFilter)
       }
 
-      const response = await fetch(`/api/vendors?${params}`);
+      const response = await fetch(`/api/vendors?${params}`)
       if (response.ok) {
-        const { data, count } = await response.json();
-        setVendors(data || []);
-        setTotal(count || 0);
+        const { data, count } = await response.json()
+        setVendors(data || [])
+        setTotal(count || 0)
       }
     } catch (error) {
-      console.error('Error fetching vendors:', error);
-      message.error('Failed to fetch vendors');
+      console.error('Error fetching vendors:', error)
+      message.error('Failed to fetch vendors')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, [page, pageSize, statusFilter]);
+  }, [page, pageSize, statusFilter])
 
   useEffect(() => {
-    fetchVendors();
-  }, [fetchVendors]);
+    fetchVendors()
+  }, [fetchVendors])
 
   const handleViewVendor = (vendor: Vendor) => {
-    setSelectedVendor(vendor);
-    setDrawerOpen(true);
-  };
+    setSelectedVendor(vendor)
+    setDrawerOpen(true)
+  }
 
   const handleStatusChange = async (vendorId: string, newStatus: VendorStatus) => {
     try {
       const response = await fetch(`/api/vendors/${vendorId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
+        body: JSON.stringify({ status: newStatus })
+      })
 
       if (response.ok) {
-        message.success('Status updated');
-        fetchVendors();
+        message.success('Status updated')
+        fetchVendors()
         if (selectedVendor?.id === vendorId) {
-          setSelectedVendor({ ...selectedVendor, status: newStatus });
+          setSelectedVendor({ ...selectedVendor, status: newStatus })
         }
       } else {
-        throw new Error('Failed to update status');
+        throw new Error('Failed to update status')
       }
     } catch {
-      message.error('Failed to update status');
+      message.error('Failed to update status')
     }
-  };
+  }
 
   const handleAddVendor = async (values: Record<string, unknown>) => {
-    setSubmitting(true);
+    setSubmitting(true)
     try {
       const response = await fetch('/api/vendors', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
-      });
+        body: JSON.stringify(values)
+      })
 
       if (response.ok) {
-        message.success('Vendor added successfully');
-        setAddModalOpen(false);
-        form.resetFields();
-        fetchVendors();
+        message.success('Vendor added successfully')
+        setAddModalOpen(false)
+        form.resetFields()
+        fetchVendors()
       } else {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to add vendor');
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to add vendor')
       }
     } catch (error) {
-      message.error(error instanceof Error ? error.message : 'Something went wrong');
+      message.error(error instanceof Error ? error.message : 'Something went wrong')
     } finally {
-      setSubmitting(false);
+      setSubmitting(false)
     }
-  };
+  }
 
   const columns: ColumnsType<Vendor> = [
     {
@@ -154,7 +124,7 @@ export default function VendorsPage() {
           </Text>
         </div>
       ),
-      width: 200,
+      width: 200
     },
     {
       title: 'Contact',
@@ -169,7 +139,7 @@ export default function VendorsPage() {
           )}
         </div>
       ),
-      width: 200,
+      width: 200
     },
     {
       title: 'Services',
@@ -177,7 +147,7 @@ export default function VendorsPage() {
       key: 'services',
       render: (services: string[]) => (
         <Space wrap size="small">
-          {services.slice(0, 2).map((s) => (
+          {services.slice(0, 2).map(s => (
             <Tag key={s} color="blue">
               {SERVICE_TYPE_LABELS[s as keyof typeof SERVICE_TYPE_LABELS] || s}
             </Tag>
@@ -185,7 +155,7 @@ export default function VendorsPage() {
           {services.length > 2 && <Tag>+{services.length - 2}</Tag>}
         </Space>
       ),
-      width: 200,
+      width: 200
     },
     {
       title: 'Rating',
@@ -196,54 +166,38 @@ export default function VendorsPage() {
           <Text type="secondary">({record.total_reviews})</Text>
         </Space>
       ),
-      width: 180,
+      width: 180
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: (status) => (
-        <Tag color={statusColors[status as VendorStatus]}>
-          {VENDOR_STATUS_LABELS[status as VendorStatus]}
-        </Tag>
-      ),
-      width: 120,
+      render: status => <Tag color={statusColors[status as VendorStatus]}>{VENDOR_STATUS_LABELS[status as VendorStatus]}</Tag>,
+      width: 120
     },
     {
       title: 'Actions',
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Button
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() => handleViewVendor(record)}
-          />
-          <Button
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => handleViewVendor(record)}
-          />
+          <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewVendor(record)} />
+          <Button size="small" icon={<EditOutlined />} onClick={() => handleViewVendor(record)} />
         </Space>
       ),
-      width: 100,
-    },
-  ];
+      width: 100
+    }
+  ]
 
-  const filteredVendors = vendors.filter((vendor) => {
-    if (!searchTerm) return true;
-    const term = searchTerm.toLowerCase();
-    return (
-      vendor.business_name.toLowerCase().includes(term) ||
-      vendor.contact_name.toLowerCase().includes(term) ||
-      vendor.email.toLowerCase().includes(term)
-    );
-  });
+  const filteredVendors = vendors.filter(vendor => {
+    if (!searchTerm) return true
+    const term = searchTerm.toLowerCase()
+    return vendor.business_name.toLowerCase().includes(term) || vendor.contact_name.toLowerCase().includes(term) || vendor.email.toLowerCase().includes(term)
+  })
 
   const serviceOptions = Object.entries(SERVICE_TYPE_LABELS).map(([value, label]) => ({
     value,
-    label,
-  }));
+    label
+  }))
 
   return (
     <div>
@@ -273,16 +227,10 @@ export default function VendorsPage() {
             onChange={setStatusFilter}
             options={Object.entries(VENDOR_STATUS_LABELS).map(([value, label]) => ({
               value,
-              label,
+              label
             }))}
           />
-          <Search
-            placeholder="Search vendors..."
-            allowClear
-            style={{ width: 300 }}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+          <Search placeholder="Search vendors..." allowClear style={{ width: 300 }} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
         </Space>
       </Card>
 
@@ -297,24 +245,18 @@ export default function VendorsPage() {
             pageSize,
             total,
             onChange: (p, ps) => {
-              setPage(p);
-              setPageSize(ps);
+              setPage(p)
+              setPageSize(ps)
             },
             showSizeChanger: true,
-            showTotal: (t) => `${t} vendors`,
+            showTotal: t => `${t} vendors`
           }}
           scroll={{ x: 1000 }}
         />
       </Card>
 
       {/* Vendor Details Drawer */}
-      <Drawer
-        title="Vendor Details"
-        placement="right"
-        width={600}
-        onClose={() => setDrawerOpen(false)}
-        open={drawerOpen}
-      >
+      <Drawer title="Vendor Details" placement="right" size="large" onClose={() => setDrawerOpen(false)} open={drawerOpen}>
         {selectedVendor && (
           <>
             <Descriptions column={1} bordered size="small">
@@ -322,38 +264,33 @@ export default function VendorsPage() {
                 <Select
                   value={selectedVendor.status}
                   style={{ width: 150 }}
-                  onChange={(value) => handleStatusChange(selectedVendor.id, value)}
+                  onChange={value => handleStatusChange(selectedVendor.id, value)}
                   options={Object.entries(VENDOR_STATUS_LABELS).map(([v, l]) => ({
                     value: v,
-                    label: l,
+                    label: l
                   }))}
                 />
               </Descriptions.Item>
-              <Descriptions.Item label="Business Name">
-                {selectedVendor.business_name}
-              </Descriptions.Item>
-              <Descriptions.Item label="Contact Name">
-                {selectedVendor.contact_name}
-              </Descriptions.Item>
-              <Descriptions.Item label="Email">
-                {selectedVendor.email}
-              </Descriptions.Item>
-              <Descriptions.Item label="Phone">
-                {selectedVendor.phone || '-'}
-              </Descriptions.Item>
+              <Descriptions.Item label="Business Name">{selectedVendor.business_name}</Descriptions.Item>
+              <Descriptions.Item label="Contact Name">{selectedVendor.contact_name}</Descriptions.Item>
+              <Descriptions.Item label="Email">{selectedVendor.email}</Descriptions.Item>
+              <Descriptions.Item label="Phone">{selectedVendor.phone || '-'}</Descriptions.Item>
               <Descriptions.Item label="Website">
                 {selectedVendor.website ? (
                   <a href={selectedVendor.website} target="_blank" rel="noopener noreferrer">
                     {selectedVendor.website}
                   </a>
-                ) : '-'}
+                ) : (
+                  '-'
+                )}
               </Descriptions.Item>
+              <Descriptions.Item label="Location">{selectedVendor.location || '-'}</Descriptions.Item>
             </Descriptions>
 
             <Divider>Services</Divider>
 
             <Space wrap>
-              {selectedVendor.services.map((s) => (
+              {selectedVendor.services.map(s => (
                 <Tag key={s} color="blue">
                   {SERVICE_TYPE_LABELS[s as keyof typeof SERVICE_TYPE_LABELS] || s}
                 </Tag>
@@ -363,7 +300,7 @@ export default function VendorsPage() {
             <Divider>Service Areas</Divider>
 
             <Space wrap>
-              {selectedVendor.service_areas.map((area) => (
+              {selectedVendor.service_areas.map(area => (
                 <Tag key={area}>{area}</Tag>
               ))}
             </Space>
@@ -371,15 +308,9 @@ export default function VendorsPage() {
             <Divider>Qualifications</Divider>
 
             <Descriptions column={2} size="small">
-              <Descriptions.Item label="Licensed">
-                {selectedVendor.licensed ? 'Yes' : 'No'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Insured">
-                {selectedVendor.insured ? 'Yes' : 'No'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Rental Experience">
-                {selectedVendor.rental_experience ? 'Yes' : 'No'}
-              </Descriptions.Item>
+              <Descriptions.Item label="Licensed">{selectedVendor.licensed ? 'Yes' : 'No'}</Descriptions.Item>
+              <Descriptions.Item label="Insured">{selectedVendor.insured ? 'Yes' : 'No'}</Descriptions.Item>
+              <Descriptions.Item label="Rental Experience">{selectedVendor.rental_experience ? 'Yes' : 'No'}</Descriptions.Item>
             </Descriptions>
 
             {selectedVendor.qualifications && (
@@ -407,28 +338,14 @@ export default function VendorsPage() {
       </Drawer>
 
       {/* Add Vendor Modal */}
-      <Modal
-        title="Add New Vendor"
-        open={addModalOpen}
-        onCancel={() => setAddModalOpen(false)}
-        footer={null}
-        width={700}
-      >
+      <Modal title="Add New Vendor" open={addModalOpen} onCancel={() => setAddModalOpen(false)} footer={null} width={700}>
         <Form form={form} layout="vertical" onFinish={handleAddVendor}>
           <Title level={5}>Contact Information</Title>
-          <Form.Item
-            name="contact_name"
-            label="Contact Name"
-            rules={[{ required: true, message: 'Required' }]}
-          >
+          <Form.Item name="contact_name" label="Contact Name" rules={[{ required: true, message: 'Required' }]}>
             <Input placeholder="John Smith" />
           </Form.Item>
 
-          <Form.Item
-            name="business_name"
-            label="Business Name"
-            rules={[{ required: true, message: 'Required' }]}
-          >
+          <Form.Item name="business_name" label="Business Name" rules={[{ required: true, message: 'Required' }]}>
             <Input placeholder="Smith Plumbing LLC" />
           </Form.Item>
 
@@ -437,7 +354,7 @@ export default function VendorsPage() {
             label="Email"
             rules={[
               { required: true, message: 'Required' },
-              { type: 'email', message: 'Invalid email' },
+              { type: 'email', message: 'Invalid email' }
             ]}
           >
             <Input placeholder="john@smithplumbing.com" />
@@ -451,32 +368,19 @@ export default function VendorsPage() {
             <Input placeholder="https://smithplumbing.com" />
           </Form.Item>
 
+          <Form.Item name="location" label="Business Location">
+            <Input placeholder="Philadelphia, PA" />
+          </Form.Item>
+
           <Divider />
           <Title level={5}>Services</Title>
 
-          <Form.Item
-            name="services"
-            label="Services Offered"
-            rules={[{ required: true, message: 'Select at least one service' }]}
-          >
-            <Select
-              mode="multiple"
-              placeholder="Select services"
-              options={serviceOptions}
-            />
+          <Form.Item name="services" label="Services Offered" rules={[{ required: true, message: 'Select at least one service' }]}>
+            <Select mode="multiple" placeholder="Select services" options={serviceOptions} />
           </Form.Item>
 
-          <Form.Item
-            name="service_areas"
-            label="Service Areas (Zip Codes)"
-            rules={[{ required: true, message: 'Enter at least one zip code' }]}
-            extra="Enter zip codes separated by commas"
-          >
-            <Select
-              mode="tags"
-              placeholder="19103, 19104, 19106"
-              tokenSeparators={[',']}
-            />
+          <Form.Item name="service_areas" label="Service Areas (Zip Codes)" rules={[{ required: true, message: 'Enter at least one zip code' }]} extra="Enter zip codes separated by commas">
+            <Select mode="tags" placeholder="19103, 19104, 19106" tokenSeparators={[',']} />
           </Form.Item>
 
           <Divider />
@@ -509,5 +413,5 @@ export default function VendorsPage() {
         </Form>
       </Modal>
     </div>
-  );
+  )
 }
