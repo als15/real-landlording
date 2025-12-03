@@ -30,7 +30,47 @@ export async function middleware(request: NextRequest) {
   );
 
   // Refresh session if expired
-  await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Check if accessing admin routes (except login page)
+  const isAdminRoute = request.nextUrl.pathname.startsWith('/admin');
+  const isAdminLoginPage = request.nextUrl.pathname === '/admin/login';
+
+  if (isAdminRoute && !isAdminLoginPage) {
+    // If not logged in, redirect to login
+    if (!user) {
+      const loginUrl = new URL('/admin/login', request.url);
+      loginUrl.searchParams.set('redirectTo', request.nextUrl.pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // Check if user is admin
+    const { data: adminUser } = await supabase
+      .from('admin_users')
+      .select('id')
+      .eq('auth_user_id', user.id)
+      .single();
+
+    if (!adminUser) {
+      // User is not an admin, redirect to login with error
+      const loginUrl = new URL('/admin/login', request.url);
+      loginUrl.searchParams.set('error', 'access_denied');
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  // If user is logged in admin and visits login page, redirect to dashboard
+  if (isAdminLoginPage && user) {
+    const { data: adminUser } = await supabase
+      .from('admin_users')
+      .select('id')
+      .eq('auth_user_id', user.id)
+      .single();
+
+    if (adminUser) {
+      return NextResponse.redirect(new URL('/admin', request.url));
+    }
+  }
 
   return supabaseResponse;
 }
