@@ -32,9 +32,25 @@ export async function middleware(request: NextRequest) {
   // Refresh session if expired
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Check if accessing admin routes (except login page)
+  // Protected routes
+  const isDashboardRoute = request.nextUrl.pathname.startsWith('/dashboard');
+  const isVendorDashboardRoute = request.nextUrl.pathname.startsWith('/vendor/dashboard');
   const isAdminRoute = request.nextUrl.pathname.startsWith('/admin');
   const isAdminLoginPage = request.nextUrl.pathname === '/admin/login';
+
+  // Protect landlord dashboard
+  if (isDashboardRoute && !user) {
+    const loginUrl = new URL('/auth/login', request.url);
+    loginUrl.searchParams.set('redirectTo', request.nextUrl.pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // Protect vendor dashboard
+  if (isVendorDashboardRoute && !user) {
+    const loginUrl = new URL('/vendor/login', request.url);
+    loginUrl.searchParams.set('redirectTo', request.nextUrl.pathname);
+    return NextResponse.redirect(loginUrl);
+  }
 
   if (isAdminRoute && !isAdminLoginPage) {
     // If not logged in, redirect to login

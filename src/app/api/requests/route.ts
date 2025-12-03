@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { ServiceRequestInput } from '@/types/database';
+import { sendRequestReceivedEmail } from '@/lib/email/send';
 
 export async function POST(request: NextRequest) {
   try {
@@ -59,6 +60,9 @@ export async function POST(request: NextRequest) {
         request_count: 1,
       });
     }
+
+    // Send confirmation email (async, don't wait)
+    sendRequestReceivedEmail(data).catch(console.error);
 
     return NextResponse.json({ id: data.id, message: 'Request created successfully' });
   } catch (error) {

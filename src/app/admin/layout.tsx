@@ -13,6 +13,7 @@ import {
   MenuUnfoldOutlined,
   LogoutOutlined,
   SettingOutlined,
+  SolutionOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 
@@ -34,6 +35,11 @@ const menuItems: MenuProps['items'] = [
     key: '/admin/vendors',
     icon: <TeamOutlined />,
     label: 'Vendors',
+  },
+  {
+    key: '/admin/applications',
+    icon: <SolutionOutlined />,
+    label: 'Applications',
   },
   {
     key: '/admin/landlords',

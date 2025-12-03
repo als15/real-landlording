@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { sendIntroEmails } from '@/lib/email/send';
+import { ServiceRequest, Vendor } from '@/types/database';
 
 export async function POST(
   request: NextRequest,
@@ -24,12 +27,41 @@ export async function POST(
     }
 
     const supabase = await createClient();
+    const adminClient = createAdminClient();
+
+    // Get the service request
+    const { data: serviceRequest, error: requestError } = await adminClient
+      .from('service_requests')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (requestError || !serviceRequest) {
+      return NextResponse.json(
+        { message: 'Request not found' },
+        { status: 404 }
+      );
+    }
+
+    // Get vendor details
+    const { data: vendors, error: vendorError } = await adminClient
+      .from('vendors')
+      .select('*')
+      .in('id', vendor_ids);
+
+    if (vendorError || !vendors || vendors.length === 0) {
+      return NextResponse.json(
+        { message: 'Vendors not found' },
+        { status: 404 }
+      );
+    }
 
     // Create match records
     const matches = vendor_ids.map((vendor_id: string) => ({
       request_id: id,
       vendor_id,
-      intro_sent: false,
+      intro_sent: true,
+      intro_sent_at: new Date().toISOString(),
     }));
 
     const { error: matchError } = await supabase
@@ -44,15 +76,25 @@ export async function POST(
       );
     }
 
-    // Update request status to matched
+    // Update request status to matched and record intro sent time
     const { error: updateError } = await supabase
       .from('service_requests')
-      .update({ status: 'matched' })
+      .update({
+        status: 'matched',
+        intro_sent_at: new Date().toISOString(),
+      })
       .eq('id', id);
 
     if (updateError) {
       console.error('Update error:', updateError);
     }
+
+    // Send intro emails (async, don't block response)
+    sendIntroEmails(serviceRequest as ServiceRequest, vendors as Vendor[])
+      .then(({ landlordSent, vendorsSent }) => {
+        console.log(`Intro emails sent: landlord=${landlordSent}, vendors=${vendorsSent}`);
+      })
+      .catch(console.error);
 
     return NextResponse.json({
       message: 'Vendors matched successfully',

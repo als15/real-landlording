@@ -1,0 +1,113 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { Layout, Menu, Typography, theme, Button, Space, Dropdown, Avatar } from 'antd';
+import {
+  HomeOutlined,
+  FileTextOutlined,
+  UserOutlined,
+  LogoutOutlined,
+  SettingOutlined,
+  DashboardOutlined,
+} from '@ant-design/icons';
+import type { MenuProps } from 'antd';
+import Link from 'next/link';
+
+const { Header, Content, Footer } = Layout;
+const { Title } = Typography;
+
+export default function VendorDashboardLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const { token } = theme.useToken();
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    router.push('/');
+    router.refresh();
+  };
+
+  const userMenuItems: MenuProps['items'] = [
+    {
+      key: 'profile',
+      icon: <UserOutlined />,
+      label: 'My Profile',
+    },
+    {
+      key: 'settings',
+      icon: <SettingOutlined />,
+      label: 'Settings',
+    },
+    {
+      type: 'divider',
+    },
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: 'Logout',
+      danger: true,
+    },
+  ];
+
+  const handleUserMenuClick: MenuProps['onClick'] = (e) => {
+    if (e.key === 'logout') {
+      handleLogout();
+    }
+  };
+
+  return (
+    <Layout style={{ minHeight: '100vh' }}>
+      <Header
+        style={{
+          background: '#fff',
+          padding: '0 24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderBottom: `1px solid ${token.colorBorderSecondary}`,
+          position: 'sticky',
+          top: 0,
+          zIndex: 100,
+        }}
+      >
+        <Space size="large">
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <HomeOutlined style={{ fontSize: 24, color: token.colorPrimary }} />
+            <Title level={4} style={{ margin: 0 }}>Real Landlording</Title>
+          </Link>
+          <Menu
+            mode="horizontal"
+            selectedKeys={[]}
+            style={{ border: 'none' }}
+            items={[
+              {
+                key: 'dashboard',
+                icon: <DashboardOutlined />,
+                label: <Link href="/vendor/dashboard">Dashboard</Link>,
+              },
+              {
+                key: 'jobs',
+                icon: <FileTextOutlined />,
+                label: <Link href="/vendor/dashboard">My Jobs</Link>,
+              },
+            ]}
+          />
+        </Space>
+
+        <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenuClick }} placement="bottomRight">
+          <Space style={{ cursor: 'pointer' }}>
+            <Avatar icon={<UserOutlined />} style={{ backgroundColor: token.colorPrimary }} />
+            <span>Vendor Portal</span>
+          </Space>
+        </Dropdown>
+      </Header>
+
+      <Content style={{ padding: '24px 48px', maxWidth: 1200, margin: '0 auto', width: '100%' }}>
+        {children}
+      </Content>
+
+      <Footer style={{ textAlign: 'center', background: '#fafafa' }}>
+        Real Landlording © {new Date().getFullYear()} - Vendor Portal
+      </Footer>
+    </Layout>
+  );
+}
