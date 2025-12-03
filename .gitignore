@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# local scripts (one-time imports with hardcoded paths)
+/scripts-local
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
