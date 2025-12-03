@@ -13,16 +13,43 @@ import {
   Drawer,
   Descriptions,
   Divider,
+  Empty,
 } from 'antd';
 import {
   ReloadOutlined,
   EyeOutlined,
   SearchOutlined,
+  EnvironmentOutlined,
 } from '@ant-design/icons';
 import { Landlord } from '@/types/database';
 import type { ColumnsType } from 'antd/es/table';
 
 const { Title, Text } = Typography;
+
+function PropertyMap({ address }: { address: string }) {
+  const fullAddress = address + ', Philadelphia, PA';
+  const encodedAddress = encodeURIComponent(fullAddress);
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+
+  return (
+    <div>
+      <iframe
+        width="100%"
+        height="250"
+        style={{ border: 0, borderRadius: 8 }}
+        loading="lazy"
+        allowFullScreen
+        referrerPolicy="no-referrer-when-downgrade"
+        src={`https://maps.google.com/maps?q=${encodedAddress}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+      />
+      <div style={{ marginTop: 8, textAlign: 'right' }}>
+        <a href={mapsUrl} target="_blank" rel="noopener noreferrer">
+          Open in Google Maps →
+        </a>
+      </div>
+    </div>
+  );
+}
 
 export default function LandlordsPage() {
   const [landlords, setLandlords] = useState<Landlord[]>([]);
@@ -33,6 +60,7 @@ export default function LandlordsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLandlord, setSelectedLandlord] = useState<Landlord | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedProperty, setSelectedProperty] = useState<string | null>(null);
 
   const fetchLandlords = useCallback(async () => {
     setLoading(true);
@@ -61,6 +89,7 @@ export default function LandlordsPage() {
 
   const handleViewLandlord = (landlord: Landlord) => {
     setSelectedLandlord(landlord);
+    setSelectedProperty(landlord.properties?.[0] || null);
     setDrawerOpen(true);
   };
 
@@ -219,12 +248,28 @@ export default function LandlordsPage() {
 
             {selectedLandlord.properties && selectedLandlord.properties.length > 0 && (
               <>
-                <Divider>Properties</Divider>
-                <Space wrap>
+                <Divider><EnvironmentOutlined /> Properties</Divider>
+                <Space wrap style={{ marginBottom: 16 }}>
                   {selectedLandlord.properties.map((prop, i) => (
-                    <Tag key={i}>{prop}</Tag>
+                    <Tag
+                      key={i}
+                      color={selectedProperty === prop ? 'blue' : 'default'}
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => setSelectedProperty(prop)}
+                    >
+                      {prop}
+                    </Tag>
                   ))}
                 </Space>
+                {selectedProperty && (
+                  <PropertyMap address={selectedProperty} />
+                )}
+              </>
+            )}
+            {(!selectedLandlord.properties || selectedLandlord.properties.length === 0) && (
+              <>
+                <Divider><EnvironmentOutlined /> Properties</Divider>
+                <Empty description="No properties on file" image={Empty.PRESENTED_IMAGE_SIMPLE} />
               </>
             )}
           </>
