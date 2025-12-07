@@ -156,7 +156,7 @@ export default function AdminDashboard() {
 
       <Card
         title="Recent Requests"
-        extra={<Link href="/admin/requests">View All</Link>}
+        extra={<Link href="/requests">View All</Link>}
       >
         <Table
           columns={columns}

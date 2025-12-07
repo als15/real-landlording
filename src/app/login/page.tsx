@@ -7,7 +7,7 @@ import { LockOutlined, MailOutlined, HomeOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
 
-export default function AdminLoginPage() {
+export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -32,7 +32,7 @@ export default function AdminLoginPage() {
       }
 
       message.success('Login successful');
-      router.push('/admin');
+      router.push('/');
       router.refresh();
     } catch (error) {
       message.error(error instanceof Error ? error.message : 'Login failed');
@@ -56,9 +56,9 @@ export default function AdminLoginPage() {
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <HomeOutlined style={{ fontSize: 40, color: '#1890ff' }} />
           <Title level={3} style={{ marginTop: 16, marginBottom: 8 }}>
-            Admin Login
+            Real Landlording
           </Title>
-          <Text type="secondary">Real Landlording Platform</Text>
+          <Text type="secondary">Admin Login</Text>
         </div>
 
         <Form layout="vertical" onFinish={onFinish}>
@@ -93,12 +93,6 @@ export default function AdminLoginPage() {
             </Button>
           </Form.Item>
         </Form>
-
-        <div style={{ textAlign: 'center' }}>
-          <Space>
-            <a href="/">Back to Home</a>
-          </Space>
-        </div>
       </Card>
     </div>
   );

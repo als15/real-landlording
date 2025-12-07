@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Table, Card, Tag, Space, Button, Select, Input, Typography, Drawer, Descriptions, Divider, message, Badge, Modal, Form, Checkbox, Rate } from 'antd'
 import { ReloadOutlined, PlusOutlined, EditOutlined, EyeOutlined, FilterOutlined } from '@ant-design/icons'
-import { Vendor, VendorStatus, VENDOR_STATUS_LABELS, SERVICE_TYPE_LABELS, ServiceType } from '@/types/database'
+import { Vendor, VendorStatus, VENDOR_STATUS_LABELS, SERVICE_TYPE_LABELS } from '@/types/database'
 import type { ColumnsType } from 'antd/es/table'
 
 const { Title, Text } = Typography

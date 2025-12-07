@@ -1,6 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+// Routes that require admin authentication (the main admin app)
+const adminRoutes = ['/', '/requests', '/vendors', '/applications', '/landlords', '/analytics'];
+
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -32,31 +35,45 @@ export async function middleware(request: NextRequest) {
   // Refresh session if expired
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Protected routes
-  const isDashboardRoute = request.nextUrl.pathname.startsWith('/dashboard');
-  const isVendorDashboardRoute = request.nextUrl.pathname.startsWith('/vendor/dashboard');
-  const isAdminRoute = request.nextUrl.pathname.startsWith('/admin');
-  const isAdminLoginPage = request.nextUrl.pathname === '/admin/login';
+  const pathname = request.nextUrl.pathname;
+
+  // Check route types
+  const isDashboardRoute = pathname.startsWith('/dashboard');
+  const isVendorDashboardRoute = pathname.startsWith('/vendor/dashboard');
+  const isLoginPage = pathname === '/login';
+  const isAdminRoute = adminRoutes.includes(pathname) || pathname === '/admin' || pathname.startsWith('/admin/');
 
   // Protect landlord dashboard
   if (isDashboardRoute && !user) {
     const loginUrl = new URL('/auth/login', request.url);
-    loginUrl.searchParams.set('redirectTo', request.nextUrl.pathname);
+    loginUrl.searchParams.set('redirectTo', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
   // Protect vendor dashboard
   if (isVendorDashboardRoute && !user) {
     const loginUrl = new URL('/vendor/login', request.url);
-    loginUrl.searchParams.set('redirectTo', request.nextUrl.pathname);
+    loginUrl.searchParams.set('redirectTo', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  if (isAdminRoute && !isAdminLoginPage) {
+  // Redirect old /admin routes to new routes
+  if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
+    const newPath = pathname.replace('/admin', '') || '/';
+    return NextResponse.redirect(new URL(newPath, request.url));
+  }
+
+  // Redirect old /admin/login to /login
+  if (pathname === '/admin/login') {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  // Protect admin routes (main app at root level)
+  if (isAdminRoute && !isLoginPage) {
     // If not logged in, redirect to login
     if (!user) {
-      const loginUrl = new URL('/admin/login', request.url);
-      loginUrl.searchParams.set('redirectTo', request.nextUrl.pathname);
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('redirectTo', pathname);
       return NextResponse.redirect(loginUrl);
     }
 
@@ -69,14 +86,14 @@ export async function middleware(request: NextRequest) {
 
     if (!adminUser) {
       // User is not an admin, redirect to login with error
-      const loginUrl = new URL('/admin/login', request.url);
+      const loginUrl = new URL('/login', request.url);
       loginUrl.searchParams.set('error', 'access_denied');
       return NextResponse.redirect(loginUrl);
     }
   }
 
   // If user is logged in admin and visits login page, redirect to dashboard
-  if (isAdminLoginPage && user) {
+  if (isLoginPage && user) {
     const { data: adminUser } = await supabase
       .from('admin_users')
       .select('id')
@@ -84,7 +101,7 @@ export async function middleware(request: NextRequest) {
       .single();
 
     if (adminUser) {
-      return NextResponse.redirect(new URL('/admin', request.url));
+      return NextResponse.redirect(new URL('/', request.url));
     }
   }
 
@@ -98,7 +115,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - api routes (handled separately)
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

@@ -22,32 +22,32 @@ const { Title } = Typography;
 
 const menuItems: MenuProps['items'] = [
   {
-    key: '/admin',
+    key: '/',
     icon: <DashboardOutlined />,
     label: 'Dashboard',
   },
   {
-    key: '/admin/requests',
+    key: '/requests',
     icon: <FileTextOutlined />,
     label: 'Requests',
   },
   {
-    key: '/admin/vendors',
+    key: '/vendors',
     icon: <TeamOutlined />,
     label: 'Vendors',
   },
   {
-    key: '/admin/applications',
+    key: '/applications',
     icon: <SolutionOutlined />,
     label: 'Applications',
   },
   {
-    key: '/admin/landlords',
+    key: '/landlords',
     icon: <UserOutlined />,
     label: 'Landlords',
   },
   {
-    key: '/admin/analytics',
+    key: '/analytics',
     icon: <BarChartOutlined />,
     label: 'Analytics',
   },
@@ -83,7 +83,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const handleUserMenuClick: MenuProps['onClick'] = async (e) => {
     if (e.key === 'logout') {
       await fetch('/api/auth/logout', { method: 'POST' });
-      router.push('/admin/login');
+      router.push('/login');
     }
   };
 
@@ -112,7 +112,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <DashboardOutlined style={{ fontSize: 24, color: token.colorPrimary }} />
           ) : (
             <Title level={4} style={{ margin: 0, color: token.colorPrimary }}>
-              Admin
+              Real Landlording
             </Title>
           )}
         </div>
