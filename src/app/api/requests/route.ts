@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
     const body: ServiceRequestInput = await request.json();
 
     // Validate required fields
-    if (!body.landlord_email || !body.service_type || !body.property_location || !body.job_description) {
+    if (!body.landlord_email || !body.service_type || !body.property_address || !body.zip_code || !body.job_description) {
       return NextResponse.json(
         { message: 'Missing required fields' },
         { status: 400 }
@@ -24,6 +24,9 @@ export async function POST(request: NextRequest) {
       .eq('email', body.landlord_email)
       .single();
 
+    // Build property_location from address and zip for backward compatibility
+    const propertyLocation = `${body.property_address}, ${body.zip_code}`;
+
     // Create the service request
     const { data, error } = await supabase
       .from('service_requests')
@@ -32,13 +35,22 @@ export async function POST(request: NextRequest) {
         landlord_email: body.landlord_email,
         landlord_name: body.landlord_name || null,
         landlord_phone: body.landlord_phone || null,
+        contact_preference: body.contact_preference || null,
+        // Property info
+        property_address: body.property_address,
+        zip_code: body.zip_code,
+        property_type: body.property_type || null,
+        unit_count: body.unit_count || null,
+        occupancy_status: body.occupancy_status || null,
+        latitude: body.latitude || null,
+        longitude: body.longitude || null,
+        property_location: propertyLocation, // Legacy field
+        // Service info
         service_type: body.service_type,
         service_details: body.service_details || null,
-        property_location: body.property_location,
         job_description: body.job_description,
         urgency: body.urgency || 'medium',
-        budget_min: body.budget_min || null,
-        budget_max: body.budget_max || null,
+        budget_range: body.budget_range || null,
         status: 'new',
       })
       .select()

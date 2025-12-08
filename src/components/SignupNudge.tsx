@@ -1,10 +1,15 @@
 'use client';
 
-import { Modal, Typography, Button, Form, Input, Space, Divider, message } from 'antd';
-import { CheckCircleOutlined, UserAddOutlined } from '@ant-design/icons';
+import { Modal, Button, Form, Input, message } from 'antd';
+import {
+  CheckCircleOutlined,
+  EyeOutlined,
+  BellOutlined,
+  SafetyCertificateOutlined,
+  ThunderboltOutlined,
+} from '@ant-design/icons';
 import { useState } from 'react';
-
-const { Title, Text, Paragraph } = Typography;
+import { brandColors } from '@/theme/config';
 
 interface SignupNudgeProps {
   open: boolean;
@@ -12,6 +17,13 @@ interface SignupNudgeProps {
   requestId: string;
   onClose: () => void;
 }
+
+const benefits = [
+  { icon: <EyeOutlined />, title: 'See vendor ratings' },
+  { icon: <BellOutlined />, title: 'Real-time updates' },
+  { icon: <SafetyCertificateOutlined />, title: 'Verified reviews' },
+  { icon: <ThunderboltOutlined />, title: 'One-click requests' },
+];
 
 export default function SignupNudge({ open, email, requestId, onClose }: SignupNudgeProps) {
   const [loading, setLoading] = useState(false);
@@ -50,95 +62,110 @@ export default function SignupNudge({ open, email, requestId, onClose }: SignupN
       open={open}
       onCancel={onClose}
       footer={null}
-      width={480}
+      width={440}
       centered
+      closable={true}
+      styles={{ body: { padding: 0 } }}
     >
-      <div style={{ textAlign: 'center', padding: '16px 0' }}>
-        <CheckCircleOutlined style={{ fontSize: 48, color: '#52c41a' }} />
-        <Title level={3} style={{ marginTop: 16 }}>
-          Request Submitted!
-        </Title>
-        <Paragraph type="secondary">
-          We&apos;ll match you with up to 3 vetted vendors and send introductions to{' '}
-          <Text strong>{email}</Text>
-        </Paragraph>
-      </div>
-
-      <Divider />
-
-      <div style={{ textAlign: 'center' }}>
-        <UserAddOutlined style={{ fontSize: 32, color: '#1890ff' }} />
-        <Title level={4}>Create an Account to Track Your Request</Title>
-        <Paragraph type="secondary">
-          With an account you can:
-        </Paragraph>
-        <ul style={{ textAlign: 'left', maxWidth: 280, margin: '0 auto 24px' }}>
-          <li>Track all your service requests</li>
-          <li>View matched vendor details</li>
-          <li>Leave reviews after jobs complete</li>
-          <li>Faster submissions in the future</li>
-        </ul>
-      </div>
-
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={handleSignup}
-        initialValues={{ email }}
+      {/* Success Banner */}
+      <div
+        style={{
+          background: `linear-gradient(135deg, #52c41a 0%, #237804 100%)`,
+          padding: '24px',
+          textAlign: 'center',
+        }}
       >
-        <Form.Item label="Email">
-          <Input value={email} disabled />
-        </Form.Item>
+        <CheckCircleOutlined style={{ fontSize: 40, color: '#fff', marginBottom: 12 }} />
+        <h2 style={{ color: '#fff', margin: 0, fontSize: 24, fontWeight: 700 }}>
+          Request Submitted!
+        </h2>
+        <p style={{ color: 'rgba(255,255,255,0.9)', margin: '8px 0 0', fontSize: 14 }}>
+          We&apos;ll email matches to <strong>{email}</strong>
+        </p>
+      </div>
 
-        <Form.Item
-          name="name"
-          label="Your Name"
-          rules={[{ required: true, message: 'Please enter your name' }]}
-        >
-          <Input placeholder="John Smith" />
-        </Form.Item>
+      {/* Account Upsell */}
+      <div style={{ padding: '24px' }}>
+        <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, textAlign: 'center', color: brandColors.primary }}>
+          Create an account to unlock:
+        </h3>
 
-        <Form.Item
-          name="password"
-          label="Create Password"
-          rules={[
-            { required: true, message: 'Please create a password' },
-            { min: 8, message: 'Password must be at least 8 characters' },
-          ]}
-        >
-          <Input.Password placeholder="At least 8 characters" />
-        </Form.Item>
+        {/* 4 Benefit Squares */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
+          {benefits.map((benefit, i) => (
+            <div
+              key={i}
+              style={{
+                background: brandColors.background,
+                border: `1px solid ${brandColors.border}`,
+                borderRadius: 10,
+                padding: '14px',
+                textAlign: 'center',
+              }}
+            >
+              <div style={{ fontSize: 22, color: brandColors.accent, marginBottom: 6 }}>
+                {benefit.icon}
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: brandColors.textPrimary }}>
+                {benefit.title}
+              </div>
+            </div>
+          ))}
+        </div>
 
-        <Form.Item
-          name="confirmPassword"
-          label="Confirm Password"
-          dependencies={['password']}
-          rules={[
-            { required: true, message: 'Please confirm your password' },
-            ({ getFieldValue }) => ({
-              validator(_, value) {
-                if (!value || getFieldValue('password') === value) {
-                  return Promise.resolve();
-                }
-                return Promise.reject(new Error('Passwords do not match'));
-              },
-            }),
-          ]}
-        >
-          <Input.Password placeholder="Confirm your password" />
-        </Form.Item>
+        {/* Quick Form */}
+        <Form form={form} onFinish={handleSignup}>
+          <Form.Item
+            name="name"
+            rules={[{ required: true, message: '' }]}
+            style={{ marginBottom: 12 }}
+          >
+            <Input placeholder="Your name" size="large" />
+          </Form.Item>
+          <Form.Item
+            name="password"
+            rules={[{ required: true, message: '' }, { min: 8, message: '' }]}
+            style={{ marginBottom: 16 }}
+          >
+            <Input.Password placeholder="Password (8+ chars)" size="large" />
+          </Form.Item>
 
-        <Form.Item>
-          <Space direction="vertical" style={{ width: '100%' }}>
-            <Button type="primary" htmlType="submit" loading={loading} block size="large">
-              Create Account
-            </Button>
-            <Button onClick={onClose} block>
-              Maybe Later
-            </Button>
-          </Space>
-        </Form.Item>
-      </Form>
+          <Button
+            type="primary"
+            htmlType="submit"
+            loading={loading}
+            block
+            size="large"
+            style={{
+              height: 48,
+              fontWeight: 600,
+              fontSize: 15,
+              background: brandColors.accent,
+              borderColor: brandColors.accent,
+            }}
+          >
+            Create Free Account
+          </Button>
+        </Form>
+
+        <p style={{ textAlign: 'center', margin: '16px 0 0', fontSize: 12, color: brandColors.textSecondary }}>
+          Join <strong>2,900+ landlords</strong> &bull;{' '}
+          <button
+            onClick={onClose}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: brandColors.textLight,
+              fontSize: 12,
+              cursor: 'pointer',
+              padding: 0,
+              textDecoration: 'underline',
+            }}
+          >
+            Skip for now
+          </button>
+        </p>
+      </div>
     </Modal>
   );
 }

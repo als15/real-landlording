@@ -1,18 +1,27 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Card, Form, Input, Button, Typography, message, Space, Divider, Spin } from 'antd';
-import { LockOutlined, MailOutlined, HomeOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Typography, message, Divider, Spin } from 'antd';
+import { LockOutlined, MailOutlined } from '@ant-design/icons';
 import Link from 'next/link';
+import AuthLayout from '@/components/layout/AuthLayout';
+import { brandColors } from '@/theme/config';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 function LoginForm() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirectTo') || '/dashboard';
+  const error = searchParams.get('error');
+
+  useEffect(() => {
+    if (error === 'not_landlord') {
+      message.error('You need a landlord account to access that page. Please sign up first.');
+    }
+  }, [error]);
 
   const onFinish = async (values: { email: string; password: string }) => {
     setLoading(true);
@@ -40,78 +49,59 @@ function LoginForm() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: '#f5f5f5',
-        padding: 24,
-      }}
+    <AuthLayout
+      title="Welcome Back"
+      subtitle="Sign in to your landlord account"
     >
-      <Card style={{ width: 400, maxWidth: '100%' }}>
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <HomeOutlined style={{ fontSize: 40, color: '#1890ff' }} />
-          <Title level={3} style={{ marginTop: 16, marginBottom: 8 }}>
-            Welcome Back
-          </Title>
-          <Text type="secondary">Sign in to your landlord account</Text>
+      <Form layout="vertical" onFinish={onFinish}>
+        <Form.Item
+          name="email"
+          rules={[
+            { required: true, message: 'Please enter your email' },
+            { type: 'email', message: 'Please enter a valid email' },
+          ]}
+        >
+          <Input
+            prefix={<MailOutlined style={{ color: brandColors.textLight }} />}
+            placeholder="Email"
+            size="large"
+          />
+        </Form.Item>
+
+        <Form.Item
+          name="password"
+          rules={[{ required: true, message: 'Please enter your password' }]}
+        >
+          <Input.Password
+            prefix={<LockOutlined style={{ color: brandColors.textLight }} />}
+            placeholder="Password"
+            size="large"
+          />
+        </Form.Item>
+
+        <div style={{ textAlign: 'right', marginBottom: 16 }}>
+          <Link href="/auth/forgot-password?type=landlord" style={{ color: brandColors.accent }}>
+            Forgot Password?
+          </Link>
         </div>
 
-        <Form layout="vertical" onFinish={onFinish}>
-          <Form.Item
-            name="email"
-            rules={[
-              { required: true, message: 'Please enter your email' },
-              { type: 'email', message: 'Please enter a valid email' },
-            ]}
-          >
-            <Input
-              prefix={<MailOutlined />}
-              placeholder="Email"
-              size="large"
-            />
-          </Form.Item>
+        <Form.Item>
+          <Button type="primary" htmlType="submit" loading={loading} block size="large">
+            Sign In
+          </Button>
+        </Form.Item>
+      </Form>
 
-          <Form.Item
-            name="password"
-            rules={[{ required: true, message: 'Please enter your password' }]}
-          >
-            <Input.Password
-              prefix={<LockOutlined />}
-              placeholder="Password"
-              size="large"
-            />
-          </Form.Item>
+      <Divider>
+        <Text type="secondary" style={{ fontSize: 13 }}>New to Real Landlording?</Text>
+      </Divider>
 
-          <div style={{ textAlign: 'right', marginBottom: 16 }}>
-            <Link href="/auth/forgot-password?type=landlord">Forgot Password?</Link>
-          </div>
-
-          <Form.Item>
-            <Button type="primary" htmlType="submit" loading={loading} block size="large">
-              Sign In
-            </Button>
-          </Form.Item>
-        </Form>
-
-        <Divider>
-          <Text type="secondary">New to Real Landlording?</Text>
-        </Divider>
-
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <Link href="/auth/signup">
-            <Button block size="large">
-              Create an Account
-            </Button>
-          </Link>
-          <div style={{ textAlign: 'center', marginTop: 16 }}>
-            <Link href="/">← Back to Home</Link>
-          </div>
-        </Space>
-      </Card>
-    </div>
+      <Link href="/auth/signup">
+        <Button block size="large">
+          Create an Account
+        </Button>
+      </Link>
+    </AuthLayout>
   );
 }
 

@@ -17,13 +17,45 @@ import {
   message,
   Result,
 } from 'antd';
-import { HomeOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import {
+  CheckCircleOutlined,
+  DollarOutlined,
+  ThunderboltOutlined,
+  SafetyCertificateOutlined,
+  TeamOutlined,
+} from '@ant-design/icons';
 import { getServiceCategoryOptions } from '@/types/database';
 import Link from 'next/link';
+import PublicHeader from '@/components/layout/PublicHeader';
+import PublicFooter from '@/components/layout/PublicFooter';
+import { brandColors } from '@/theme/config';
 
-const { Header, Content, Footer } = Layout;
+const { Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
+
+const benefits = [
+  {
+    icon: <DollarOutlined style={{ fontSize: 24 }} />,
+    title: 'Qualified Leads',
+    description: 'Get connected with landlords actively looking for your services',
+  },
+  {
+    icon: <ThunderboltOutlined style={{ fontSize: 24 }} />,
+    title: 'No Marketing Spend',
+    description: 'We bring the customers to you — focus on what you do best',
+  },
+  {
+    icon: <SafetyCertificateOutlined style={{ fontSize: 24 }} />,
+    title: 'Build Your Reputation',
+    description: 'Collect reviews and grow your presence in the landlord community',
+  },
+  {
+    icon: <TeamOutlined style={{ fontSize: 24 }} />,
+    title: 'Join 100+ Vendors',
+    description: 'Be part of Philadelphia\'s trusted contractor network',
+  },
+];
 
 export default function VendorApplyPage() {
   const [form] = Form.useForm();
@@ -56,68 +88,118 @@ export default function VendorApplyPage() {
 
   if (submitted) {
     return (
-      <Layout style={{ minHeight: '100vh' }}>
-        <Header
-          style={{
-            background: '#fff',
-            padding: '0 24px',
-            display: 'flex',
-            alignItems: 'center',
-            borderBottom: '1px solid #f0f0f0',
-          }}
-        >
-          <a href="https://www.reallandlording.com" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <HomeOutlined style={{ fontSize: 24, color: '#1890ff' }} />
-            <Title level={4} style={{ margin: 0 }}>Real Landlording</Title>
-          </a>
-        </Header>
-        <Content style={{ padding: '48px 24px', display: 'flex', justifyContent: 'center' }}>
-          <Result
-            icon={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
-            title="Application Submitted!"
-            subTitle="Thank you for applying to join our vendor network. We'll review your application and get back to you within 2-3 business days."
-            extra={[
-              <a href="https://www.reallandlording.com" key="home">
-                <Button type="primary" size="large">
-                  Back to Home
-                </Button>
-              </a>,
-            ]}
-          />
+      <Layout style={{ minHeight: '100vh', background: brandColors.background }}>
+        <PublicHeader showRequestButton={true} showSignIn={false} />
+        <Content style={{ padding: '48px 24px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <Card
+            style={{
+              maxWidth: 500,
+              textAlign: 'center',
+              borderRadius: 16,
+              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.06)',
+            }}
+          >
+            <Result
+              icon={<CheckCircleOutlined style={{ color: brandColors.success }} />}
+              title="Application Submitted!"
+              subTitle="Thank you for applying to join our vendor network. We'll review your application and get back to you within 2-3 business days."
+              extra={[
+                <a href="https://www.reallandlording.com" key="home">
+                  <Button type="primary" size="large">
+                    Back to Home
+                  </Button>
+                </a>,
+              ]}
+            />
+          </Card>
         </Content>
+        <PublicFooter />
       </Layout>
     );
   }
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Header
+    <Layout style={{ minHeight: '100vh', background: brandColors.background }}>
+      <PublicHeader showRequestButton={true} showSignIn={false} />
+
+      {/* Hero Section */}
+      <div
         style={{
-          background: '#fff',
-          padding: '0 24px',
-          display: 'flex',
-          alignItems: 'center',
-          borderBottom: '1px solid #f0f0f0',
+          background: `linear-gradient(135deg, ${brandColors.backgroundDark} 0%, #23282d 100%)`,
+          padding: '48px 24px',
+          textAlign: 'center',
         }}
       >
-        <a href="https://www.reallandlording.com" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <HomeOutlined style={{ fontSize: 24, color: '#1890ff' }} />
-          <Title level={4} style={{ margin: 0 }}>Real Landlording</Title>
-        </a>
-      </Header>
+        <div style={{ maxWidth: 700, margin: '0 auto' }}>
+          <Title style={{ color: brandColors.white, fontSize: 36, marginBottom: 16 }}>
+            Join Our Vendor Network
+          </Title>
+          <Paragraph style={{ color: 'rgba(255,255,255,0.8)', fontSize: 18 }}>
+            Get connected with Philadelphia landlords who need your services.
+            No marketing spend — we bring qualified leads directly to you.
+          </Paragraph>
+        </div>
+      </div>
 
       <Content style={{ padding: '48px 24px' }}>
-        <Row justify="center">
-          <Col xs={24} lg={16} xl={14}>
-            <div style={{ textAlign: 'center', marginBottom: 32 }}>
-              <Title level={2}>Join Our Vendor Network</Title>
-              <Paragraph style={{ fontSize: 16, color: '#666' }}>
-                Get connected with Philadelphia landlords who need your services.
-                No marketing spend — we bring qualified leads directly to you.
-              </Paragraph>
+        <Row gutter={[48, 32]} justify="center" style={{ maxWidth: 1200, margin: '0 auto' }}>
+          {/* Benefits Column */}
+          <Col xs={24} lg={8}>
+            <div style={{ position: 'sticky', top: 100 }}>
+              <Title level={4} style={{ marginBottom: 24, color: brandColors.primary }}>
+                Why Join Real Landlording?
+              </Title>
+              <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                {benefits.map((benefit, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      display: 'flex',
+                      gap: 16,
+                      padding: 16,
+                      background: brandColors.white,
+                      borderRadius: 12,
+                      border: `1px solid ${brandColors.border}`,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 10,
+                        background: `${brandColors.accent}15`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: brandColors.accent,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {benefit.icon}
+                    </div>
+                    <div>
+                      <Text strong style={{ display: 'block', marginBottom: 4 }}>
+                        {benefit.title}
+                      </Text>
+                      <Text type="secondary" style={{ fontSize: 13 }}>
+                        {benefit.description}
+                      </Text>
+                    </div>
+                  </div>
+                ))}
+              </Space>
             </div>
+          </Col>
 
-            <Card>
+          {/* Form Column */}
+          <Col xs={24} lg={16}>
+            <Card
+              style={{
+                borderRadius: 16,
+                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.06)',
+                border: `1px solid ${brandColors.border}`,
+              }}
+            >
               <Form form={form} layout="vertical" onFinish={onFinish}>
                 <Title level={4}>Contact Information</Title>
 
@@ -264,16 +346,14 @@ export default function VendorApplyPage() {
 
             <div style={{ textAlign: 'center', marginTop: 24 }}>
               <Text type="secondary">
-                Already a vendor? <Link href="/vendor/login">Sign in to your dashboard</Link>
+                Already a vendor? <Link href="/vendor/login" style={{ color: brandColors.accent }}>Sign in to your dashboard</Link>
               </Text>
             </div>
           </Col>
         </Row>
       </Content>
 
-      <Footer style={{ textAlign: 'center', background: '#fafafa' }}>
-        Real Landlording © {new Date().getFullYear()} - Philadelphia&apos;s Landlord Community
-      </Footer>
+      <PublicFooter />
     </Layout>
   );
 }

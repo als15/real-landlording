@@ -43,18 +43,57 @@ export async function middleware(request: NextRequest) {
   const isLoginPage = pathname === '/login';
   const isAdminRoute = adminRoutes.includes(pathname) || pathname === '/admin' || pathname.startsWith('/admin/');
 
-  // Protect landlord dashboard
-  if (isDashboardRoute && !user) {
-    const loginUrl = new URL('/auth/login', request.url);
-    loginUrl.searchParams.set('redirectTo', pathname);
-    return NextResponse.redirect(loginUrl);
+  // Protect landlord dashboard - must be logged in AND be a landlord
+  if (isDashboardRoute) {
+    if (!user) {
+      const loginUrl = new URL('/auth/login', request.url);
+      loginUrl.searchParams.set('redirectTo', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // Verify user is a landlord
+    const { data: landlord } = await supabase
+      .from('landlords')
+      .select('id')
+      .or(`auth_user_id.eq.${user.id},email.eq.${user.email}`)
+      .single();
+
+    if (!landlord) {
+      // User is not a landlord, redirect to login with error
+      const loginUrl = new URL('/auth/login', request.url);
+      loginUrl.searchParams.set('error', 'not_landlord');
+      return NextResponse.redirect(loginUrl);
+    }
   }
 
-  // Protect vendor dashboard
-  if (isVendorDashboardRoute && !user) {
-    const loginUrl = new URL('/vendor/login', request.url);
-    loginUrl.searchParams.set('redirectTo', pathname);
-    return NextResponse.redirect(loginUrl);
+  // Protect vendor dashboard - must be logged in AND be an active vendor
+  if (isVendorDashboardRoute) {
+    if (!user) {
+      const loginUrl = new URL('/vendor/login', request.url);
+      loginUrl.searchParams.set('redirectTo', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // Verify user is an active vendor
+    const { data: vendor } = await supabase
+      .from('vendors')
+      .select('id, status')
+      .eq('email', user.email)
+      .single();
+
+    if (!vendor) {
+      // User is not a vendor, redirect to vendor login with error
+      const loginUrl = new URL('/vendor/login', request.url);
+      loginUrl.searchParams.set('error', 'not_vendor');
+      return NextResponse.redirect(loginUrl);
+    }
+
+    if (vendor.status !== 'active') {
+      // Vendor is not active, redirect with pending status
+      const loginUrl = new URL('/vendor/login', request.url);
+      loginUrl.searchParams.set('error', 'vendor_not_active');
+      return NextResponse.redirect(loginUrl);
+    }
   }
 
   // Redirect old /admin routes to new routes

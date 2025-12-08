@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, Form, Input, Button, Typography, message, Space, Divider, Spin } from 'antd';
 import { LockOutlined, MailOutlined, HomeOutlined } from '@ant-design/icons';
@@ -13,6 +13,16 @@ function VendorLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirectTo') || '/vendor/dashboard';
+  const error = searchParams.get('error');
+
+  // Show error messages from redirects
+  useEffect(() => {
+    if (error === 'not_vendor') {
+      message.error('You need a vendor account to access that page. Apply to join our network.');
+    } else if (error === 'vendor_not_active') {
+      message.warning('Your vendor account is pending approval. We\'ll notify you once approved.');
+    }
+  }, [error]);
 
   const onFinish = async (values: { email: string; password: string }) => {
     setLoading(true);
@@ -107,7 +117,7 @@ function VendorLoginForm() {
             </Button>
           </Link>
           <div style={{ textAlign: 'center', marginTop: 16 }}>
-            <Link href="/">← Back to Home</Link>
+            <a href="https://www.reallandlording.com">← Back to Home</a>
           </div>
         </Space>
       </Card>

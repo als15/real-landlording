@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Layout, Menu, Typography, theme, Button, Space, Dropdown, Avatar } from 'antd';
+import { Layout, Menu, Typography, Button, Space, Dropdown, Avatar, Badge } from 'antd';
 import {
   DashboardOutlined,
   FileTextOutlined,
@@ -14,11 +14,13 @@ import {
   LogoutOutlined,
   SettingOutlined,
   SolutionOutlined,
+  BellOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
+import { brandColors } from '@/theme/config';
 
 const { Header, Sider, Content } = Layout;
-const { Title } = Typography;
+const { Text } = Typography;
 
 const menuItems: MenuProps['items'] = [
   {
@@ -57,7 +59,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const { token } = theme.useToken();
 
   const handleMenuClick: MenuProps['onClick'] = (e) => {
     router.push(e.key);
@@ -93,69 +94,131 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         trigger={null}
         collapsible
         collapsed={collapsed}
-        theme="light"
+        width={240}
         style={{
-          borderRight: `1px solid ${token.colorBorderSecondary}`,
+          background: brandColors.backgroundDark,
+          borderRight: 'none',
         }}
       >
+        {/* Logo Section */}
         <div
           style={{
             height: 64,
             display: 'flex',
             alignItems: 'center',
             justifyContent: collapsed ? 'center' : 'flex-start',
-            padding: collapsed ? 0 : '0 16px',
-            borderBottom: `1px solid ${token.colorBorderSecondary}`,
+            padding: collapsed ? 0 : '0 20px',
+            borderBottom: '1px solid rgba(255,255,255,0.1)',
           }}
         >
           {collapsed ? (
-            <DashboardOutlined style={{ fontSize: 24, color: token.colorPrimary }} />
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                background: `linear-gradient(135deg, ${brandColors.accent} 0%, #c49a3d 100%)`,
+                borderRadius: 6,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 700,
+                fontSize: 14,
+                color: brandColors.backgroundDark,
+              }}
+            >
+              RL
+            </div>
           ) : (
-            <Title level={4} style={{ margin: 0, color: token.colorPrimary }}>
-              Real Landlording
-            </Title>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div
+                style={{
+                  width: 32,
+                  height: 32,
+                  background: `linear-gradient(135deg, ${brandColors.accent} 0%, #c49a3d 100%)`,
+                  borderRadius: 6,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 700,
+                  fontSize: 14,
+                  color: brandColors.backgroundDark,
+                }}
+              >
+                RL
+              </div>
+              <div style={{ lineHeight: 1.2 }}>
+                <Text strong style={{ color: brandColors.white, fontSize: 14, display: 'block' }}>
+                  Real Landlording
+                </Text>
+                <Text style={{ color: brandColors.accent, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Admin Portal
+                </Text>
+              </div>
+            </div>
           )}
         </div>
+
+        {/* Navigation Menu */}
         <Menu
           mode="inline"
           selectedKeys={[pathname]}
           items={menuItems}
           onClick={handleMenuClick}
-          style={{ borderRight: 0 }}
+          style={{
+            background: 'transparent',
+            borderRight: 0,
+            marginTop: 8,
+          }}
+          theme="dark"
         />
       </Sider>
-      <Layout>
+
+      <Layout style={{ background: brandColors.background }}>
         <Header
           style={{
             padding: '0 24px',
-            background: token.colorBgContainer,
+            background: brandColors.white,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderBottom: `1px solid ${token.colorBorderSecondary}`,
+            borderBottom: `1px solid ${brandColors.border}`,
+            boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
           }}
         >
           <Button
             type="text"
             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
             onClick={() => setCollapsed(!collapsed)}
+            style={{ fontSize: 16 }}
           />
-          <Space>
+          <Space size="middle">
+            <Badge count={3} size="small">
+              <Button type="text" icon={<BellOutlined style={{ fontSize: 18 }} />} />
+            </Badge>
             <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenuClick }} placement="bottomRight">
               <Space style={{ cursor: 'pointer' }}>
-                <Avatar icon={<UserOutlined />} />
-                <span>Admin</span>
+                <Avatar
+                  style={{
+                    background: `linear-gradient(135deg, ${brandColors.accent} 0%, #c49a3d 100%)`,
+                    color: brandColors.backgroundDark,
+                  }}
+                >
+                  A
+                </Avatar>
+                <Text strong>Admin</Text>
               </Space>
             </Dropdown>
           </Space>
         </Header>
+
         <Content
           style={{
             margin: 24,
             padding: 24,
-            background: token.colorBgContainer,
-            borderRadius: token.borderRadiusLG,
+            background: brandColors.white,
+            borderRadius: 12,
             minHeight: 280,
+            boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
           }}
         >
           {children}

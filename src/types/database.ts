@@ -4,6 +4,35 @@ export type VendorStatus = 'active' | 'inactive' | 'pending_review' | 'rejected'
 export type RequestStatus = 'new' | 'matching' | 'matched' | 'completed' | 'cancelled';
 export type UrgencyLevel = 'low' | 'medium' | 'high' | 'emergency';
 
+// Property types for service requests
+export type PropertyType =
+  | 'row_home'
+  | 'single_family'
+  | 'duplex'
+  | 'triplex'
+  | 'small_multi'
+  | 'large_multi'
+  | 'new_construction'
+  | 'commercial';
+
+export type UnitCount = '1' | '2-10' | '11-99' | '100+';
+
+export type OccupancyStatus = 'occupied' | 'vacant' | 'partial';
+
+export type ContactPreference = 'phone' | 'email' | 'text' | 'whatsapp' | 'no_preference';
+
+export type BudgetRange =
+  | 'under_500'
+  | '500_1000'
+  | '1000_2500'
+  | '2500_5000'
+  | '5000_10000'
+  | '10000_25000'
+  | '25000_50000'
+  | '50000_100000'
+  | 'over_100000'
+  | 'not_sure';
+
 // Service Categories (alphabetically ordered)
 export type ServiceCategory =
   | 'acquisitions'
@@ -423,6 +452,51 @@ export const REQUEST_STATUS_LABELS: Record<RequestStatus, string> = {
   cancelled: 'Cancelled',
 };
 
+export const PROPERTY_TYPE_LABELS: Record<PropertyType, string> = {
+  row_home: 'Row Home',
+  single_family: 'Single Family Detached',
+  duplex: 'Duplex',
+  triplex: 'Triplex',
+  small_multi: 'Small Multi-Family (4-10 units)',
+  large_multi: 'Large Multi-Family (11+ units)',
+  new_construction: 'New Construction',
+  commercial: 'Commercial',
+};
+
+export const UNIT_COUNT_LABELS: Record<UnitCount, string> = {
+  '1': '1 Unit',
+  '2-10': '2-10 Units',
+  '11-99': '11-99 Units',
+  '100+': '100+ Units',
+};
+
+export const OCCUPANCY_STATUS_LABELS: Record<OccupancyStatus, string> = {
+  occupied: 'Occupied',
+  vacant: 'Vacant',
+  partial: 'Partially Occupied',
+};
+
+export const CONTACT_PREFERENCE_LABELS: Record<ContactPreference, string> = {
+  phone: 'Phone Call',
+  email: 'Email',
+  text: 'Text Message',
+  whatsapp: 'WhatsApp',
+  no_preference: 'No Preference',
+};
+
+export const BUDGET_RANGE_LABELS: Record<BudgetRange, string> = {
+  under_500: 'Under $500',
+  '500_1000': '$500 - $1,000',
+  '1000_2500': '$1,000 - $2,500',
+  '2500_5000': '$2,500 - $5,000',
+  '5000_10000': '$5,000 - $10,000',
+  '10000_25000': '$10,000 - $25,000',
+  '25000_50000': '$25,000 - $50,000',
+  '50000_100000': '$50,000 - $100,000',
+  over_100000: '$100,000+',
+  not_sure: 'Not Sure Yet',
+};
+
 // Database row types
 export interface Landlord {
   id: string;
@@ -471,13 +545,27 @@ export interface ServiceRequest {
   landlord_email: string;
   landlord_name: string | null;
   landlord_phone: string | null;
-  service_type: ServiceCategory;
-  service_details: Record<string, string> | null; // Stores sub-category selections
+  contact_preference: ContactPreference | null;
+  // Property info
+  property_address: string | null;
+  zip_code: string | null;
+  property_type: PropertyType | null;
+  unit_count: UnitCount | null;
+  occupancy_status: OccupancyStatus | null;
+  latitude: number | null;
+  longitude: number | null;
+  // Legacy field - kept for backward compatibility
   property_location: string;
+  // Service info
+  service_type: ServiceCategory;
+  service_details: Record<string, string> | null;
   job_description: string;
   urgency: UrgencyLevel;
+  budget_range: BudgetRange | null;
+  // Legacy budget fields - kept for backward compatibility
   budget_min: number | null;
   budget_max: number | null;
+  // Status and tracking
   status: RequestStatus;
   intro_sent_at: string | null;
   followup_sent_at: string | null;
@@ -522,16 +610,25 @@ export interface VendorWithMatches extends Vendor {
 
 // Form input types
 export interface ServiceRequestInput {
+  // Contact info
   landlord_email: string;
   landlord_name?: string;
   landlord_phone?: string;
+  contact_preference?: ContactPreference;
+  // Property info
+  property_address: string;
+  zip_code: string;
+  property_type?: PropertyType;
+  unit_count?: UnitCount;
+  occupancy_status?: OccupancyStatus;
+  latitude?: number;
+  longitude?: number;
+  // Service info
   service_type: ServiceCategory;
-  service_details?: Record<string, string>; // Sub-category selections
-  property_location: string;
+  service_details?: Record<string, string>;
   job_description: string;
   urgency: UrgencyLevel;
-  budget_min?: number;
-  budget_max?: number;
+  budget_range?: BudgetRange;
 }
 
 export interface VendorInput {

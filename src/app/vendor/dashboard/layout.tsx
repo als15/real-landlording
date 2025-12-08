@@ -1,9 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Layout, Menu, Typography, theme, Button, Space, Dropdown, Avatar } from 'antd';
+import { Layout, Menu, Typography, Space, Dropdown, Avatar } from 'antd';
 import {
-  HomeOutlined,
   FileTextOutlined,
   UserOutlined,
   LogoutOutlined,
@@ -12,13 +11,13 @@ import {
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import Link from 'next/link';
+import { brandColors } from '@/theme/config';
 
 const { Header, Content, Footer } = Layout;
-const { Title } = Typography;
+const { Text } = Typography;
 
 export default function VendorDashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { token } = theme.useToken();
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -55,29 +54,63 @@ export default function VendorDashboardLayout({ children }: { children: React.Re
   };
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ minHeight: '100vh', background: brandColors.background }}>
       <Header
         style={{
-          background: '#fff',
+          background: brandColors.backgroundDark,
           padding: '0 24px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderBottom: `1px solid ${token.colorBorderSecondary}`,
           position: 'sticky',
           top: 0,
           zIndex: 100,
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
         }}
       >
         <Space size="large">
-          <a href="https://www.reallandlording.com" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <HomeOutlined style={{ fontSize: 24, color: token.colorPrimary }} />
-            <Title level={4} style={{ margin: 0 }}>Real Landlording</Title>
+          <a
+            href="https://www.reallandlording.com"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              textDecoration: 'none',
+            }}
+          >
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                background: `linear-gradient(135deg, ${brandColors.accent} 0%, #c49a3d 100%)`,
+                borderRadius: 6,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 700,
+                fontSize: 14,
+                color: brandColors.backgroundDark,
+              }}
+            >
+              RL
+            </div>
+            <div style={{ lineHeight: 1.2 }}>
+              <Text strong style={{ color: brandColors.white, fontSize: 14, display: 'block' }}>
+                Real Landlording
+              </Text>
+              <Text style={{ color: brandColors.accent, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Vendor Portal
+              </Text>
+            </div>
           </a>
           <Menu
             mode="horizontal"
             selectedKeys={[]}
-            style={{ border: 'none' }}
+            style={{
+              background: 'transparent',
+              border: 'none',
+            }}
+            theme="dark"
             items={[
               {
                 key: 'dashboard',
@@ -95,8 +128,15 @@ export default function VendorDashboardLayout({ children }: { children: React.Re
 
         <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenuClick }} placement="bottomRight">
           <Space style={{ cursor: 'pointer' }}>
-            <Avatar icon={<UserOutlined />} style={{ backgroundColor: token.colorPrimary }} />
-            <span>Vendor Portal</span>
+            <Avatar
+              style={{
+                background: `linear-gradient(135deg, ${brandColors.accent} 0%, #c49a3d 100%)`,
+                color: brandColors.backgroundDark,
+              }}
+            >
+              V
+            </Avatar>
+            <Text style={{ color: brandColors.white }}>Vendor Portal</Text>
           </Space>
         </Dropdown>
       </Header>
@@ -105,8 +145,15 @@ export default function VendorDashboardLayout({ children }: { children: React.Re
         {children}
       </Content>
 
-      <Footer style={{ textAlign: 'center', background: '#fafafa' }}>
-        Real Landlording © {new Date().getFullYear()} - Vendor Portal
+      <Footer
+        style={{
+          textAlign: 'center',
+          background: brandColors.backgroundDark,
+          color: 'rgba(255,255,255,0.6)',
+          padding: '16px 24px',
+        }}
+      >
+        Real Landlording &copy; {new Date().getFullYear()} - Vendor Portal
       </Footer>
     </Layout>
   );

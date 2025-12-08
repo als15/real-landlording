@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 import { ConfigProvider } from "antd";
+import theme from "@/theme/config";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Real Landlording",
-  description: "Property management made simple",
+  description: "Connecting Philadelphia landlords with trusted contractors",
 };
 
 export default function RootLayout({
@@ -17,7 +18,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <AntdRegistry>
-          <ConfigProvider>
+          <ConfigProvider theme={theme}>
             {children}
           </ConfigProvider>
         </AntdRegistry>
