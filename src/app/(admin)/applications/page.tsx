@@ -11,7 +11,7 @@ import {
   Modal,
   Descriptions,
   Divider,
-  message,
+  App,
   Badge,
   Input,
 } from 'antd';
@@ -38,6 +38,7 @@ export default function ApplicationsPage() {
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [processing, setProcessing] = useState(false);
+  const { message } = App.useApp();
 
   const fetchApplications = useCallback(async () => {
     setLoading(true);

@@ -15,7 +15,7 @@ import {
   Divider,
   Rate,
   Input,
-  message,
+  App,
   Badge,
 } from 'antd';
 import {
@@ -59,6 +59,7 @@ export default function DashboardPage() {
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
+  const { message } = App.useApp();
 
   useEffect(() => {
     fetchRequests();

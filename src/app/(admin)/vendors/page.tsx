@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { Table, Card, Tag, Space, Button, Select, Input, Typography, Drawer, Descriptions, Divider, message, Badge, Modal, Form, Checkbox, Rate } from 'antd'
+import { Table, Card, Tag, Space, Button, Select, Input, Typography, Drawer, Descriptions, Divider, App, Badge, Modal, Form, Checkbox, Rate } from 'antd'
 import { ReloadOutlined, PlusOutlined, EditOutlined, EyeOutlined, FilterOutlined } from '@ant-design/icons'
 import { Vendor, VendorStatus, VENDOR_STATUS_LABELS, SERVICE_TYPE_LABELS } from '@/types/database'
 import type { ColumnsType } from 'antd/es/table'
@@ -31,6 +31,7 @@ export default function VendorsPage() {
   const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm()
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
+  const { message } = App.useApp()
 
   // Debounce search input
   useEffect(() => {

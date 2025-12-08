@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Card, Form, Input, Button, Typography, message, Space, Divider, Spin } from 'antd';
+import { Card, Form, Input, Button, Typography, App, Space, Divider, Spin } from 'antd';
 import { LockOutlined, MailOutlined, HomeOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 
@@ -14,6 +14,7 @@ function VendorLoginForm() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirectTo') || '/vendor/dashboard';
   const error = searchParams.get('error');
+  const { message } = App.useApp();
 
   // Show error messages from redirects
   useEffect(() => {
@@ -22,7 +23,7 @@ function VendorLoginForm() {
     } else if (error === 'vendor_not_active') {
       message.warning('Your vendor account is pending approval. We\'ll notify you once approved.');
     }
-  }, [error]);
+  }, [error, message]);
 
   const onFinish = async (values: { email: string; password: string }) => {
     setLoading(true);

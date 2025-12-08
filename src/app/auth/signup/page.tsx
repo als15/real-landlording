@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Form, Input, Button, Typography, message, Divider } from 'antd';
+import { Form, Input, Button, Typography, App, Divider } from 'antd';
 import { LockOutlined, MailOutlined, UserOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import AuthLayout from '@/components/layout/AuthLayout';
@@ -13,6 +13,7 @@ const { Text } = Typography;
 export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { message } = App.useApp();
 
   const onFinish = async (values: { email: string; password: string; name: string }) => {
     setLoading(true);

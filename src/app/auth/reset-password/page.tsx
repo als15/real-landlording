@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Card, Form, Input, Button, Typography, message, Result, Spin } from 'antd';
+import { Card, Form, Input, Button, Typography, App, Result, Spin } from 'antd';
 import { LockOutlined, HomeOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 
@@ -13,6 +13,7 @@ function ResetPasswordForm() {
   const [success, setSuccess] = useState(false);
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { message } = App.useApp();
 
   const token = searchParams.get('token');
   const userType = searchParams.get('type') || 'landlord';

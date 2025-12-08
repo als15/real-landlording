@@ -1,6 +1,6 @@
 'use client';
 
-import { Modal, Button, Form, Input, message } from 'antd';
+import { Modal, Button, Form, Input, App } from 'antd';
 import {
   CheckCircleOutlined,
   EyeOutlined,
@@ -28,6 +28,7 @@ const benefits = [
 export default function SignupNudge({ open, email, requestId, onClose }: SignupNudgeProps) {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
+  const { message } = App.useApp();
 
   const handleSignup = async (values: { name: string; password: string }) => {
     setLoading(true);

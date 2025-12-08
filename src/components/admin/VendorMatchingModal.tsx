@@ -8,7 +8,7 @@ import {
   Space,
   Tag,
   Typography,
-  message,
+  App,
   Checkbox,
   Alert,
   Descriptions,
@@ -40,6 +40,7 @@ export default function VendorMatchingModal({
   const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const { message } = App.useApp();
 
   useEffect(() => {
     if (open && request) {

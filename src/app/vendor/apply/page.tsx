@@ -14,7 +14,7 @@ import {
   Row,
   Col,
   Divider,
-  message,
+  App,
   Result,
 } from 'antd';
 import {
@@ -61,6 +61,7 @@ export default function VendorApplyPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const { message } = App.useApp();
 
   const serviceOptions = getServiceCategoryOptions();
 

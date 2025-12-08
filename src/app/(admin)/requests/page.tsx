@@ -13,7 +13,7 @@ import {
   Drawer,
   Descriptions,
   Divider,
-  message,
+  App,
   Badge,
 } from 'antd';
 import {
@@ -63,6 +63,7 @@ export default function RequestsPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [matchingModalOpen, setMatchingModalOpen] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const { message } = App.useApp();
 
   // Debounce search input
   useEffect(() => {

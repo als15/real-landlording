@@ -16,7 +16,7 @@ import {
   Row,
   Col,
   Rate,
-  message,
+  App,
   Empty,
 } from 'antd';
 import {
@@ -62,6 +62,7 @@ export default function VendorDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [selectedJob, setSelectedJob] = useState<JobWithRequest | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const { message } = App.useApp();
 
   useEffect(() => {
     fetchData();

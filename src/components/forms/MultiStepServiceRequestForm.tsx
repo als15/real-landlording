@@ -10,7 +10,7 @@ import {
   Card,
   Row,
   Col,
-  message,
+  App,
   Steps,
   Divider,
 } from 'antd';
@@ -48,6 +48,7 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | null>(null);
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
+  const { message } = App.useApp();
 
   const categoryOptions = getServiceCategoryOptions();
 

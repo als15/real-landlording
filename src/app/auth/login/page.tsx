@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Form, Input, Button, Typography, message, Divider, Spin } from 'antd';
+import { Form, Input, Button, Typography, App, Divider, Spin } from 'antd';
 import { LockOutlined, MailOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import AuthLayout from '@/components/layout/AuthLayout';
@@ -16,12 +16,13 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirectTo') || '/dashboard';
   const error = searchParams.get('error');
+  const { message } = App.useApp();
 
   useEffect(() => {
     if (error === 'not_landlord') {
       message.error('You need a landlord account to access that page. Please sign up first.');
     }
-  }, [error]);
+  }, [error, message]);
 
   const onFinish = async (values: { email: string; password: string }) => {
     setLoading(true);
