@@ -196,7 +196,7 @@ export default function DashboardPage() {
           <Title level={2} style={{ margin: 0 }}>My Service Requests</Title>
           <Text type="secondary">Track your requests and leave reviews for vendors</Text>
         </div>
-        <Link href="/">
+        <Link href="/request">
           <Button type="primary" icon={<PlusOutlined />} size="large">
             New Request
           </Button>
@@ -209,7 +209,7 @@ export default function DashboardPage() {
             description={
               <Space direction="vertical">
                 <Text>You haven&apos;t submitted any service requests yet.</Text>
-                <Link href="/">
+                <Link href="/request">
                   <Button type="primary" icon={<PlusOutlined />}>
                     Submit Your First Request
                   </Button>

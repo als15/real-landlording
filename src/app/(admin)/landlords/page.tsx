@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Table,
   Card,
@@ -58,9 +58,28 @@ export default function LandlordsPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedLandlord, setSelectedLandlord] = useState<Landlord | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<string | null>(null);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounce search input
+  useEffect(() => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setPage(1); // Reset to first page on search
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, [searchTerm]);
 
   const fetchLandlords = useCallback(async () => {
     setLoading(true);
@@ -69,6 +88,10 @@ export default function LandlordsPage() {
         limit: pageSize.toString(),
         offset: ((page - 1) * pageSize).toString(),
       });
+
+      if (debouncedSearch.trim()) {
+        params.append('search', debouncedSearch.trim());
+      }
 
       const response = await fetch(`/api/admin/landlords?${params}`);
       if (response.ok) {
@@ -81,7 +104,7 @@ export default function LandlordsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize]);
+  }, [page, pageSize, debouncedSearch]);
 
   useEffect(() => {
     fetchLandlords();
@@ -153,16 +176,6 @@ export default function LandlordsPage() {
     },
   ];
 
-  const filteredLandlords = landlords.filter((landlord) => {
-    if (!searchTerm) return true;
-    const term = searchTerm.toLowerCase();
-    return (
-      landlord.email.toLowerCase().includes(term) ||
-      (landlord.name?.toLowerCase().includes(term) || false) ||
-      (landlord.phone?.toLowerCase().includes(term) || false)
-    );
-  });
-
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
@@ -191,7 +204,7 @@ export default function LandlordsPage() {
       <Card>
         <Table
           columns={columns}
-          dataSource={filteredLandlords}
+          dataSource={landlords}
           rowKey="id"
           loading={loading}
           pagination={{

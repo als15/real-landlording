@@ -18,7 +18,7 @@ import {
   Result,
 } from 'antd';
 import { HomeOutlined, CheckCircleOutlined } from '@ant-design/icons';
-import { SERVICE_TYPE_LABELS } from '@/types/database';
+import { getServiceCategoryOptions } from '@/types/database';
 import Link from 'next/link';
 
 const { Header, Content, Footer } = Layout;
@@ -30,10 +30,7 @@ export default function VendorApplyPage() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const serviceOptions = Object.entries(SERVICE_TYPE_LABELS).map(([value, label]) => ({
-    value,
-    label,
-  }));
+  const serviceOptions = getServiceCategoryOptions();
 
   const onFinish = async (values: Record<string, unknown>) => {
     setLoading(true);
@@ -69,10 +66,10 @@ export default function VendorApplyPage() {
             borderBottom: '1px solid #f0f0f0',
           }}
         >
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <a href="https://www.reallandlording.com" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <HomeOutlined style={{ fontSize: 24, color: '#1890ff' }} />
             <Title level={4} style={{ margin: 0 }}>Real Landlording</Title>
-          </Link>
+          </a>
         </Header>
         <Content style={{ padding: '48px 24px', display: 'flex', justifyContent: 'center' }}>
           <Result
@@ -80,11 +77,11 @@ export default function VendorApplyPage() {
             title="Application Submitted!"
             subTitle="Thank you for applying to join our vendor network. We'll review your application and get back to you within 2-3 business days."
             extra={[
-              <Link href="/" key="home">
+              <a href="https://www.reallandlording.com" key="home">
                 <Button type="primary" size="large">
                   Back to Home
                 </Button>
-              </Link>,
+              </a>,
             ]}
           />
         </Content>
@@ -103,10 +100,10 @@ export default function VendorApplyPage() {
           borderBottom: '1px solid #f0f0f0',
         }}
       >
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <a href="https://www.reallandlording.com" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <HomeOutlined style={{ fontSize: 24, color: '#1890ff' }} />
           <Title level={4} style={{ margin: 0 }}>Real Landlording</Title>
-        </Link>
+        </a>
       </Header>
 
       <Content style={{ padding: '48px 24px' }}>

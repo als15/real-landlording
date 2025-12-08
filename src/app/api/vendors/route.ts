@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
 
     const status = searchParams.get('status');
+    const search = searchParams.get('search');
     const service_type = searchParams.get('service_type');
     const location = searchParams.get('location');
     const limit = parseInt(searchParams.get('limit') || '50');
@@ -16,8 +17,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from('vendors')
       .select('*', { count: 'exact' })
-      .order('performance_score', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .order('performance_score', { ascending: false });
 
     if (status) {
       query = query.eq('status', status);
@@ -31,6 +31,17 @@ export async function GET(request: NextRequest) {
       // Check if vendor serves this zip code area
       query = query.contains('service_areas', [location.substring(0, 5)]);
     }
+
+    // Server-side search across multiple fields
+    if (search && search.trim()) {
+      const searchTerm = `%${search.trim()}%`;
+      query = query.or(
+        `business_name.ilike.${searchTerm},contact_name.ilike.${searchTerm},email.ilike.${searchTerm},phone.ilike.${searchTerm}`
+      );
+    }
+
+    // Apply pagination after filters
+    query = query.range(offset, offset + limit - 1);
 
     const { data, error, count } = await query;
 

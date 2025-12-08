@@ -22,7 +22,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
-    router.push('/');
+    router.push('https://www.reallandlording.com');
     router.refresh();
   };
 
@@ -70,10 +70,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }}
       >
         <Space size="large">
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <a href="https://www.reallandlording.com" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <HomeOutlined style={{ fontSize: 24, color: token.colorPrimary }} />
             <Title level={4} style={{ margin: 0 }}>Real Landlording</Title>
-          </Link>
+          </a>
           <Menu
             mode="horizontal"
             selectedKeys={[]}
@@ -89,7 +89,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </Space>
 
         <Space>
-          <Link href="/">
+          <Link href="/request">
             <Button type="primary" icon={<PlusOutlined />}>
               New Request
             </Button>

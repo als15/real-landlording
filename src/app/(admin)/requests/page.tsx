@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Table,
   Card,
@@ -58,9 +58,28 @@ export default function RequestsPage() {
   const [pageSize, setPageSize] = useState(20);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [matchingModalOpen, setMatchingModalOpen] = useState(false);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounce search input
+  useEffect(() => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setPage(1); // Reset to first page on search
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, [searchTerm]);
 
   const fetchRequests = useCallback(async () => {
     setLoading(true);
@@ -72,6 +91,10 @@ export default function RequestsPage() {
 
       if (statusFilter) {
         params.append('status', statusFilter);
+      }
+
+      if (debouncedSearch.trim()) {
+        params.append('search', debouncedSearch.trim());
       }
 
       const response = await fetch(`/api/requests?${params}`);
@@ -86,7 +109,7 @@ export default function RequestsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, statusFilter]);
+  }, [page, pageSize, statusFilter, debouncedSearch]);
 
   useEffect(() => {
     fetchRequests();
@@ -119,6 +142,11 @@ export default function RequestsPage() {
     } catch {
       message.error('Failed to update status');
     }
+  };
+
+  const handleStatusFilterChange = (value: string | null) => {
+    setStatusFilter(value);
+    setPage(1); // Reset to first page on filter change
   };
 
   const columns: ColumnsType<ServiceRequest> = [
@@ -204,17 +232,6 @@ export default function RequestsPage() {
     },
   ];
 
-  const filteredRequests = requests.filter((request) => {
-    if (!searchTerm) return true;
-    const term = searchTerm.toLowerCase();
-    return (
-      request.landlord_email.toLowerCase().includes(term) ||
-      (request.landlord_name?.toLowerCase().includes(term) || false) ||
-      request.property_location.toLowerCase().includes(term) ||
-      request.job_description.toLowerCase().includes(term)
-    );
-  });
-
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
@@ -235,7 +252,7 @@ export default function RequestsPage() {
             allowClear
             style={{ width: 160 }}
             value={statusFilter}
-            onChange={setStatusFilter}
+            onChange={handleStatusFilterChange}
             options={Object.entries(REQUEST_STATUS_LABELS).map(([value, label]) => ({
               value,
               label,
@@ -254,7 +271,7 @@ export default function RequestsPage() {
       <Card>
         <Table
           columns={columns}
-          dataSource={filteredRequests}
+          dataSource={requests}
           rowKey="id"
           loading={loading}
           pagination={{

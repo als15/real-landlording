@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
         landlord_name: body.landlord_name || null,
         landlord_phone: body.landlord_phone || null,
         service_type: body.service_type,
+        service_details: body.service_details || null,
         property_location: body.property_location,
         job_description: body.job_description,
         urgency: body.urgency || 'medium',
@@ -80,18 +81,29 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
 
     const status = searchParams.get('status');
+    const search = searchParams.get('search');
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
 
     let query = supabase
       .from('service_requests')
       .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .order('created_at', { ascending: false });
 
     if (status) {
       query = query.eq('status', status);
     }
+
+    // Server-side search across multiple fields
+    if (search && search.trim()) {
+      const searchTerm = `%${search.trim()}%`;
+      query = query.or(
+        `landlord_email.ilike.${searchTerm},landlord_name.ilike.${searchTerm},property_location.ilike.${searchTerm},job_description.ilike.${searchTerm}`
+      );
+    }
+
+    // Apply pagination after filters
+    query = query.range(offset, offset + limit - 1);
 
     const { data, error, count } = await query;
 

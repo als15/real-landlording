@@ -22,7 +22,7 @@ export default function VendorDashboardLayout({ children }: { children: React.Re
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
-    router.push('/');
+    router.push('https://www.reallandlording.com');
     router.refresh();
   };
 
@@ -70,10 +70,10 @@ export default function VendorDashboardLayout({ children }: { children: React.Re
         }}
       >
         <Space size="large">
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <a href="https://www.reallandlording.com" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <HomeOutlined style={{ fontSize: 24, color: token.colorPrimary }} />
             <Title level={4} style={{ margin: 0 }}>Real Landlording</Title>
-          </Link>
+          </a>
           <Menu
             mode="horizontal"
             selectedKeys={[]}

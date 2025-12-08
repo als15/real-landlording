@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { Table, Card, Tag, Space, Button, Select, Input, Typography, Drawer, Descriptions, Divider, message, Badge, Modal, Form, Checkbox, Rate } from 'antd'
 import { ReloadOutlined, PlusOutlined, EditOutlined, EyeOutlined, FilterOutlined } from '@ant-design/icons'
 import { Vendor, VendorStatus, VENDOR_STATUS_LABELS, SERVICE_TYPE_LABELS } from '@/types/database'
@@ -24,11 +24,30 @@ export default function VendorsPage() {
   const [pageSize, setPageSize] = useState(20)
   const [statusFilter, setStatusFilter] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [addModalOpen, setAddModalOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm()
+  const debounceRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Debounce search input
+  useEffect(() => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current)
+    }
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(searchTerm)
+      setPage(1) // Reset to first page on search
+    }, 300)
+
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current)
+      }
+    }
+  }, [searchTerm])
 
   const fetchVendors = useCallback(async () => {
     setLoading(true)
@@ -40,6 +59,10 @@ export default function VendorsPage() {
 
       if (statusFilter) {
         params.append('status', statusFilter)
+      }
+
+      if (debouncedSearch.trim()) {
+        params.append('search', debouncedSearch.trim())
       }
 
       const response = await fetch(`/api/vendors?${params}`)
@@ -54,7 +77,7 @@ export default function VendorsPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, pageSize, statusFilter])
+  }, [page, pageSize, statusFilter, debouncedSearch])
 
   useEffect(() => {
     fetchVendors()
@@ -110,6 +133,11 @@ export default function VendorsPage() {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  const handleStatusFilterChange = (value: string | null) => {
+    setStatusFilter(value)
+    setPage(1) // Reset to first page on filter change
   }
 
   const columns: ColumnsType<Vendor> = [
@@ -188,12 +216,6 @@ export default function VendorsPage() {
     }
   ]
 
-  const filteredVendors = vendors.filter(vendor => {
-    if (!searchTerm) return true
-    const term = searchTerm.toLowerCase()
-    return vendor.business_name.toLowerCase().includes(term) || vendor.contact_name.toLowerCase().includes(term) || vendor.email.toLowerCase().includes(term)
-  })
-
   const serviceOptions = Object.entries(SERVICE_TYPE_LABELS).map(([value, label]) => ({
     value,
     label
@@ -224,20 +246,26 @@ export default function VendorsPage() {
             allowClear
             style={{ width: 160 }}
             value={statusFilter}
-            onChange={setStatusFilter}
+            onChange={handleStatusFilterChange}
             options={Object.entries(VENDOR_STATUS_LABELS).map(([value, label]) => ({
               value,
               label
             }))}
           />
-          <Search placeholder="Search vendors..." allowClear style={{ width: 300 }} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+          <Search
+            placeholder="Search vendors..."
+            allowClear
+            style={{ width: 300 }}
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+          />
         </Space>
       </Card>
 
       <Card>
         <Table
           columns={columns}
-          dataSource={filteredVendors}
+          dataSource={vendors}
           rowKey="id"
           loading={loading}
           pagination={{

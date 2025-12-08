@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Form,
   Input,
@@ -12,13 +12,15 @@ import {
   Row,
   Col,
   message,
+  Divider,
 } from 'antd';
 import {
-  ServiceType,
+  ServiceCategory,
   UrgencyLevel,
-  SERVICE_TYPE_LABELS,
+  SERVICE_TAXONOMY,
   URGENCY_LABELS,
   ServiceRequestInput,
+  getServiceCategoryOptions,
 } from '@/types/database';
 
 const { TextArea } = Input;
@@ -31,24 +33,61 @@ interface ServiceRequestFormProps {
 export default function ServiceRequestForm({ onSuccess }: ServiceRequestFormProps) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | null>(null);
 
-  const serviceOptions = Object.entries(SERVICE_TYPE_LABELS).map(([value, label]) => ({
-    value,
-    label,
-  }));
+  const categoryOptions = getServiceCategoryOptions();
 
   const urgencyOptions = Object.entries(URGENCY_LABELS).map(([value, label]) => ({
     value,
     label,
   }));
 
-  const onFinish = async (values: ServiceRequestInput) => {
+  // Get classifications for selected category
+  const classifications = selectedCategory ? SERVICE_TAXONOMY[selectedCategory].classifications : [];
+
+  // Reset service_details when category changes
+  useEffect(() => {
+    if (selectedCategory) {
+      // Clear previous service_details selections
+      const fieldsToReset: Record<string, undefined> = {};
+      Object.keys(form.getFieldsValue()).forEach((key) => {
+        if (key.startsWith('service_detail_')) {
+          fieldsToReset[key] = undefined;
+        }
+      });
+      form.setFieldsValue(fieldsToReset);
+    }
+  }, [selectedCategory, form]);
+
+  const onFinish = async (values: Record<string, unknown>) => {
     setLoading(true);
     try {
+      // Build service_details from form values
+      const serviceDetails: Record<string, string> = {};
+      Object.entries(values).forEach(([key, value]) => {
+        if (key.startsWith('service_detail_') && value) {
+          const label = key.replace('service_detail_', '').replace(/_/g, ' ');
+          serviceDetails[label] = value as string;
+        }
+      });
+
+      const requestData: ServiceRequestInput = {
+        landlord_email: values.landlord_email as string,
+        landlord_name: values.landlord_name as string,
+        landlord_phone: values.landlord_phone as string | undefined,
+        service_type: values.service_type as ServiceCategory,
+        service_details: Object.keys(serviceDetails).length > 0 ? serviceDetails : undefined,
+        property_location: values.property_location as string,
+        job_description: values.job_description as string,
+        urgency: values.urgency as UrgencyLevel,
+        budget_min: values.budget_min as number | undefined,
+        budget_max: values.budget_max as number | undefined,
+      };
+
       const response = await fetch('/api/requests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
+        body: JSON.stringify(requestData),
       });
 
       if (!response.ok) {
@@ -59,15 +98,20 @@ export default function ServiceRequestForm({ onSuccess }: ServiceRequestFormProp
       const data = await response.json();
       message.success('Request submitted successfully! We\'ll match you with vendors soon.');
       form.resetFields();
+      setSelectedCategory(null);
 
       if (onSuccess) {
-        onSuccess(data.id, values.landlord_email);
+        onSuccess(data.id, requestData.landlord_email);
       }
     } catch (error) {
       message.error(error instanceof Error ? error.message : 'Something went wrong');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCategoryChange = (value: ServiceCategory) => {
+    setSelectedCategory(value);
   };
 
   return (
@@ -113,7 +157,8 @@ export default function ServiceRequestForm({ onSuccess }: ServiceRequestFormProp
           <Input placeholder="(215) 555-0123" />
         </Form.Item>
 
-        <Title level={5} style={{ marginTop: 24 }}>Service Details</Title>
+        <Divider />
+        <Title level={5}>Service Details</Title>
 
         <Form.Item
           name="service_type"
@@ -121,14 +166,33 @@ export default function ServiceRequestForm({ onSuccess }: ServiceRequestFormProp
           rules={[{ required: true, message: 'Please select a service type' }]}
         >
           <Select
-            placeholder="Select a service"
-            options={serviceOptions}
+            placeholder="Select a service category"
+            options={categoryOptions}
             showSearch
             filterOption={(input, option) =>
               (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
             }
+            onChange={handleCategoryChange}
           />
         </Form.Item>
+
+        {/* Dynamic sub-category questions */}
+        {classifications.map((classification, index) => {
+          const fieldName = `service_detail_${classification.label.replace(/\s+/g, '_')}`;
+          return (
+            <Form.Item
+              key={index}
+              name={fieldName}
+              label={classification.label}
+              rules={[{ required: true, message: `Please select ${classification.label.toLowerCase()}` }]}
+            >
+              <Select
+                placeholder={`Select ${classification.label.toLowerCase()}`}
+                options={classification.options.map((opt) => ({ value: opt, label: opt }))}
+              />
+            </Form.Item>
+          );
+        })}
 
         <Form.Item
           name="property_location"
@@ -165,7 +229,8 @@ export default function ServiceRequestForm({ onSuccess }: ServiceRequestFormProp
           </Col>
         </Row>
 
-        <Title level={5} style={{ marginTop: 24 }}>Budget (Optional)</Title>
+        <Divider />
+        <Title level={5}>Budget (Optional)</Title>
         <Row gutter={16}>
           <Col xs={12}>
             <Form.Item name="budget_min" label="Min Budget">
