@@ -7,12 +7,12 @@ import {
   Select,
   Button,
   Typography,
-  Card,
   Row,
   Col,
   App,
   Steps,
   Divider,
+  Radio,
 } from 'antd';
 import { ArrowLeftOutlined, ArrowRightOutlined, SendOutlined } from '@ant-design/icons';
 import {
@@ -23,20 +23,26 @@ import {
   OccupancyStatus,
   ContactPreference,
   BudgetRange,
+  FinishLevel,
+  SimpleUrgency,
   SERVICE_TAXONOMY,
-  URGENCY_LABELS,
   PROPERTY_TYPE_LABELS,
   UNIT_COUNT_LABELS,
   OCCUPANCY_STATUS_LABELS,
   CONTACT_PREFERENCE_LABELS,
   BUDGET_RANGE_LABELS,
+  FINISH_LEVEL_LABELS,
+  SIMPLE_URGENCY_OPTIONS,
   ServiceRequestInput,
-  getServiceCategoryOptions,
+  getGroupedServiceCategories,
 } from '@/types/database';
 import AddressAutocomplete, { AddressData } from '@/components/AddressAutocomplete';
+import UrgencyToggle from '@/components/forms/UrgencyToggle';
+import MediaUpload from '@/components/MediaUpload';
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;
+const { OptGroup, Option } = Select;
 
 interface MultiStepServiceRequestFormProps {
   onSuccess?: (requestId: string, email: string) => void;
@@ -48,10 +54,14 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | null>(null);
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
+  const [isOwner, setIsOwner] = useState(true);
+  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const { message } = App.useApp();
 
-  const categoryOptions = getServiceCategoryOptions();
+  // Get grouped categories for dropdown
+  const groupedCategories = getGroupedServiceCategories();
 
+  // Options for dropdowns
   const propertyTypeOptions = Object.entries(PROPERTY_TYPE_LABELS).map(([value, label]) => ({
     value,
     label,
@@ -72,12 +82,12 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
     label,
   }));
 
-  const urgencyOptions = Object.entries(URGENCY_LABELS).map(([value, label]) => ({
+  const budgetOptions = Object.entries(BUDGET_RANGE_LABELS).map(([value, label]) => ({
     value,
     label,
   }));
 
-  const budgetOptions = Object.entries(BUDGET_RANGE_LABELS).map(([value, label]) => ({
+  const finishLevelOptions = Object.entries(FINISH_LEVEL_LABELS).map(([value, label]) => ({
     value,
     label,
   }));
@@ -98,14 +108,26 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
     }
   }, [selectedCategory, form]);
 
+  // Step validation functions
   const validateStep1 = async () => {
     try {
-      await form.validateFields([
-        'landlord_name',
-        'landlord_email',
-        'property_address',
-        'zip_code',
-      ]);
+      const fields = ['service_type'];
+      // Add dynamic classification fields
+      if (classifications.length > 0) {
+        classifications.forEach((c) => {
+          fields.push(`service_detail_${c.label.replace(/\s+/g, '_')}`);
+        });
+      }
+      await form.validateFields(fields);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const validateStep2 = async () => {
+    try {
+      await form.validateFields(['job_description']);
       return true;
     } catch {
       return false;
@@ -113,14 +135,17 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
   };
 
   const handleNext = async () => {
-    const isValid = await validateStep1();
-    if (isValid) {
-      setCurrentStep(1);
+    if (currentStep === 0) {
+      const isValid = await validateStep1();
+      if (isValid) setCurrentStep(1);
+    } else if (currentStep === 1) {
+      const isValid = await validateStep2();
+      if (isValid) setCurrentStep(2);
     }
   };
 
   const handleBack = () => {
-    setCurrentStep(0);
+    setCurrentStep(currentStep - 1);
   };
 
   const handleCategoryChange = (value: ServiceCategory) => {
@@ -128,13 +153,18 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
   };
 
   const handleAddressSelect = (addressData: AddressData) => {
-    // Auto-fill zip code from selected address
     if (addressData.zip_code) {
       form.setFieldsValue({ zip_code: addressData.zip_code });
     }
-    // Store coordinates for later
     if (addressData.lat && addressData.lng) {
       setCoordinates({ lat: addressData.lat, lng: addressData.lng });
+    }
+  };
+
+  const handleIsOwnerChange = (value: boolean) => {
+    setIsOwner(value);
+    if (value) {
+      form.setFieldsValue({ business_name: undefined });
     }
   };
 
@@ -150,11 +180,19 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
         }
       });
 
+      // Map simple urgency to UrgencyLevel
+      const simpleUrgency = (values.urgency as SimpleUrgency) || 'standard';
+      const urgencyMapping = SIMPLE_URGENCY_OPTIONS.find((o) => o.value === simpleUrgency);
+      const urgency: UrgencyLevel = urgencyMapping?.mapsTo || 'medium';
+
       const requestData: ServiceRequestInput = {
         landlord_email: values.landlord_email as string,
-        landlord_name: values.landlord_name as string,
+        first_name: values.first_name as string,
+        last_name: values.last_name as string,
         landlord_phone: values.landlord_phone as string | undefined,
         contact_preference: values.contact_preference as ContactPreference | undefined,
+        is_owner: values.is_owner as boolean,
+        business_name: values.business_name as string | undefined,
         property_address: values.property_address as string,
         zip_code: values.zip_code as string,
         property_type: values.property_type as PropertyType | undefined,
@@ -165,8 +203,10 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
         service_type: values.service_type as ServiceCategory,
         service_details: Object.keys(serviceDetails).length > 0 ? serviceDetails : undefined,
         job_description: values.job_description as string,
-        urgency: values.urgency as UrgencyLevel,
+        urgency,
+        finish_level: values.finish_level as FinishLevel | undefined,
         budget_range: values.budget_range as BudgetRange | undefined,
+        media_urls: mediaUrls.length > 0 ? mediaUrls : undefined,
       };
 
       const response = await fetch('/api/requests', {
@@ -186,6 +226,8 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
       setCurrentStep(0);
       setSelectedCategory(null);
       setCoordinates(null);
+      setMediaUrls([]);
+      setIsOwner(true);
 
       if (onSuccess) {
         onSuccess(data.id, requestData.landlord_email);
@@ -198,23 +240,40 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
   };
 
   const steps = [
+    { title: 'Service', description: 'What do you need?' },
+    { title: 'Details', description: 'Tell us more' },
     { title: 'Your Info', description: 'Contact & Property' },
-    { title: 'Project Details', description: 'Service & Description' },
   ];
 
   const onFinishFailed = (errorInfo: { errorFields: { name: (string | number)[]; errors: string[] }[] }) => {
-    console.log('Form validation failed:', errorInfo);
-    // Check if errors are on step 1 fields (hidden when on step 2)
-    const step1Fields = ['landlord_name', 'landlord_email', 'property_address', 'zip_code'];
-    const hasStep1Errors = errorInfo.errorFields.some(field =>
+    // Find which step has errors and navigate there
+    const step1Fields = ['service_type'];
+    classifications.forEach((c) => {
+      step1Fields.push(`service_detail_${c.label.replace(/\s+/g, '_')}`);
+    });
+    const step2Fields = ['job_description'];
+    const step3Fields = ['first_name', 'last_name', 'landlord_email', 'property_address', 'zip_code'];
+
+    const hasStep1Errors = errorInfo.errorFields.some((field) =>
       step1Fields.includes(field.name[0] as string)
     );
+    const hasStep2Errors = errorInfo.errorFields.some((field) =>
+      step2Fields.includes(field.name[0] as string)
+    );
+    const hasStep3Errors = errorInfo.errorFields.some((field) =>
+      step3Fields.includes(field.name[0] as string)
+    );
 
-    if (hasStep1Errors && currentStep === 1) {
-      message.error('Please go back and complete the required fields in Step 1');
+    if (hasStep1Errors && currentStep !== 0) {
+      message.error('Please complete the service selection');
       setCurrentStep(0);
+    } else if (hasStep2Errors && currentStep !== 1) {
+      message.error('Please complete the job details');
+      setCurrentStep(1);
+    } else if (hasStep3Errors && currentStep !== 2) {
+      message.error('Please complete your contact information');
+      setCurrentStep(2);
     } else {
-      // Show first error message
       const firstError = errorInfo.errorFields[0]?.errors[0];
       if (firstError) {
         message.error(firstError);
@@ -236,22 +295,184 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
         layout="vertical"
         onFinish={onFinish}
         onFinishFailed={onFinishFailed}
-        initialValues={{ urgency: 'medium' }}
+        initialValues={{ urgency: 'standard', is_owner: true }}
       >
-        {/* Step 1: Contact & Property Info */}
+        {/* Step 1: Service Selection */}
         <div style={{ display: currentStep === 0 ? 'block' : 'none' }}>
+          <Title level={5}>What service do you need?</Title>
+
+          <Form.Item
+            name="service_type"
+            label="Service Category"
+            rules={[{ required: true, message: 'Please select a service type' }]}
+          >
+            <Select
+              placeholder="Select a service category"
+              showSearch
+              filterOption={(input, option) => {
+                // Handle both Option and OptGroup
+                const children = option?.children;
+                if (children && typeof children === 'string') {
+                  return (children as string).toLowerCase().includes(input.toLowerCase());
+                }
+                return false;
+              }}
+              onChange={handleCategoryChange}
+              size="large"
+            >
+              {groupedCategories.map((group) => (
+                <OptGroup key={group.group} label={group.label}>
+                  {group.categories.map((cat) => (
+                    <Option key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </Option>
+                  ))}
+                </OptGroup>
+              ))}
+            </Select>
+          </Form.Item>
+
+          {/* Dynamic sub-category questions */}
+          {classifications.map((classification, index) => {
+            const fieldName = `service_detail_${classification.label.replace(/\s+/g, '_')}`;
+            return (
+              <Form.Item
+                key={index}
+                name={fieldName}
+                label={classification.label}
+                rules={[{ required: true, message: `Please select ${classification.label.toLowerCase()}` }]}
+              >
+                <Select
+                  placeholder={`Select ${classification.label.toLowerCase()}`}
+                  options={classification.options.map((opt) => ({ value: opt, label: opt }))}
+                  size="large"
+                />
+              </Form.Item>
+            );
+          })}
+
+          <Form.Item
+            name="finish_level"
+            label="Finish Level"
+            extra="This helps vendors recommend appropriate materials and solutions"
+          >
+            <Select
+              placeholder="Select finish level"
+              options={finishLevelOptions}
+              size="large"
+              allowClear
+            />
+          </Form.Item>
+
+          <Form.Item style={{ marginTop: 24 }}>
+            <Button
+              type="primary"
+              size="large"
+              block
+              onClick={handleNext}
+              icon={<ArrowRightOutlined />}
+            >
+              Next: Job Details
+            </Button>
+          </Form.Item>
+        </div>
+
+        {/* Step 2: Job Details */}
+        <div style={{ display: currentStep === 1 ? 'block' : 'none' }}>
+          <Title level={5}>Tell us about the job</Title>
+
+          <Form.Item
+            name="job_description"
+            label="Describe the Job"
+            rules={[
+              { required: true, message: 'Please describe the job' },
+              { min: 20, message: 'Please provide more detail (at least 20 characters)' },
+            ]}
+          >
+            <TextArea
+              rows={4}
+              placeholder="Describe what you need done, any special requirements, access instructions, etc."
+              size="large"
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="urgency"
+            label="How urgent is this?"
+          >
+            <UrgencyToggle />
+          </Form.Item>
+
+          <Form.Item
+            label="Photos or Videos (optional)"
+            extra="Photos help vendors provide accurate estimates"
+          >
+            <MediaUpload
+              value={mediaUrls}
+              onChange={setMediaUrls}
+            />
+          </Form.Item>
+
+          <Form.Item name="budget_range" label="Budget Range (optional)">
+            <Select
+              placeholder="Select budget range"
+              options={budgetOptions}
+              size="large"
+              allowClear
+            />
+          </Form.Item>
+
+          <Row gutter={16} style={{ marginTop: 24 }}>
+            <Col xs={24} md={8}>
+              <Button
+                size="large"
+                block
+                onClick={handleBack}
+                icon={<ArrowLeftOutlined />}
+              >
+                Back
+              </Button>
+            </Col>
+            <Col xs={24} md={16}>
+              <Button
+                type="primary"
+                size="large"
+                block
+                onClick={handleNext}
+                icon={<ArrowRightOutlined />}
+              >
+                Next: Your Info
+              </Button>
+            </Col>
+          </Row>
+        </div>
+
+        {/* Step 3: Contact & Property Info */}
+        <div style={{ display: currentStep === 2 ? 'block' : 'none' }}>
           <Title level={5}>Contact Information</Title>
 
           <Row gutter={16}>
             <Col xs={24} md={12}>
               <Form.Item
-                name="landlord_name"
-                label="Your Name"
-                rules={[{ required: true, message: 'Please enter your name' }]}
+                name="first_name"
+                label="First Name"
+                rules={[{ required: true, message: 'Please enter your first name' }]}
               >
-                <Input placeholder="John Smith" size="large" />
+                <Input placeholder="John" size="large" />
               </Form.Item>
             </Col>
+            <Col xs={24} md={12}>
+              <Form.Item
+                name="last_name"
+                label="Last Name"
+                rules={[{ required: true, message: 'Please enter your last name' }]}
+              >
+                <Input placeholder="Smith" size="large" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
             <Col xs={24} md={12}>
               <Form.Item
                 name="landlord_email"
@@ -264,14 +485,14 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
                 <Input placeholder="john@example.com" size="large" />
               </Form.Item>
             </Col>
-          </Row>
-
-          <Row gutter={16}>
             <Col xs={24} md={12}>
-              <Form.Item name="landlord_phone" label="Phone (optional)">
+              <Form.Item name="landlord_phone" label="Phone">
                 <Input placeholder="(215) 555-0123" size="large" />
               </Form.Item>
             </Col>
+          </Row>
+
+          <Row gutter={16}>
             <Col xs={24} md={12}>
               <Form.Item name="contact_preference" label="Best way to reach you">
                 <Select
@@ -282,7 +503,31 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
                 />
               </Form.Item>
             </Col>
+            <Col xs={24} md={12}>
+              <Form.Item
+                name="is_owner"
+                label="Are you the property owner?"
+              >
+                <Radio.Group
+                  onChange={(e) => handleIsOwnerChange(e.target.value)}
+                  value={isOwner}
+                >
+                  <Radio value={true}>Yes</Radio>
+                  <Radio value={false}>No</Radio>
+                </Radio.Group>
+              </Form.Item>
+            </Col>
           </Row>
+
+          {!isOwner && (
+            <Form.Item
+              name="business_name"
+              label="Business/Company Name"
+              rules={[{ required: !isOwner, message: 'Please enter your business name' }]}
+            >
+              <Input placeholder="ABC Property Management" size="large" />
+            </Form.Item>
+          )}
 
           <Divider />
           <Title level={5}>Property Information</Title>
@@ -337,96 +582,6 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
                 <Select
                   placeholder="Select status"
                   options={occupancyOptions}
-                  size="large"
-                  allowClear
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item style={{ marginTop: 24 }}>
-            <Button
-              type="primary"
-              size="large"
-              block
-              onClick={handleNext}
-              icon={<ArrowRightOutlined />}
-            >
-              Next: Project Details
-            </Button>
-          </Form.Item>
-        </div>
-
-        {/* Step 2: Service Details */}
-        <div style={{ display: currentStep === 1 ? 'block' : 'none' }}>
-          <Title level={5}>Service Information</Title>
-
-          <Form.Item
-            name="service_type"
-            label="What service do you need?"
-            rules={[{ required: true, message: 'Please select a service type' }]}
-          >
-            <Select
-              placeholder="Select a service category"
-              options={categoryOptions}
-              showSearch
-              filterOption={(input, option) =>
-                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-              }
-              onChange={handleCategoryChange}
-              size="large"
-            />
-          </Form.Item>
-
-          {/* Dynamic sub-category questions */}
-          {classifications.map((classification, index) => {
-            const fieldName = `service_detail_${classification.label.replace(/\s+/g, '_')}`;
-            return (
-              <Form.Item
-                key={index}
-                name={fieldName}
-                label={classification.label}
-                rules={[{ required: true, message: `Please select ${classification.label.toLowerCase()}` }]}
-              >
-                <Select
-                  placeholder={`Select ${classification.label.toLowerCase()}`}
-                  options={classification.options.map((opt) => ({ value: opt, label: opt }))}
-                  size="large"
-                />
-              </Form.Item>
-            );
-          })}
-
-          <Form.Item
-            name="job_description"
-            label="Describe the Job"
-            rules={[
-              { required: true, message: 'Please describe the job' },
-              { min: 20, message: 'Please provide more detail (at least 20 characters)' },
-            ]}
-          >
-            <TextArea
-              rows={4}
-              placeholder="Describe what you need done, any special requirements, access instructions, etc."
-              size="large"
-            />
-          </Form.Item>
-
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                name="urgency"
-                label="How urgent is this?"
-                rules={[{ required: true }]}
-              >
-                <Select options={urgencyOptions} size="large" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item name="budget_range" label="Budget Range (optional)">
-                <Select
-                  placeholder="Select budget range"
-                  options={budgetOptions}
                   size="large"
                   allowClear
                 />

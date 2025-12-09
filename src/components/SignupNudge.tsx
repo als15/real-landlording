@@ -1,12 +1,15 @@
 'use client';
 
-import { Modal, Button, Form, Input, App } from 'antd';
+import { Modal, Button, Form, Input, App, Steps } from 'antd';
 import {
   CheckCircleOutlined,
   EyeOutlined,
   BellOutlined,
   SafetyCertificateOutlined,
   ThunderboltOutlined,
+  ClockCircleOutlined,
+  TeamOutlined,
+  MailOutlined,
 } from '@ant-design/icons';
 import { useState } from 'react';
 import { brandColors } from '@/theme/config';
@@ -23,6 +26,12 @@ const benefits = [
   { icon: <BellOutlined />, title: 'Real-time updates' },
   { icon: <SafetyCertificateOutlined />, title: 'Verified reviews' },
   { icon: <ThunderboltOutlined />, title: 'One-click requests' },
+];
+
+const nextSteps = [
+  { title: 'Request Received', description: 'We got your request' },
+  { title: 'Matching', description: 'Finding best vendors' },
+  { title: 'Email Intro', description: 'You\'ll hear from us' },
 ];
 
 export default function SignupNudge({ open, email, requestId, onClose }: SignupNudgeProps) {
@@ -72,7 +81,7 @@ export default function SignupNudge({ open, email, requestId, onClose }: SignupN
       <div
         style={{
           background: `linear-gradient(135deg, #52c41a 0%, #237804 100%)`,
-          padding: '24px',
+          padding: '24px 24px 20px',
           textAlign: 'center',
         }}
       >
@@ -82,6 +91,34 @@ export default function SignupNudge({ open, email, requestId, onClose }: SignupN
         </h2>
         <p style={{ color: 'rgba(255,255,255,0.9)', margin: '8px 0 0', fontSize: 14 }}>
           We&apos;ll email matches to <strong>{email}</strong>
+        </p>
+      </div>
+
+      {/* What Happens Next */}
+      <div
+        style={{
+          background: brandColors.background,
+          padding: '16px 24px',
+          borderBottom: `1px solid ${brandColors.border}`,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <ClockCircleOutlined style={{ color: brandColors.accent }} />
+          <span style={{ fontWeight: 600, fontSize: 13, color: brandColors.textPrimary }}>
+            What happens next
+          </span>
+        </div>
+        <Steps
+          size="small"
+          current={0}
+          items={nextSteps.map((step) => ({
+            title: <span style={{ fontSize: 12 }}>{step.title}</span>,
+            description: <span style={{ fontSize: 11, color: brandColors.textSecondary }}>{step.description}</span>,
+          }))}
+          style={{ marginBottom: 8 }}
+        />
+        <p style={{ margin: 0, fontSize: 12, color: brandColors.textSecondary, textAlign: 'center' }}>
+          Expect vendor introductions within <strong style={{ color: brandColors.accent }}>24-48 hours</strong>
         </p>
       </div>
 

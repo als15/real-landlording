@@ -33,6 +33,28 @@ export type BudgetRange =
   | 'over_100000'
   | 'not_sure';
 
+// Finish level for service requests
+export type FinishLevel = 'premium' | 'standard' | 'budget';
+
+// Simplified urgency for form UI (maps to UrgencyLevel)
+export type SimpleUrgency = 'standard' | 'emergency';
+
+// Service Category Groups
+export type ServiceCategoryGroup =
+  | 'trades_technical'
+  | 'property_care'
+  | 'compliance_testing'
+  | 'professional_financial'
+  | 'creative_knowledge';
+
+export const SERVICE_CATEGORY_GROUP_LABELS: Record<ServiceCategoryGroup, string> = {
+  trades_technical: 'Trades & Technical',
+  property_care: 'Property Care & Maintenance',
+  compliance_testing: 'Compliance & Testing',
+  professional_financial: 'Professional & Financial',
+  creative_knowledge: 'Creative & Knowledge',
+};
+
 // Service Categories (alphabetically ordered)
 export type ServiceCategory =
   | 'acquisitions'
@@ -41,7 +63,7 @@ export type ServiceCategory =
   | 'bookkeeping_accounting'
   | 'cleaning'
   | 'cleanout_junk_removal'
-  | 'compliance_legal'
+  | 'compliance_city'
   | 'electrician'
   | 'environmental_testing'
   | 'exterior'
@@ -54,7 +76,7 @@ export type ServiceCategory =
   | 'insurance'
   | 'landscaping_snow'
   | 'lead_testing'
-  | 'locksmith_security'
+  | 'legal_eviction'
   | 'movers'
   | 'painting'
   | 'pest_control'
@@ -79,76 +101,65 @@ export interface ServiceClassification {
 // Full service taxonomy
 export interface ServiceCategoryConfig {
   label: string;
+  group: ServiceCategoryGroup;
   classifications: ServiceClassification[];
+  externalLink?: boolean; // For categories that link externally (e.g., Property Tax Appeals)
 }
 
 // Complete service taxonomy with all categories and sub-options
 export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = {
-  acquisitions: {
-    label: 'Acquisitions',
-    classifications: [
-      {
-        label: 'Services Needed',
-        options: ['1:1 Philly Investing Coaching', 'New Construction', 'Flips', 'Buy & Hold'],
-      },
-    ],
-  },
-  appliance_repair: {
-    label: 'Appliance Repair',
-    classifications: [
-      {
-        label: 'Appliance Type',
-        options: ['Washer / Dryer', 'Oven / Range', 'Refrigerator', 'Dishwasher', 'Other'],
-      },
-    ],
-  },
-  architect_design: {
-    label: 'Architect / Design',
-    classifications: [
-      {
-        label: 'Services Needed',
-        options: ['Plans', 'Zoning', 'Layout', 'Design Services', 'Consulting', 'Other'],
-      },
-    ],
-  },
-  bookkeeping_accounting: {
-    label: 'Bookkeeping / Accounting',
+  // === TRADES & TECHNICAL ===
+  roofer: {
+    label: 'Roofer',
+    group: 'trades_technical',
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Rental Bookkeeping', 'Tax Filing'],
+        options: ['Leak Repair', 'Full Replacement', 'Maintenance/Coating', 'Gutter Repair', 'Skylight Issue', 'Other'],
+      },
+      {
+        label: 'Roof Type',
+        options: ['Flat Roof (Rubber/Bitumen)', 'Shingle (Asphalt)', 'Slate', 'Fiberglass', 'Metal', 'Other'],
       },
     ],
   },
-  cleaning: {
-    label: 'Cleaning',
+  general_contractor: {
+    label: 'GC',
+    group: 'trades_technical',
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Deep Clean Tenant Turn', 'Light Clean', 'Post Construction Clean'],
+        options: ['Full Gut', 'Large Rehab', 'Prep for Listing', 'Kitchen', 'Bath', 'Finish Basement', 'Addition', 'Scope for Purchase Decision', 'Rental Improvement Fund Help', '203k Project'],
       },
     ],
   },
-  cleanout_junk_removal: {
-    label: 'Clean Out / Junk Removal',
+  plumber_sewer: {
+    label: 'Plumber/Sewer',
+    group: 'trades_technical',
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Light Demo', 'Light Cleanout', 'Heavy Cleanout', 'Construction Debris', 'Appliance Removal', 'Furniture Removal'],
+        options: ['Leak', 'Clog/Blockage', 'No Hot Water', 'Low Water Pressure', 'New Installation', 'Frozen Pipes', 'Sewer/Water Line', 'Sewer Scope', 'Hydrojetting', 'Other'],
+      },
+      {
+        label: 'Fixture Involved',
+        options: ['Kitchen Sink', 'Bathroom Sink', 'Toilet', 'Shower/Tub', 'Water Heater', 'Main Line', 'Outdoor Spigot', 'Basement', 'Other'],
       },
     ],
   },
-  compliance_legal: {
-    label: 'Compliance & Legal',
+  waterproofing: {
+    label: 'Waterproofing/Moisture',
+    group: 'trades_technical',
     classifications: [
       {
-        label: 'Issue Type',
-        options: ['Get Compliant', 'Remedy Code Violations', 'Eviction & Possession Help', 'Permit Expediting / Zoning', 'PHA Inspection Prep'],
+        label: 'Service Needed',
+        options: ['French Drain', 'Sump Pump', 'Unknown', 'Other'],
       },
     ],
   },
   electrician: {
     label: 'Electrician',
+    group: 'trades_technical',
     classifications: [
       {
         label: 'Service Needed',
@@ -160,75 +171,13 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
       },
     ],
   },
-  environmental_testing: {
-    label: 'Environmental Testing',
-    classifications: [
-      {
-        label: 'Service Needed',
-        options: ['Asbestos', 'Radon', 'Soil', 'Water', 'Other'],
-      },
-    ],
-  },
-  exterior: {
-    label: 'Exterior',
-    classifications: [
-      {
-        label: 'Service Needed',
-        options: ['Siding', 'Windows', 'Doors', 'Masonry/Brickwork', 'Stucco', 'Decking', 'Paving', 'Welding', 'Fencing'],
-      },
-    ],
-  },
-  financing: {
-    label: 'Financing',
-    classifications: [
-      {
-        label: 'Service Needed',
-        options: ['Conventional Mortgage', 'Hard Money', 'Refi', 'DSCR', '203k', 'Other'],
-      },
-    ],
-  },
-  fire_safety_compliance: {
-    label: 'Fire & Safety Compliance',
-    classifications: [
-      {
-        label: 'Service Needed',
-        options: ['Fire Extinguishers', 'Smoke Detectors', 'Fire Escape', 'Sprinklers', 'Other'],
-      },
-    ],
-  },
-  flooring: {
-    label: 'Flooring',
-    classifications: [
-      {
-        label: 'Service Needed',
-        options: ['Hardwood Refinishing / Repair', 'Carpet Installation', 'LVP / Tile Installation', 'Other'],
-      },
-    ],
-  },
-  general_contractor: {
-    label: 'General Contractor',
-    classifications: [
-      {
-        label: 'Service Needed',
-        options: ['Full Gut', 'Large Rehab', 'Prep for Listing', 'Kitchen', 'Bath', 'Finish Basement', 'Addition', 'Scope for Purchase Decision', 'Rental Improvement Fund Help', '203k Project'],
-      },
-    ],
-  },
-  handyman: {
-    label: 'Handyman',
-    classifications: [
-      {
-        label: 'Service Needed',
-        options: ['General Repair', 'Assembly', 'Drywall Patching', 'Painting (Small)', 'Minor Plumbing', 'Other'],
-      },
-    ],
-  },
   hvac: {
     label: 'HVAC Specialist',
+    group: 'trades_technical',
     classifications: [
       {
         label: 'Equipment Type',
-        options: ['Gas Furnace', 'Electric Furnace', 'Boiler (Radiators)', 'Central AC', 'Heat Pump', 'Ductless Mini-Split', 'Oil Furnace'],
+        options: ['Gas Furnace', 'Electric Furnace', 'Boiler', 'Central AC', 'Heat Pump', 'Ductless Mini-Split', 'Oil Furnace'],
       },
       {
         label: 'Service Needed',
@@ -236,62 +185,101 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
       },
     ],
   },
-  insurance: {
-    label: 'Insurance',
+  exterior: {
+    label: 'Exterior',
+    group: 'trades_technical',
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Property Insurance', 'Umbrella', 'Builders Risk', 'Public Adjustor', 'Restoration', 'Other'],
+        options: ['Siding', 'Windows', 'Doors', 'Masonry/Brickwork', 'Stucco', 'Decking', 'Paving', 'Welding', 'Fencing'],
       },
     ],
   },
-  landscaping_snow: {
-    label: 'Landscaping / Snow Removal',
+  flooring: {
+    label: 'Flooring',
+    group: 'trades_technical',
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Lawn Maintenance', 'Snow Removal'],
+        options: ['Hardwood Refinishing/Repair', 'Carpet Installation', 'LVP/Tile Installation', 'Other'],
       },
     ],
   },
-  lead_testing: {
-    label: 'Lead Testing',
+  appliance_repair: {
+    label: 'Appliance Repair',
+    group: 'trades_technical',
+    classifications: [
+      {
+        label: 'Appliance Type',
+        options: ['Washer/Dryer', 'Oven/Range', 'Refrigerator', 'Dishwasher', 'Other'],
+      },
+    ],
+  },
+  handyman: {
+    label: 'Handyman',
+    group: 'trades_technical',
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Lead Safe Certification', 'Lead Free Certification'],
-      },
-    ],
-  },
-  locksmith_security: {
-    label: 'Locksmith / Security',
-    classifications: [
-      {
-        label: 'Service Needed',
-        options: ['Lockout Service', 'Rekey / Lock Change', 'Replace Locks', 'Smart Lock / Access Control', 'Security Equipment', 'Other'],
-      },
-    ],
-  },
-  movers: {
-    label: 'Movers',
-    classifications: [
-      {
-        label: 'Services Needed',
-        options: ['Small Move', 'Large Move', 'Heavy Lifting'],
+        options: ['General Repair', 'Assembly', 'Drywall Patching', 'Small Painting', 'Minor Plumbing', 'Other'],
       },
     ],
   },
   painting: {
     label: 'Painting',
+    group: 'trades_technical',
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Unit Turn Painting', 'Touch-up', 'Exterior'],
+        options: ['Unit Turn Painting', 'Touch-Up', 'Exterior'],
+      },
+    ],
+  },
+  structural: {
+    label: 'Structural',
+    group: 'trades_technical',
+    classifications: [
+      {
+        label: 'Service Needed',
+        options: ['Foundation', 'Basement', 'Joists', 'Stairs', 'Other'],
+      },
+    ],
+  },
+  architect_design: {
+    label: 'Architect/Design',
+    group: 'trades_technical',
+    classifications: [
+      {
+        label: 'Service Needed',
+        options: ['Plans', 'Zoning', 'Layout', 'Design Services', 'Consulting', 'Other'],
+      },
+    ],
+  },
+
+  // === PROPERTY CARE & MAINTENANCE ===
+  cleaning: {
+    label: 'Cleaning',
+    group: 'property_care',
+    classifications: [
+      {
+        label: 'Service Needed',
+        options: ['Deep Clean Tenant Turn', 'Light Clean', 'Post-Construction Clean'],
+      },
+    ],
+  },
+  cleanout_junk_removal: {
+    label: 'Clean Out/Junk Removal',
+    group: 'property_care',
+    classifications: [
+      {
+        label: 'Service Needed',
+        options: ['Light Demo', 'Light Cleanout', 'Heavy Cleanout', 'Construction Debris', 'Appliance Removal', 'Furniture Removal'],
       },
     ],
   },
   pest_control: {
     label: 'Pest Control',
+    group: 'property_care',
     classifications: [
       {
         label: 'Service Needed',
@@ -299,52 +287,113 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
       },
       {
         label: 'Pest Type',
-        options: ['Rodents', 'Bed Bug Inspection / Treatment', 'Termite / WDI Inspection', 'Mosquito / Exterior Yard Treatment', 'Wildlife Removal (squirrels, raccoons, birds, etc.)', 'Other'],
+        options: ['Rodents', 'Bed Bugs', 'Termite/WDI', 'Mosquito/Yard Treatment', 'Wildlife', 'Other'],
       },
     ],
   },
-  photography: {
-    label: 'Photography',
-    classifications: [
-      {
-        label: 'Services Needed',
-        options: ['Listing Photos', 'Matterport', 'Drone', 'Floorplan'],
-      },
-    ],
-  },
-  plumber_sewer: {
-    label: 'Plumber / Sewer',
+  landscaping_snow: {
+    label: 'Landscaping/Snow',
+    group: 'property_care',
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Leak', 'Clog / Blockage', 'No Hot Water', 'Low Water Pressure', 'New Installation', 'Frozen Pipes', 'Sewer/Water Line', 'Sewer Scope', 'Hydrojetting', 'Other'],
-      },
-      {
-        label: 'Fixture Involved',
-        options: ['Kitchen Sink', 'Bathroom Sink', 'Toilet', 'Shower / Tub', 'Water Heater', 'Main Line', 'Outdoor Spigot', 'Basement', 'Other'],
+        options: ['Lawn Maintenance', 'Snow Removal'],
       },
     ],
   },
   preventative_maintenance: {
     label: 'Preventative Maintenance',
+    group: 'property_care',
     classifications: [
       {
-        label: 'Services Needed',
-        options: ['Routine Maintenance Pkg.', 'Premium Maintenance Pkg.', 'Routine Property'],
+        label: 'Service Needed',
+        options: ['Routine Maintenance Package', 'Premium Maintenance Package'],
       },
     ],
   },
   property_check: {
     label: 'Property Check / Site Visit',
+    group: 'property_care',
     classifications: [
       {
-        label: 'Services Needed',
-        options: ['Vacant Property Check', 'Tenant-Occupied Property Check', 'Post-Storm Check', 'Security Check (Entry Points)', 'Insurance Documentation Visit', 'Other'],
+        label: 'Service Needed',
+        options: ['Vacant Property Check', 'Tenant-Occupied Check', 'Post-Storm Check', 'Security Check', 'Insurance Documentation Visit', 'Other'],
       },
     ],
   },
+  movers: {
+    label: 'Movers',
+    group: 'property_care',
+    classifications: [
+      {
+        label: 'Service Needed',
+        options: ['Small Move', 'Large Move', 'Heavy Lifting'],
+      },
+    ],
+  },
+
+  // === COMPLIANCE & TESTING ===
+  lead_testing: {
+    label: 'Lead Testing',
+    group: 'compliance_testing',
+    classifications: [
+      {
+        label: 'Service Needed',
+        options: ['Lead-Safe Certification', 'Lead-Free Certification'],
+      },
+    ],
+  },
+  fire_safety_compliance: {
+    label: 'Fire & Safety Compliance',
+    group: 'compliance_testing',
+    classifications: [
+      {
+        label: 'Service Needed',
+        options: ['Fire Extinguishers', 'Smoke Detectors', 'Fire Escape', 'Sprinklers', 'Other'],
+      },
+    ],
+  },
+  environmental_testing: {
+    label: 'Environmental Testing',
+    group: 'compliance_testing',
+    classifications: [
+      {
+        label: 'Service Needed',
+        options: ['Asbestos', 'Radon', 'Soil', 'Water', 'Other'],
+      },
+    ],
+  },
+  compliance_city: {
+    label: 'Compliance & City Requirements',
+    group: 'compliance_testing',
+    classifications: [
+      {
+        label: 'Issue Type',
+        options: ['Get Compliant', 'Remedy Code Violations', 'Permit Expediting', 'Zoning', 'PHA Inspection Prep'],
+      },
+    ],
+  },
+  legal_eviction: {
+    label: 'Legal & Eviction Services',
+    group: 'compliance_testing',
+    classifications: [
+      {
+        label: 'Issue Type',
+        options: ['Eviction Filing', 'Possession Assistance', 'Notice Preparation', 'Tenant Dispute Consultation', 'Other'],
+      },
+    ],
+  },
+  property_tax_appeals: {
+    label: 'Property Tax Appeals',
+    group: 'compliance_testing',
+    classifications: [],
+    externalLink: true,
+  },
+
+  // === PROFESSIONAL & FINANCIAL ===
   property_management: {
-    label: 'Property Management & Tenant Placement',
+    label: 'Property Management / Tenant Placement',
+    group: 'professional_financial',
     classifications: [
       {
         label: 'Service Needed',
@@ -352,17 +401,49 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
       },
     ],
   },
-  property_tax_appeals: {
-    label: 'Property Tax Appeals',
+  insurance: {
+    label: 'Insurance',
+    group: 'professional_financial',
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Property Tax Appeal Consultation'],
+        options: ['Property Insurance', 'Umbrella', 'Builders Risk', 'Public Adjustor', 'Restoration', 'Other'],
+      },
+    ],
+  },
+  financing: {
+    label: 'Financing',
+    group: 'professional_financial',
+    classifications: [
+      {
+        label: 'Service Needed',
+        options: ['Conventional Mortgage', 'Hard Money', 'Refi', 'DSCR', '203k', 'Other'],
+      },
+    ],
+  },
+  bookkeeping_accounting: {
+    label: 'Bookkeeping/Accounting',
+    group: 'professional_financial',
+    classifications: [
+      {
+        label: 'Service Needed',
+        options: ['Rental Bookkeeping', 'Tax Filing'],
+      },
+    ],
+  },
+  acquisitions: {
+    label: 'Acquisitions',
+    group: 'professional_financial',
+    classifications: [
+      {
+        label: 'Service Needed',
+        options: ['1:1 Philly Investing Coaching', 'New Construction', 'Flips', 'Buy & Hold'],
       },
     ],
   },
   re_agent: {
-    label: 'Real Estate Agent',
+    label: 'RE Agent',
+    group: 'professional_financial',
     classifications: [
       {
         label: 'Service Needed',
@@ -370,43 +451,25 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
       },
     ],
   },
-  roofer: {
-    label: 'Roofer',
+
+  // === CREATIVE & KNOWLEDGE ===
+  photography: {
+    label: 'Property Photography & Media',
+    group: 'creative_knowledge',
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Leak Repair', 'Full Replacement', 'Maintenance / Coating', 'Gutter Repair', 'Skylight Issue', 'Other'],
-      },
-      {
-        label: 'Roof Type',
-        options: ['Flat Roof (Rubber/Bitumen)', 'Shingle (Asphalt)', 'Slate', 'Fiberglass', 'Metal', 'Other'],
-      },
-    ],
-  },
-  structural: {
-    label: 'Structural',
-    classifications: [
-      {
-        label: 'Services Needed',
-        options: ['Foundation', 'Basement', 'Joists', 'Stairs', 'Other'],
+        options: ['Listing Photos', 'Matterport', 'Drone', 'Floorplan'],
       },
     ],
   },
   training: {
     label: 'Boost My Knowhow (Education)',
+    group: 'creative_knowledge',
     classifications: [
       {
         label: 'Training Type',
-        options: ['Landlord Workshops', '1:1 Landlord Coaching', '1:1 Philly Investing Coaching', 'Expert Portfolio Review', 'Section 8 Hacking', 'Self Guided Rehab Course'],
-      },
-    ],
-  },
-  waterproofing: {
-    label: 'Water Proofing / Moisture Control',
-    classifications: [
-      {
-        label: 'Service Needed',
-        options: ['French Drain', 'Sump Pump', 'Unknown', 'Other'],
+        options: ['Landlord Workshops', '1:1 Landlord Coaching', '1:1 Philly Investing Coaching', 'Expert Portfolio Review', 'Section 8 Hacking', 'Self-Guided Rehab Course'],
       },
     ],
   },
@@ -416,10 +479,55 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
 export const getServiceCategoryOptions = () => {
   return Object.entries(SERVICE_TAXONOMY)
     .map(([value, config]) => ({
-      value,
+      value: value as ServiceCategory,
       label: config.label,
+      group: config.group,
     }))
     .sort((a, b) => a.label.localeCompare(b.label));
+};
+
+// Helper to get categories grouped by their parent group
+export const getServiceCategoriesByGroup = () => {
+  const grouped: Record<ServiceCategoryGroup, { value: ServiceCategory; label: string }[]> = {
+    trades_technical: [],
+    property_care: [],
+    compliance_testing: [],
+    professional_financial: [],
+    creative_knowledge: [],
+  };
+
+  Object.entries(SERVICE_TAXONOMY).forEach(([value, config]) => {
+    grouped[config.group].push({
+      value: value as ServiceCategory,
+      label: config.label,
+    });
+  });
+
+  // Sort each group alphabetically
+  Object.keys(grouped).forEach((key) => {
+    grouped[key as ServiceCategoryGroup].sort((a, b) => a.label.localeCompare(b.label));
+  });
+
+  return grouped;
+};
+
+// Get ordered groups with their categories for UI display
+export const getGroupedServiceCategories = () => {
+  const groupOrder: ServiceCategoryGroup[] = [
+    'trades_technical',
+    'property_care',
+    'compliance_testing',
+    'professional_financial',
+    'creative_knowledge',
+  ];
+
+  const categoriesByGroup = getServiceCategoriesByGroup();
+
+  return groupOrder.map((group) => ({
+    group,
+    label: SERVICE_CATEGORY_GROUP_LABELS[group],
+    categories: categoriesByGroup[group],
+  }));
 };
 
 // Legacy ServiceType for backward compatibility (maps to ServiceCategory)
@@ -497,6 +605,38 @@ export const BUDGET_RANGE_LABELS: Record<BudgetRange, string> = {
   not_sure: 'Not Sure Yet',
 };
 
+export const FINISH_LEVEL_LABELS: Record<FinishLevel, string> = {
+  premium: 'Premium Upgrade - High-End',
+  standard: 'Standard Rental - Cost-Efficient',
+  budget: 'Budget - Extend Lifespan',
+};
+
+// Simplified urgency options for form UI
+export const SIMPLE_URGENCY_OPTIONS: Array<{
+  value: SimpleUrgency;
+  label: string;
+  description: string;
+  mapsTo: UrgencyLevel;
+}> = [
+  { value: 'standard', label: 'Standard', description: 'Schedule in 1-2 weeks', mapsTo: 'medium' },
+  { value: 'emergency', label: 'Emergency', description: 'Need help ASAP (24hrs)', mapsTo: 'emergency' },
+];
+
+// File upload constraints
+export const FILE_UPLOAD_CONSTRAINTS = {
+  maxFileSizeMB: 10,
+  maxFileSizeBytes: 10 * 1024 * 1024,
+  maxFilesPerRequest: 5,
+  allowedMimeTypes: [
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/heic',
+    'video/mp4',
+    'video/quicktime',
+  ],
+};
+
 // Database row types
 export interface Landlord {
   id: string;
@@ -543,9 +683,15 @@ export interface ServiceRequest {
   id: string;
   landlord_id: string | null;
   landlord_email: string;
-  landlord_name: string | null;
+  // Name fields (new split fields + legacy)
+  first_name: string | null;
+  last_name: string | null;
+  landlord_name: string | null; // Legacy - kept for backward compatibility
   landlord_phone: string | null;
   contact_preference: ContactPreference | null;
+  // Ownership info (new)
+  is_owner: boolean | null;
+  business_name: string | null;
   // Property info
   property_address: string | null;
   zip_code: string | null;
@@ -561,7 +707,10 @@ export interface ServiceRequest {
   service_details: Record<string, string> | null;
   job_description: string;
   urgency: UrgencyLevel;
+  finish_level: FinishLevel | null;
   budget_range: BudgetRange | null;
+  // Media uploads (new)
+  media_urls: string[];
   // Legacy budget fields - kept for backward compatibility
   budget_min: number | null;
   budget_max: number | null;
@@ -610,11 +759,16 @@ export interface VendorWithMatches extends Vendor {
 
 // Form input types
 export interface ServiceRequestInput {
-  // Contact info
+  // Contact info (split name fields)
   landlord_email: string;
-  landlord_name?: string;
+  first_name: string;
+  last_name: string;
+  landlord_name?: string; // Legacy - computed from first + last
   landlord_phone?: string;
   contact_preference?: ContactPreference;
+  // Ownership info
+  is_owner: boolean;
+  business_name?: string;
   // Property info
   property_address: string;
   zip_code: string;
@@ -628,7 +782,10 @@ export interface ServiceRequestInput {
   service_details?: Record<string, string>;
   job_description: string;
   urgency: UrgencyLevel;
+  finish_level?: FinishLevel;
   budget_range?: BudgetRange;
+  // Media uploads
+  media_urls?: string[];
 }
 
 export interface VendorInput {

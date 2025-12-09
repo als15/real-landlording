@@ -8,7 +8,15 @@ export async function POST(request: NextRequest) {
     const body: ServiceRequestInput = await request.json();
 
     // Validate required fields
-    if (!body.landlord_email || !body.service_type || !body.property_address || !body.zip_code || !body.job_description) {
+    if (
+      !body.landlord_email ||
+      !body.first_name ||
+      !body.last_name ||
+      !body.service_type ||
+      !body.property_address ||
+      !body.zip_code ||
+      !body.job_description
+    ) {
       return NextResponse.json(
         { message: 'Missing required fields' },
         { status: 400 }
@@ -27,15 +35,24 @@ export async function POST(request: NextRequest) {
     // Build property_location from address and zip for backward compatibility
     const propertyLocation = `${body.property_address}, ${body.zip_code}`;
 
+    // Compute landlord_name from first/last name for backward compatibility
+    const landlordName = `${body.first_name} ${body.last_name}`.trim();
+
     // Create the service request
     const { data, error } = await supabase
       .from('service_requests')
       .insert({
         landlord_id: existingLandlord?.id || null,
         landlord_email: body.landlord_email,
-        landlord_name: body.landlord_name || null,
+        landlord_name: landlordName,
         landlord_phone: body.landlord_phone || null,
         contact_preference: body.contact_preference || null,
+        // New split name fields
+        first_name: body.first_name,
+        last_name: body.last_name,
+        // Owner/business info
+        is_owner: body.is_owner ?? true,
+        business_name: body.business_name || null,
         // Property info
         property_address: body.property_address,
         zip_code: body.zip_code,
@@ -51,6 +68,9 @@ export async function POST(request: NextRequest) {
         job_description: body.job_description,
         urgency: body.urgency || 'medium',
         budget_range: body.budget_range || null,
+        finish_level: body.finish_level || null,
+        // Media
+        media_urls: body.media_urls || [],
         status: 'new',
       })
       .select()
@@ -68,7 +88,9 @@ export async function POST(request: NextRequest) {
     if (!existingLandlord) {
       await supabase.from('landlords').insert({
         email: body.landlord_email,
-        name: body.landlord_name || null,
+        name: landlordName,
+        first_name: body.first_name,
+        last_name: body.last_name,
         phone: body.landlord_phone || null,
         request_count: 1,
       });
