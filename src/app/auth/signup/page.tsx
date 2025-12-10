@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Form, Input, Button, Typography, App, Divider } from 'antd';
-import { LockOutlined, MailOutlined, UserOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Typography, App, Divider, Result, Alert } from 'antd';
+import { LockOutlined, MailOutlined, UserOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import AuthLayout from '@/components/layout/AuthLayout';
 import { brandColors } from '@/theme/config';
@@ -12,6 +12,9 @@ const { Text } = Typography;
 
 export default function SignupPage() {
   const [loading, setLoading] = useState(false);
+  const [signupComplete, setSignupComplete] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+  const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(true);
   const router = useRouter();
   const { message } = App.useApp();
 
@@ -30,14 +33,70 @@ export default function SignupPage() {
         throw new Error(data.message || 'Signup failed');
       }
 
-      message.success('Account created! Please check your email to verify.');
-      router.push('/auth/login');
+      setUserEmail(values.email);
+      setNeedsEmailConfirmation(data.needsEmailConfirmation);
+
+      if (data.needsEmailConfirmation) {
+        // Show confirmation screen
+        setSignupComplete(true);
+      } else {
+        // Email confirmation disabled, go directly to login
+        message.success('Account created! You can now sign in.');
+        router.push('/auth/login');
+      }
     } catch (error) {
       message.error(error instanceof Error ? error.message : 'Signup failed');
     } finally {
       setLoading(false);
     }
   };
+
+  if (signupComplete) {
+    return (
+      <AuthLayout
+        title="Check Your Email"
+        subtitle="Almost there!"
+      >
+        <Result
+          icon={<CheckCircleOutlined style={{ color: brandColors.success }} />}
+          title="Account Created!"
+          subTitle={
+            <div style={{ textAlign: 'left', maxWidth: 350, margin: '0 auto' }}>
+              <p style={{ marginBottom: 16 }}>
+                We sent a verification link to:
+              </p>
+              <p style={{ fontWeight: 600, color: brandColors.primary, marginBottom: 16 }}>
+                {userEmail}
+              </p>
+              <Alert
+                type="info"
+                showIcon
+                message="Next Steps"
+                description={
+                  <ol style={{ margin: '8px 0 0 0', paddingLeft: 20 }}>
+                    <li>Check your email inbox</li>
+                    <li>Click the verification link</li>
+                    <li>Return here to sign in</li>
+                  </ol>
+                }
+                style={{ marginBottom: 16 }}
+              />
+              <Text type="secondary" style={{ fontSize: 13 }}>
+                Don&apos;t see it? Check your spam folder or wait a few minutes.
+              </Text>
+            </div>
+          }
+          extra={[
+            <Link href="/auth/login" key="login">
+              <Button type="primary" size="large">
+                Go to Sign In
+              </Button>
+            </Link>,
+          ]}
+        />
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Table,
   Card,
@@ -20,6 +20,7 @@ import {
   CheckOutlined,
   CloseOutlined,
   EyeOutlined,
+  SearchOutlined,
 } from '@ant-design/icons';
 import {
   Vendor,
@@ -28,7 +29,7 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 
 const { Title, Text } = Typography;
-const { TextArea } = Input;
+const { TextArea, Search } = Input;
 
 export default function ApplicationsPage() {
   const [applications, setApplications] = useState<Vendor[]>([]);
@@ -38,12 +39,36 @@ export default function ApplicationsPage() {
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const { message } = App.useApp();
+
+  // Debounce search input
+  useEffect(() => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, [searchTerm]);
 
   const fetchApplications = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/applications');
+      const params = new URLSearchParams();
+      if (debouncedSearch.trim()) {
+        params.append('search', debouncedSearch.trim());
+      }
+
+      const response = await fetch(`/api/admin/applications?${params}`);
       if (response.ok) {
         const { data } = await response.json();
         setApplications(data || []);
@@ -54,7 +79,7 @@ export default function ApplicationsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [debouncedSearch]);
 
   useEffect(() => {
     fetchApplications();
@@ -196,6 +221,19 @@ export default function ApplicationsPage() {
           Refresh
         </Button>
       </div>
+
+      <Card style={{ marginBottom: 16 }}>
+        <Space wrap>
+          <SearchOutlined />
+          <Search
+            placeholder="Search by business name, contact, email, or phone..."
+            allowClear
+            style={{ width: 400 }}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </Space>
+      </Card>
 
       <Card>
         <Table

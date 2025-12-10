@@ -49,8 +49,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   ];
 
   const handleUserMenuClick: MenuProps['onClick'] = (e) => {
-    if (e.key === 'logout') {
-      handleLogout();
+    switch (e.key) {
+      case 'profile':
+        router.push('/dashboard/profile');
+        break;
+      case 'settings':
+        router.push('/dashboard/settings');
+        break;
+      case 'logout':
+        handleLogout();
+        break;
     }
   };
 

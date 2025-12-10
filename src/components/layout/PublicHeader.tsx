@@ -1,9 +1,12 @@
 'use client';
 
-import { Layout, Typography, Space, Button } from 'antd';
-import { UserOutlined, FormOutlined } from '@ant-design/icons';
+import { useEffect, useState } from 'react';
+import { Layout, Typography, Space, Button, Avatar, Dropdown } from 'antd';
+import { UserOutlined, FormOutlined, DashboardOutlined, LogoutOutlined } from '@ant-design/icons';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { brandColors } from '@/theme/config';
+import type { MenuProps } from 'antd';
 
 const { Header } = Layout;
 const { Text } = Typography;
@@ -13,10 +16,68 @@ interface PublicHeaderProps {
   showSignIn?: boolean;
 }
 
+interface UserInfo {
+  email: string;
+  name?: string;
+}
+
 export default function PublicHeader({
   showRequestButton = true,
   showSignIn = true
 }: PublicHeaderProps) {
+  const [user, setUser] = useState<UserInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    // Check if user is logged in
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      const response = await fetch('/api/landlord/profile');
+      if (response.ok) {
+        const data = await response.json();
+        setUser({ email: data.email, name: data.name || data.first_name });
+      }
+    } catch {
+      // Not logged in, that's fine
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    setUser(null);
+    router.refresh();
+  };
+
+  const userMenuItems: MenuProps['items'] = [
+    {
+      key: 'dashboard',
+      icon: <DashboardOutlined />,
+      label: 'My Dashboard',
+    },
+    {
+      type: 'divider',
+    },
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: 'Logout',
+      danger: true,
+    },
+  ];
+
+  const handleUserMenuClick: MenuProps['onClick'] = (e) => {
+    if (e.key === 'dashboard') {
+      router.push('/dashboard');
+    } else if (e.key === 'logout') {
+      handleLogout();
+    }
+  };
   return (
     <Header
       style={{
@@ -98,7 +159,19 @@ export default function PublicHeader({
             </Button>
           </Link>
         )}
-        {showSignIn && (
+        {!loading && user ? (
+          <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenuClick }} placement="bottomRight">
+            <Space style={{ cursor: 'pointer' }}>
+              <Avatar
+                icon={<UserOutlined />}
+                style={{ backgroundColor: brandColors.accent, color: brandColors.backgroundDark }}
+              />
+              <Text style={{ color: brandColors.white, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {user.name || user.email.split('@')[0]}
+              </Text>
+            </Space>
+          </Dropdown>
+        ) : showSignIn && !loading ? (
           <Link href="/auth/login">
             <Button
               type="text"
@@ -110,7 +183,7 @@ export default function PublicHeader({
               Sign In
             </Button>
           </Link>
-        )}
+        ) : null}
       </Space>
     </Header>
   );

@@ -1,15 +1,28 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get('search');
+
     const adminClient = createAdminClient();
 
-    const { data, error } = await adminClient
+    let query = adminClient
       .from('vendors')
       .select('*')
       .eq('status', 'pending_review')
       .order('created_at', { ascending: false });
+
+    // Add search filter if provided
+    if (search && search.trim()) {
+      const searchTerm = `%${search.trim()}%`;
+      query = query.or(
+        `business_name.ilike.${searchTerm},contact_name.ilike.${searchTerm},email.ilike.${searchTerm},phone.ilike.${searchTerm}`
+      );
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching applications:', error);

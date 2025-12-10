@@ -29,6 +29,8 @@ import Link from 'next/link';
 import PublicHeader from '@/components/layout/PublicHeader';
 import PublicFooter from '@/components/layout/PublicFooter';
 import { brandColors } from '@/theme/config';
+import AddressAutocomplete, { AddressData } from '@/components/AddressAutocomplete';
+import ZipCodeAutocomplete from '@/components/ZipCodeAutocomplete';
 
 const { Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
@@ -271,20 +273,26 @@ export default function VendorApplyPage() {
 
                 <Form.Item
                   name="service_areas"
-                  label="Service Areas (Zip Codes)"
+                  label="Service Areas"
                   rules={[{ required: true, message: 'Enter at least one zip code' }]}
-                  extra="Enter the Philadelphia area zip codes you serve"
                 >
-                  <Select
-                    mode="tags"
-                    placeholder="19103, 19104, 19106..."
-                    tokenSeparators={[',', ' ']}
-                    size="large"
+                  <ZipCodeAutocomplete
+                    placeholder="Search for neighborhoods, cities, or type zip codes..."
                   />
                 </Form.Item>
 
-                <Form.Item name="location" label="Business Location">
-                  <Input placeholder="Philadelphia, PA" size="large" />
+                <Form.Item
+                  name="location"
+                  label="Business Address"
+                  extra="Start typing to search for your business address"
+                >
+                  <AddressAutocomplete
+                    placeholder="Start typing your business address..."
+                    onAddressSelect={(data: AddressData) => {
+                      // Also set lat/lng if we want to store them
+                      form.setFieldValue('location', data.formatted_address);
+                    }}
+                  />
                 </Form.Item>
 
                 <Divider />

@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { Typography, Row, Col, Layout, Space } from 'antd';
+import { Typography, Row, Col, Layout, Space, Modal, Button, Steps } from 'antd';
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   SafetyCertificateOutlined,
   TeamOutlined,
   StarFilled,
+  DashboardOutlined,
 } from '@ant-design/icons';
 import MultiStepServiceRequestForm from '@/components/forms/MultiStepServiceRequestForm';
 import SignupNudge from '@/components/SignupNudge';
@@ -15,6 +16,7 @@ import FAQ from '@/components/FAQ';
 import PublicHeader from '@/components/layout/PublicHeader';
 import PublicFooter from '@/components/layout/PublicFooter';
 import { brandColors } from '@/theme/config';
+import Link from 'next/link';
 
 const { Title, Text, Paragraph } = Typography;
 const { Content } = Layout;
@@ -54,13 +56,21 @@ const stats = [
 
 export default function ServiceRequestPage() {
   const [showSignupNudge, setShowSignupNudge] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState('');
   const [submittedRequestId, setSubmittedRequestId] = useState('');
 
-  const handleFormSuccess = (requestId: string, email: string) => {
+  const handleFormSuccess = (requestId: string, email: string, isLoggedIn: boolean) => {
     setSubmittedRequestId(requestId);
     setSubmittedEmail(email);
-    setShowSignupNudge(true);
+
+    if (isLoggedIn) {
+      // User is already logged in, show success message instead of signup nudge
+      setShowSuccessMessage(true);
+    } else {
+      // User is not logged in, show signup nudge
+      setShowSignupNudge(true);
+    }
   };
 
   return (
@@ -258,6 +268,76 @@ export default function ServiceRequestPage() {
         requestId={submittedRequestId}
         onClose={() => setShowSignupNudge(false)}
       />
+
+      {/* Success Modal for Logged-in Users */}
+      <Modal
+        open={showSuccessMessage}
+        onCancel={() => setShowSuccessMessage(false)}
+        footer={null}
+        width={480}
+        centered
+        styles={{ body: { padding: 0 } }}
+      >
+        {/* Success Banner */}
+        <div
+          style={{
+            background: `linear-gradient(135deg, #52c41a 0%, #237804 100%)`,
+            padding: '24px 24px 20px',
+            textAlign: 'center',
+          }}
+        >
+          <CheckCircleOutlined style={{ fontSize: 40, color: '#fff', marginBottom: 12 }} />
+          <h2 style={{ color: '#fff', margin: 0, fontSize: 24, fontWeight: 700 }}>
+            Request Submitted!
+          </h2>
+          <p style={{ color: 'rgba(255,255,255,0.9)', margin: '8px 0 0', fontSize: 14 }}>
+            We&apos;ll email matches to <strong>{submittedEmail}</strong>
+          </p>
+        </div>
+
+        {/* What Happens Next */}
+        <div
+          style={{
+            background: brandColors.background,
+            padding: '16px 24px',
+            borderBottom: `1px solid ${brandColors.border}`,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <ClockCircleOutlined style={{ color: brandColors.accent }} />
+            <span style={{ fontWeight: 600, fontSize: 13, color: brandColors.primary }}>
+              What happens next
+            </span>
+          </div>
+          <Steps
+            size="small"
+            current={0}
+            items={[
+              { title: <span style={{ fontSize: 12 }}>Request Received</span>, description: <span style={{ fontSize: 11, color: brandColors.textSecondary }}>We got your request</span> },
+              { title: <span style={{ fontSize: 12 }}>Matching</span>, description: <span style={{ fontSize: 11, color: brandColors.textSecondary }}>Finding best vendors</span> },
+              { title: <span style={{ fontSize: 12 }}>Email Intro</span>, description: <span style={{ fontSize: 11, color: brandColors.textSecondary }}>You&apos;ll hear from us</span> },
+            ]}
+            style={{ marginBottom: 8 }}
+          />
+          <p style={{ margin: 0, fontSize: 12, color: brandColors.textSecondary, textAlign: 'center' }}>
+            Expect vendor introductions within <strong style={{ color: brandColors.accent }}>24-48 hours</strong>
+          </p>
+        </div>
+
+        {/* Actions */}
+        <div style={{ padding: '20px 24px', textAlign: 'center' }}>
+          <Space direction="vertical" style={{ width: '100%' }} size="middle">
+            <Link href="/dashboard">
+              <Button type="primary" icon={<DashboardOutlined />} size="large" block>
+                Go to My Dashboard
+              </Button>
+            </Link>
+            <Button onClick={() => setShowSuccessMessage(false)} size="large" block>
+              Submit Another Request
+            </Button>
+          </Space>
+        </div>
+      </Modal>
     </Layout>
   );
 }

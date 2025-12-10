@@ -45,7 +45,7 @@ const { Title, Text } = Typography;
 const { OptGroup, Option } = Select;
 
 interface MultiStepServiceRequestFormProps {
-  onSuccess?: (requestId: string, email: string) => void;
+  onSuccess?: (requestId: string, email: string, isLoggedIn: boolean) => void;
 }
 
 export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServiceRequestFormProps) {
@@ -56,7 +56,31 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [isOwner, setIsOwner] = useState(true);
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const { message } = App.useApp();
+
+  // Check if user is logged in and pre-fill their info
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const response = await fetch('/api/landlord/profile');
+        if (response.ok) {
+          const data = await response.json();
+          setIsLoggedIn(true);
+          // Pre-fill form with user data
+          form.setFieldsValue({
+            first_name: data.first_name || data.name?.split(' ')[0] || '',
+            last_name: data.last_name || data.name?.split(' ').slice(1).join(' ') || '',
+            landlord_email: data.email,
+            landlord_phone: data.phone || '',
+          });
+        }
+      } catch {
+        // Not logged in, that's okay
+      }
+    };
+    fetchUserProfile();
+  }, [form]);
 
   // Get grouped categories for dropdown
   const groupedCategories = getGroupedServiceCategories();
@@ -230,7 +254,7 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
       setIsOwner(true);
 
       if (onSuccess) {
-        onSuccess(data.id, requestData.landlord_email);
+        onSuccess(data.id, requestData.landlord_email, isLoggedIn);
       }
     } catch (error) {
       message.error(error instanceof Error ? error.message : 'Something went wrong');

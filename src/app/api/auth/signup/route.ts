@@ -14,12 +14,16 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
+    // Get the site URL for email redirect
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || request.headers.get('origin') || '';
+
     // Create auth user
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { name },
+        emailRedirectTo: `${siteUrl}/auth/login?confirmed=true`,
       },
     });
 
@@ -36,6 +40,18 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Check if user already exists (identities will be empty if user exists but is unconfirmed)
+    const isExistingUser = authData.user.identities && authData.user.identities.length === 0;
+    if (isExistingUser) {
+      return NextResponse.json(
+        { message: 'An account with this email already exists. Please sign in or reset your password.' },
+        { status: 400 }
+      );
+    }
+
+    // Check if email confirmation is required
+    const needsEmailConfirmation = !authData.user.email_confirmed_at;
 
     // Update or create landlord profile with auth user id
     const { error: landlordError } = await supabase
@@ -70,8 +86,11 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      message: 'Account created successfully',
+      message: needsEmailConfirmation
+        ? 'Account created! Please check your email to verify your account before signing in.'
+        : 'Account created successfully! You can now sign in.',
       user: { id: authData.user.id, email: authData.user.email },
+      needsEmailConfirmation,
     });
   } catch (error) {
     console.error('Signup error:', error);
