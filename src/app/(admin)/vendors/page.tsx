@@ -28,8 +28,11 @@ export default function VendorsPage() {
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [addModalOpen, setAddModalOpen] = useState(false)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [editingVendor, setEditingVendor] = useState<Vendor | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm()
+  const [editForm] = Form.useForm()
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
   const { message } = App.useApp()
 
@@ -136,6 +139,59 @@ export default function VendorsPage() {
     }
   }
 
+  const handleOpenEditModal = (vendor: Vendor) => {
+    setEditingVendor(vendor)
+    editForm.setFieldsValue({
+      contact_name: vendor.contact_name,
+      business_name: vendor.business_name,
+      email: vendor.email,
+      phone: vendor.phone,
+      website: vendor.website,
+      location: vendor.location,
+      services: vendor.services,
+      service_areas: vendor.service_areas,
+      licensed: vendor.licensed,
+      insured: vendor.insured,
+      rental_experience: vendor.rental_experience,
+      qualifications: vendor.qualifications,
+      admin_notes: vendor.admin_notes,
+    })
+    setEditModalOpen(true)
+  }
+
+  const handleEditVendor = async (values: Record<string, unknown>) => {
+    if (!editingVendor) return
+
+    setSubmitting(true)
+    try {
+      const response = await fetch(`/api/vendors/${editingVendor.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values)
+      })
+
+      if (response.ok) {
+        message.success('Vendor updated successfully')
+        setEditModalOpen(false)
+        setEditingVendor(null)
+        editForm.resetFields()
+        fetchVendors()
+        // Update drawer if open with same vendor
+        if (selectedVendor?.id === editingVendor.id) {
+          const updated = await response.json()
+          setSelectedVendor(updated.data || { ...selectedVendor, ...values })
+        }
+      } else {
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to update vendor')
+      }
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : 'Something went wrong')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   const handleStatusFilterChange = (value: string | null) => {
     setStatusFilter(value)
     setPage(1) // Reset to first page on filter change
@@ -209,8 +265,8 @@ export default function VendorsPage() {
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewVendor(record)} />
-          <Button size="small" icon={<EditOutlined />} onClick={() => handleViewVendor(record)} />
+          <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewVendor(record)} title="View" />
+          <Button size="small" icon={<EditOutlined />} onClick={() => handleOpenEditModal(record)} title="Edit" />
         </Space>
       ),
       width: 100
@@ -285,7 +341,27 @@ export default function VendorsPage() {
       </Card>
 
       {/* Vendor Details Drawer */}
-      <Drawer title="Vendor Details" placement="right" size="large" onClose={() => setDrawerOpen(false)} open={drawerOpen}>
+      <Drawer
+        title="Vendor Details"
+        placement="right"
+        size="large"
+        onClose={() => setDrawerOpen(false)}
+        open={drawerOpen}
+        extra={
+          selectedVendor && (
+            <Button
+              type="primary"
+              icon={<EditOutlined />}
+              onClick={() => {
+                setDrawerOpen(false)
+                handleOpenEditModal(selectedVendor)
+              }}
+            >
+              Edit
+            </Button>
+          )
+        }
+      >
         {selectedVendor && (
           <>
             <Descriptions column={1} bordered size="small">
@@ -437,6 +513,105 @@ export default function VendorsPage() {
                 Add Vendor
               </Button>
               <Button onClick={() => setAddModalOpen(false)}>Cancel</Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Edit Vendor Modal */}
+      <Modal
+        title={`Edit Vendor: ${editingVendor?.business_name || ''}`}
+        open={editModalOpen}
+        onCancel={() => {
+          setEditModalOpen(false)
+          setEditingVendor(null)
+          editForm.resetFields()
+        }}
+        footer={null}
+        width={700}
+      >
+        <Form form={editForm} layout="vertical" onFinish={handleEditVendor}>
+          <Title level={5}>Contact Information</Title>
+          <Form.Item name="contact_name" label="Contact Name" rules={[{ required: true, message: 'Required' }]}>
+            <Input placeholder="John Smith" />
+          </Form.Item>
+
+          <Form.Item name="business_name" label="Business Name" rules={[{ required: true, message: 'Required' }]}>
+            <Input placeholder="Smith Plumbing LLC" />
+          </Form.Item>
+
+          <Form.Item
+            name="email"
+            label="Email"
+            rules={[
+              { required: true, message: 'Required' },
+              { type: 'email', message: 'Invalid email' }
+            ]}
+          >
+            <Input placeholder="john@smithplumbing.com" />
+          </Form.Item>
+
+          <Form.Item name="phone" label="Phone">
+            <Input placeholder="(215) 555-0123" />
+          </Form.Item>
+
+          <Form.Item name="website" label="Website">
+            <Input placeholder="https://smithplumbing.com" />
+          </Form.Item>
+
+          <Form.Item name="location" label="Business Location">
+            <Input placeholder="Philadelphia, PA" />
+          </Form.Item>
+
+          <Divider />
+          <Title level={5}>Services</Title>
+
+          <Form.Item name="services" label="Services Offered" rules={[{ required: true, message: 'Select at least one service' }]}>
+            <Select mode="multiple" placeholder="Select services" options={serviceOptions} />
+          </Form.Item>
+
+          <Form.Item name="service_areas" label="Service Areas (Zip Codes)" rules={[{ required: true, message: 'Enter at least one zip code' }]} extra="Enter zip codes separated by commas">
+            <Select mode="tags" placeholder="19103, 19104, 19106" tokenSeparators={[',']} />
+          </Form.Item>
+
+          <Divider />
+          <Title level={5}>Qualifications</Title>
+
+          <Space>
+            <Form.Item name="licensed" valuePropName="checked">
+              <Checkbox>Licensed</Checkbox>
+            </Form.Item>
+            <Form.Item name="insured" valuePropName="checked">
+              <Checkbox>Insured</Checkbox>
+            </Form.Item>
+            <Form.Item name="rental_experience" valuePropName="checked">
+              <Checkbox>Rental Property Experience</Checkbox>
+            </Form.Item>
+          </Space>
+
+          <Form.Item name="qualifications" label="Additional Qualifications">
+            <TextArea rows={3} placeholder="Certifications, years of experience, etc." />
+          </Form.Item>
+
+          <Divider />
+          <Title level={5}>Admin</Title>
+
+          <Form.Item name="admin_notes" label="Admin Notes">
+            <TextArea rows={3} placeholder="Internal notes about this vendor..." />
+          </Form.Item>
+
+          <Form.Item>
+            <Space>
+              <Button type="primary" htmlType="submit" loading={submitting}>
+                Save Changes
+              </Button>
+              <Button onClick={() => {
+                setEditModalOpen(false)
+                setEditingVendor(null)
+                editForm.resetFields()
+              }}>
+                Cancel
+              </Button>
             </Space>
           </Form.Item>
         </Form>
