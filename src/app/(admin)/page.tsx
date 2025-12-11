@@ -130,7 +130,7 @@ export default function AdminDashboard() {
               title="New Requests"
               value={stats.newRequests}
               prefix={<ClockCircleOutlined />}
-              valueStyle={{ color: '#1890ff' }}
+              styles={{ content: { color: '#1890ff' } }}
             />
           </Card>
         </Col>

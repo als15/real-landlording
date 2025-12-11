@@ -210,7 +210,7 @@ export default function VendorDashboardPage() {
               <Statistic
                 title="Pending"
                 value={stats.pendingJobs}
-                valueStyle={{ color: '#faad14' }}
+                styles={{ content: { color: '#faad14' } }}
               />
             </Card>
           </Col>
@@ -220,7 +220,7 @@ export default function VendorDashboardPage() {
                 title="Completed"
                 value={stats.completedJobs}
                 prefix={<CheckCircleOutlined />}
-                valueStyle={{ color: '#52c41a' }}
+                styles={{ content: { color: '#52c41a' } }}
               />
             </Card>
           </Col>

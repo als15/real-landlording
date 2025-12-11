@@ -132,7 +132,7 @@ export default function AnalyticsPage() {
               value={data.matchSuccessRate}
               suffix="%"
               prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: data.matchSuccessRate >= 70 ? '#3f8600' : undefined }}
+              styles={{ content: { color: data.matchSuccessRate >= 70 ? '#3f8600' : undefined } }}
             />
           </Card>
         </Col>
