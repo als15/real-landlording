@@ -25,10 +25,10 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // Check if landlord exists with this email
+    // Check if landlord exists with this email and get request count
     const { data: existingLandlord } = await supabase
       .from('landlords')
-      .select('id')
+      .select('id, request_count')
       .eq('email', body.landlord_email)
       .single();
 
@@ -84,8 +84,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // If landlord doesn't exist, create a basic profile
-    if (!existingLandlord) {
+    // Track request count for graduated signup nudge
+    let requestCount = 1;
+
+    if (existingLandlord) {
+      // Increment request_count for existing landlord
+      requestCount = (existingLandlord.request_count || 0) + 1;
+      await supabase
+        .from('landlords')
+        .update({
+          request_count: requestCount,
+          // Update name/phone if provided (in case they changed)
+          first_name: body.first_name,
+          last_name: body.last_name,
+          name: landlordName,
+          phone: body.landlord_phone || undefined, // Only update if provided
+        })
+        .eq('id', existingLandlord.id);
+    } else {
+      // Create a basic landlord profile for new submitters
       await supabase.from('landlords').insert({
         email: body.landlord_email,
         name: landlordName,
@@ -99,7 +116,11 @@ export async function POST(request: NextRequest) {
     // Send confirmation email (async, don't wait)
     sendRequestReceivedEmail(data).catch(console.error);
 
-    return NextResponse.json({ id: data.id, message: 'Request created successfully' });
+    return NextResponse.json({
+      id: data.id,
+      message: 'Request created successfully',
+      requestCount, // Include for graduated signup nudge
+    });
   } catch (error) {
     console.error('API error:', error);
     return NextResponse.json(

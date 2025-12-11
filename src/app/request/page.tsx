@@ -59,10 +59,12 @@ export default function ServiceRequestPage() {
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState('');
   const [submittedRequestId, setSubmittedRequestId] = useState('');
+  const [submittedRequestCount, setSubmittedRequestCount] = useState(1);
 
-  const handleFormSuccess = (requestId: string, email: string, isLoggedIn: boolean) => {
+  const handleFormSuccess = (requestId: string, email: string, isLoggedIn: boolean, requestCount: number) => {
     setSubmittedRequestId(requestId);
     setSubmittedEmail(email);
+    setSubmittedRequestCount(requestCount);
 
     if (isLoggedIn) {
       // User is already logged in, show success message instead of signup nudge
@@ -266,6 +268,7 @@ export default function ServiceRequestPage() {
         open={showSignupNudge}
         email={submittedEmail}
         requestId={submittedRequestId}
+        requestCount={submittedRequestCount}
         onClose={() => setShowSignupNudge(false)}
       />
 

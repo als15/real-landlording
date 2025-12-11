@@ -45,7 +45,7 @@ const { Title, Text } = Typography;
 const { OptGroup, Option } = Select;
 
 interface MultiStepServiceRequestFormProps {
-  onSuccess?: (requestId: string, email: string, isLoggedIn: boolean) => void;
+  onSuccess?: (requestId: string, email: string, isLoggedIn: boolean, requestCount: number) => void;
 }
 
 export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServiceRequestFormProps) {
@@ -254,7 +254,7 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
       setIsOwner(true);
 
       if (onSuccess) {
-        onSuccess(data.id, requestData.landlord_email, isLoggedIn);
+        onSuccess(data.id, requestData.landlord_email, isLoggedIn, data.requestCount || 1);
       }
     } catch (error) {
       message.error(error instanceof Error ? error.message : 'Something went wrong');

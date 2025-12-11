@@ -18,6 +18,7 @@ interface SignupNudgeProps {
   open: boolean;
   email: string;
   requestId: string;
+  requestCount?: number; // For graduated messaging
   onClose: () => void;
 }
 
@@ -34,10 +35,19 @@ const nextSteps = [
   { title: 'Email Intro', description: 'You\'ll hear from us' },
 ];
 
-export default function SignupNudge({ open, email, requestId, onClose }: SignupNudgeProps) {
+export default function SignupNudge({ open, email, requestId, requestCount = 1, onClose }: SignupNudgeProps) {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
   const { message } = App.useApp();
+
+  // Graduated messaging based on request count
+  const isRepeatRequester = requestCount > 1;
+  const headerText = isRepeatRequester
+    ? `You have ${requestCount} requests!`
+    : 'Request Submitted!';
+  const subHeaderText = isRepeatRequester
+    ? 'Create an account to track all your requests in one place'
+    : `We'll email matches to`;
 
   const handleSignup = async (values: { name: string; password: string }) => {
     setLoading(true);
@@ -77,20 +87,30 @@ export default function SignupNudge({ open, email, requestId, onClose }: SignupN
       closable={true}
       styles={{ body: { padding: 0 } }}
     >
-      {/* Success Banner */}
+      {/* Success Banner - different styling for repeat requesters */}
       <div
         style={{
-          background: `linear-gradient(135deg, #52c41a 0%, #237804 100%)`,
+          background: isRepeatRequester
+            ? `linear-gradient(135deg, ${brandColors.accent} 0%, #c49a3d 100%)`
+            : `linear-gradient(135deg, #52c41a 0%, #237804 100%)`,
           padding: '24px 24px 20px',
           textAlign: 'center',
         }}
       >
-        <CheckCircleOutlined style={{ fontSize: 40, color: '#fff', marginBottom: 12 }} />
+        {isRepeatRequester ? (
+          <TeamOutlined style={{ fontSize: 40, color: '#fff', marginBottom: 12 }} />
+        ) : (
+          <CheckCircleOutlined style={{ fontSize: 40, color: '#fff', marginBottom: 12 }} />
+        )}
         <h2 style={{ color: '#fff', margin: 0, fontSize: 24, fontWeight: 700 }}>
-          Request Submitted!
+          {headerText}
         </h2>
         <p style={{ color: 'rgba(255,255,255,0.9)', margin: '8px 0 0', fontSize: 14 }}>
-          We&apos;ll email matches to <strong>{email}</strong>
+          {isRepeatRequester ? (
+            subHeaderText
+          ) : (
+            <>We&apos;ll email matches to <strong>{email}</strong></>
+          )}
         </p>
       </div>
 
@@ -125,7 +145,9 @@ export default function SignupNudge({ open, email, requestId, onClose }: SignupN
       {/* Account Upsell */}
       <div style={{ padding: '24px' }}>
         <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, textAlign: 'center', color: brandColors.primary }}>
-          Create an account to unlock:
+          {isRepeatRequester
+            ? 'Manage all your requests in one dashboard:'
+            : 'Create an account to unlock:'}
         </h3>
 
         {/* 4 Benefit Squares */}
@@ -182,7 +204,7 @@ export default function SignupNudge({ open, email, requestId, onClose }: SignupN
               borderColor: brandColors.accent,
             }}
           >
-            Create Free Account
+            {isRepeatRequester ? 'Create Account & Track Requests' : 'Create Free Account'}
           </Button>
         </Form>
 

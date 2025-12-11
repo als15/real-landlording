@@ -36,6 +36,11 @@ yarn-error.log*
 # vercel
 .vercel
 
+# supabase local development (NOT migrations - those should be committed)
+.supabase/
+supabase/.branches/
+supabase/.temp/
+
 # local scripts (one-time imports with hardcoded paths)
 /scripts-local
 
