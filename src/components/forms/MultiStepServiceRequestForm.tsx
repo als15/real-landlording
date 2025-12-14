@@ -116,10 +116,11 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
     label,
   }));
 
-  // Get classifications for selected category
+  // Get classifications and emergency flag for selected category
   const classifications = selectedCategory ? SERVICE_TAXONOMY[selectedCategory].classifications : [];
+  const emergencyEnabled = selectedCategory ? SERVICE_TAXONOMY[selectedCategory].emergencyEnabled ?? false : false;
 
-  // Reset service_details when category changes
+  // Reset service_details and urgency when category changes
   useEffect(() => {
     if (selectedCategory) {
       const fieldsToReset: Record<string, undefined> = {};
@@ -129,6 +130,12 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
         }
       });
       form.setFieldsValue(fieldsToReset);
+
+      // Reset urgency to standard if new category doesn't support emergency
+      const categoryConfig = SERVICE_TAXONOMY[selectedCategory];
+      if (!categoryConfig.emergencyEnabled) {
+        form.setFieldsValue({ urgency: 'standard' });
+      }
     }
   }, [selectedCategory, form]);
 
@@ -420,12 +427,14 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
             />
           </Form.Item>
 
-          <Form.Item
-            name="urgency"
-            label="How urgent is this?"
-          >
-            <UrgencyToggle />
-          </Form.Item>
+          {emergencyEnabled && (
+            <Form.Item
+              name="urgency"
+              label="How urgent is this?"
+            >
+              <UrgencyToggle emergencyEnabled={emergencyEnabled} />
+            </Form.Item>
+          )}
 
           <Form.Item
             label="Photos or Videos (optional)"

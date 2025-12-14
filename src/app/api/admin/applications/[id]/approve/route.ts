@@ -25,20 +25,34 @@ export async function POST(
       );
     }
 
-    // Generate a temporary password
-    const tempPassword = Math.random().toString(36).slice(-12) + 'A1!';
+    // Check if auth user already exists (e.g., they're already a landlord)
+    const { data: existingUsers } = await adminClient.auth.admin.listUsers();
+    const existingAuthUser = existingUsers?.users?.find(u => u.email === vendor.email);
 
-    // Create auth user for vendor
-    const { data: authUser, error: authError } = await adminClient.auth.admin.createUser({
-      email: vendor.email,
-      password: tempPassword,
-      email_confirm: true,
-      user_metadata: { name: vendor.contact_name },
-    });
+    let authUserId: string | null = null;
+    let tempPassword: string | null = null;
 
-    if (authError) {
-      console.error('Error creating auth user:', authError);
-      // Continue anyway - vendor can use password reset
+    if (existingAuthUser) {
+      // User already has an account (likely a landlord), reuse their auth
+      authUserId = existingAuthUser.id;
+      console.log(`Vendor ${vendor.email} already has auth account, linking existing user`);
+    } else {
+      // Create new auth user for vendor
+      tempPassword = Math.random().toString(36).slice(-12) + 'A1!';
+
+      const { data: authUser, error: authError } = await adminClient.auth.admin.createUser({
+        email: vendor.email,
+        password: tempPassword,
+        email_confirm: true,
+        user_metadata: { name: vendor.contact_name },
+      });
+
+      if (authError) {
+        console.error('Error creating auth user:', authError);
+        // Continue anyway - vendor can use password reset
+      } else {
+        authUserId = authUser?.user?.id || null;
+      }
     }
 
     // Update vendor status to active
@@ -46,7 +60,7 @@ export async function POST(
       .from('vendors')
       .update({
         status: 'active',
-        auth_user_id: authUser?.user?.id || null,
+        auth_user_id: authUserId,
       })
       .eq('id', id);
 
@@ -59,12 +73,16 @@ export async function POST(
     }
 
     // Send welcome email with login instructions
-    sendVendorWelcomeEmail(vendor as Vendor, authUser?.user ? tempPassword : undefined)
+    // If existing user, they'll use their current password; if new, include temp password
+    sendVendorWelcomeEmail(vendor as Vendor, tempPassword || undefined)
       .catch(console.error);
 
     return NextResponse.json({
-      message: 'Vendor approved successfully',
-      tempPassword: authUser?.user ? tempPassword : null,
+      message: existingAuthUser
+        ? 'Vendor approved - linked to existing account'
+        : 'Vendor approved successfully',
+      tempPassword,
+      existingAccount: !!existingAuthUser,
     });
   } catch (error) {
     console.error('API error:', error);

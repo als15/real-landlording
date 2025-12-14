@@ -9,16 +9,27 @@ const { Text } = Typography;
 interface UrgencyToggleProps {
   value?: SimpleUrgency;
   onChange?: (value: SimpleUrgency) => void;
+  emergencyEnabled?: boolean;
 }
 
-export default function UrgencyToggle({ value = 'standard', onChange }: UrgencyToggleProps) {
+export default function UrgencyToggle({ value = 'standard', onChange, emergencyEnabled = true }: UrgencyToggleProps) {
+  // Filter options based on whether emergency is enabled
+  const options = emergencyEnabled
+    ? SIMPLE_URGENCY_OPTIONS
+    : SIMPLE_URGENCY_OPTIONS.filter((o) => o.value !== 'emergency');
+
+  // If only one option, don't show the toggle
+  if (options.length <= 1) {
+    return null;
+  }
+
   return (
     <Radio.Group
       value={value}
       onChange={(e) => onChange?.(e.target.value)}
       style={{ width: '100%', display: 'flex', gap: 12 }}
     >
-      {SIMPLE_URGENCY_OPTIONS.map((option) => (
+      {options.map((option) => (
         <Radio.Button
           key={option.value}
           value={option.value}

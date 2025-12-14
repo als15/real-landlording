@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { updateVendorScore } from '@/lib/scoring';
 
 export async function POST(request: NextRequest) {
   try {
@@ -85,6 +86,11 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Update vendor's performance score (async, don't block response)
+    updateVendorScore(supabase, match.vendor_id).catch(err => {
+      console.error('Error updating vendor score:', err);
+    });
 
     return NextResponse.json({ message: 'Review submitted successfully' });
   } catch (error) {

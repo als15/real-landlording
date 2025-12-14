@@ -48,7 +48,7 @@ export type ServiceCategoryGroup =
   | 'creative_knowledge';
 
 export const SERVICE_CATEGORY_GROUP_LABELS: Record<ServiceCategoryGroup, string> = {
-  trades_technical: 'Trades & Technical',
+  trades_technical: 'Fix It / Build It',
   property_care: 'Property Care & Maintenance',
   compliance_testing: 'Compliance & Testing',
   professional_financial: 'Professional & Financial',
@@ -104,6 +104,7 @@ export interface ServiceCategoryConfig {
   group: ServiceCategoryGroup;
   classifications: ServiceClassification[];
   externalLink?: boolean; // For categories that link externally (e.g., Property Tax Appeals)
+  emergencyEnabled?: boolean; // Whether this service category supports emergency requests
 }
 
 // Complete service taxonomy with all categories and sub-options
@@ -112,6 +113,7 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
   roofer: {
     label: 'Roofer',
     group: 'trades_technical',
+    emergencyEnabled: true,
     classifications: [
       {
         label: 'Service Needed',
@@ -136,6 +138,7 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
   plumber_sewer: {
     label: 'Plumber/Sewer',
     group: 'trades_technical',
+    emergencyEnabled: true,
     classifications: [
       {
         label: 'Service Needed',
@@ -150,6 +153,7 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
   waterproofing: {
     label: 'Waterproofing/Moisture',
     group: 'trades_technical',
+    emergencyEnabled: true,
     classifications: [
       {
         label: 'Service Needed',
@@ -160,6 +164,7 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
   electrician: {
     label: 'Electrician',
     group: 'trades_technical',
+    emergencyEnabled: true,
     classifications: [
       {
         label: 'Service Needed',
@@ -174,6 +179,7 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
   hvac: {
     label: 'HVAC Specialist',
     group: 'trades_technical',
+    emergencyEnabled: true,
     classifications: [
       {
         label: 'Equipment Type',
@@ -208,6 +214,7 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
   appliance_repair: {
     label: 'Appliance Repair',
     group: 'trades_technical',
+    emergencyEnabled: true,
     classifications: [
       {
         label: 'Appliance Type',
@@ -218,6 +225,7 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
   handyman: {
     label: 'Handyman',
     group: 'trades_technical',
+    emergencyEnabled: true,
     classifications: [
       {
         label: 'Service Needed',
@@ -260,6 +268,7 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
   cleaning: {
     label: 'Cleaning',
     group: 'property_care',
+    emergencyEnabled: true,
     classifications: [
       {
         label: 'Service Needed',
@@ -280,6 +289,7 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
   pest_control: {
     label: 'Pest Control',
     group: 'property_care',
+    emergencyEnabled: true,
     classifications: [
       {
         label: 'Service Needed',
@@ -287,7 +297,7 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
       },
       {
         label: 'Pest Type',
-        options: ['Rodents', 'Bed Bugs', 'Termite/WDI', 'Mosquito/Yard Treatment', 'Wildlife', 'Other'],
+        options: ['Rodents', 'Bed Bugs', 'Termite/WDI Inspection', 'Mosquito/Yard Treatment', 'Wildlife', 'Other'],
       },
     ],
   },
@@ -324,6 +334,7 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
   movers: {
     label: 'Movers',
     group: 'property_care',
+    emergencyEnabled: true,
     classifications: [
       {
         label: 'Service Needed',
