@@ -105,6 +105,7 @@ export interface ServiceCategoryConfig {
   classifications: ServiceClassification[];
   externalLink?: boolean; // For categories that link externally (e.g., Property Tax Appeals)
   emergencyEnabled?: boolean; // Whether this service category supports emergency requests
+  finishLevelEnabled?: boolean; // Whether this service category shows finish level options
 }
 
 // Complete service taxonomy with all categories and sub-options
@@ -128,6 +129,7 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
   general_contractor: {
     label: 'GC',
     group: 'trades_technical',
+    finishLevelEnabled: true,
     classifications: [
       {
         label: 'Service Needed',
@@ -194,6 +196,7 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
   exterior: {
     label: 'Exterior',
     group: 'trades_technical',
+    finishLevelEnabled: true,
     classifications: [
       {
         label: 'Service Needed',
@@ -204,6 +207,7 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
   flooring: {
     label: 'Flooring',
     group: 'trades_technical',
+    finishLevelEnabled: true,
     classifications: [
       {
         label: 'Service Needed',
@@ -236,6 +240,7 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
   painting: {
     label: 'Painting',
     group: 'trades_technical',
+    finishLevelEnabled: true,
     classifications: [
       {
         label: 'Service Needed',
@@ -256,6 +261,7 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
   architect_design: {
     label: 'Architect/Design',
     group: 'trades_technical',
+    finishLevelEnabled: true,
     classifications: [
       {
         label: 'Service Needed',

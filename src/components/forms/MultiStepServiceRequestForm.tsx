@@ -116,11 +116,12 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
     label,
   }));
 
-  // Get classifications and emergency flag for selected category
+  // Get classifications, emergency flag, and finish level flag for selected category
   const classifications = selectedCategory ? SERVICE_TAXONOMY[selectedCategory].classifications : [];
   const emergencyEnabled = selectedCategory ? SERVICE_TAXONOMY[selectedCategory].emergencyEnabled ?? false : false;
+  const finishLevelEnabled = selectedCategory ? SERVICE_TAXONOMY[selectedCategory].finishLevelEnabled ?? false : false;
 
-  // Reset service_details and urgency when category changes
+  // Reset service_details, urgency, and finish_level when category changes
   useEffect(() => {
     if (selectedCategory) {
       const fieldsToReset: Record<string, undefined> = {};
@@ -131,10 +132,14 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
       });
       form.setFieldsValue(fieldsToReset);
 
-      // Reset urgency to standard if new category doesn't support emergency
       const categoryConfig = SERVICE_TAXONOMY[selectedCategory];
+      // Reset urgency to standard if new category doesn't support emergency
       if (!categoryConfig.emergencyEnabled) {
         form.setFieldsValue({ urgency: 'standard' });
+      }
+      // Reset finish_level if new category doesn't support it
+      if (!categoryConfig.finishLevelEnabled) {
+        form.setFieldsValue({ finish_level: undefined });
       }
     }
   }, [selectedCategory, form]);
@@ -382,18 +387,20 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
             );
           })}
 
-          <Form.Item
-            name="finish_level"
-            label="Finish Level"
-            extra="This helps vendors recommend appropriate materials and solutions"
-          >
-            <Select
-              placeholder="Select finish level"
-              options={finishLevelOptions}
-              size="large"
-              allowClear
-            />
-          </Form.Item>
+          {finishLevelEnabled && (
+            <Form.Item
+              name="finish_level"
+              label="Finish Level"
+              extra="This helps vendors recommend appropriate materials and solutions"
+            >
+              <Select
+                placeholder="Select finish level"
+                options={finishLevelOptions}
+                size="large"
+                allowClear
+              />
+            </Form.Item>
+          )}
 
           <Form.Item style={{ marginTop: 24 }}>
             <Button
