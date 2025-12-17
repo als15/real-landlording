@@ -12,6 +12,16 @@ import {
 } from '@/lib/scoring';
 
 describe('Vendor Scoring System', () => {
+  // Helper to create a review with multi-dimensional fields
+  const createReview = (rating: number, createdAt: Date = new Date()) => ({
+    rating,
+    quality: null,
+    price: null,
+    timeline: null,
+    treatment: null,
+    createdAt,
+  });
+
   // Helper to create test metrics
   const createMetrics = (overrides: Partial<VendorMetrics> = {}): VendorMetrics => ({
     vendorId: 'test-vendor-1',
@@ -20,6 +30,9 @@ describe('Vendor Scoring System', () => {
     acceptedJobs: 0,
     completedJobs: 0,
     noShows: 0,
+    declinesAfterAccept: 0,
+    responseTimes: [],
+    vettingScore: null,
     lastActivityDate: null,
     ...overrides,
   });
@@ -42,11 +55,11 @@ describe('Vendor Scoring System', () => {
     it('5-star reviews increase score above 50', () => {
       const metrics = createMetrics({
         reviews: [
-          { rating: 5, createdAt: new Date() },
-          { rating: 5, createdAt: new Date() },
-          { rating: 5, createdAt: new Date() },
-          { rating: 5, createdAt: new Date() },
-          { rating: 5, createdAt: new Date() },
+          createReview(5),
+          createReview(5),
+          createReview(5),
+          createReview(5),
+          createReview(5),
         ],
       });
       const result = calculateVendorScore(metrics);
@@ -57,11 +70,11 @@ describe('Vendor Scoring System', () => {
     it('1-star reviews decrease score below 50', () => {
       const metrics = createMetrics({
         reviews: [
-          { rating: 1, createdAt: new Date() },
-          { rating: 1, createdAt: new Date() },
-          { rating: 1, createdAt: new Date() },
-          { rating: 1, createdAt: new Date() },
-          { rating: 1, createdAt: new Date() },
+          createReview(1),
+          createReview(1),
+          createReview(1),
+          createReview(1),
+          createReview(1),
         ],
       });
       const result = calculateVendorScore(metrics);
@@ -71,11 +84,11 @@ describe('Vendor Scoring System', () => {
     it('3-star reviews result in around default score', () => {
       const metrics = createMetrics({
         reviews: [
-          { rating: 3, createdAt: new Date() },
-          { rating: 3, createdAt: new Date() },
-          { rating: 3, createdAt: new Date() },
-          { rating: 3, createdAt: new Date() },
-          { rating: 3, createdAt: new Date() },
+          createReview(3),
+          createReview(3),
+          createReview(3),
+          createReview(3),
+          createReview(3),
         ],
       });
       const result = calculateVendorScore(metrics);
@@ -91,17 +104,17 @@ describe('Vendor Scoring System', () => {
       // All good reviews, but one is recent and one is old
       const metricsRecentGood = createMetrics({
         reviews: [
-          { rating: 5, createdAt: new Date() }, // Recent good
-          { rating: 3, createdAt: oldDate },
-          { rating: 3, createdAt: oldDate },
+          createReview(5), // Recent good
+          createReview(3, oldDate),
+          createReview(3, oldDate),
         ],
       });
 
       const metricsOldGood = createMetrics({
         reviews: [
-          { rating: 3, createdAt: new Date() }, // Recent average
-          { rating: 5, createdAt: oldDate },
-          { rating: 5, createdAt: oldDate },
+          createReview(3), // Recent average
+          createReview(5, oldDate),
+          createReview(5, oldDate),
         ],
       });
 
@@ -116,7 +129,7 @@ describe('Vendor Scoring System', () => {
   describe('Confidence dampening', () => {
     it('1 review has low confidence', () => {
       const metrics = createMetrics({
-        reviews: [{ rating: 5, createdAt: new Date() }],
+        reviews: [createReview(5)],
       });
       const result = calculateVendorScore(metrics);
       expect(result.breakdown.confidence).toBe(1 / REVIEW_CONFIG.minReviewsForFullWeight);
@@ -124,7 +137,7 @@ describe('Vendor Scoring System', () => {
 
     it('5+ reviews have full confidence', () => {
       const metrics = createMetrics({
-        reviews: Array(5).fill(null).map(() => ({ rating: 5, createdAt: new Date() })),
+        reviews: Array(5).fill(null).map(() => (createReview(5))),
       });
       const result = calculateVendorScore(metrics);
       expect(result.breakdown.confidence).toBe(1);
@@ -132,7 +145,7 @@ describe('Vendor Scoring System', () => {
 
     it('single 5-star review does not give max score due to dampening', () => {
       const metrics = createMetrics({
-        reviews: [{ rating: 5, createdAt: new Date() }],
+        reviews: [createReview(5)],
       });
       const result = calculateVendorScore(metrics);
       // With dampening, score should be pulled toward 50
@@ -144,7 +157,7 @@ describe('Vendor Scoring System', () => {
   describe('Completion and acceptance rates', () => {
     it('high completion rate improves score', () => {
       const metricsHigh = createMetrics({
-        reviews: [{ rating: 4, createdAt: new Date() }],
+        reviews: [createReview(4)],
         totalMatches: 10,
         acceptedJobs: 10,
         completedJobs: 10,
@@ -152,7 +165,7 @@ describe('Vendor Scoring System', () => {
       });
 
       const metricsLow = createMetrics({
-        reviews: [{ rating: 4, createdAt: new Date() }],
+        reviews: [createReview(4)],
         totalMatches: 10,
         acceptedJobs: 10,
         completedJobs: 5,
@@ -167,7 +180,7 @@ describe('Vendor Scoring System', () => {
 
     it('high acceptance rate improves score', () => {
       const metricsHigh = createMetrics({
-        reviews: [{ rating: 4, createdAt: new Date() }],
+        reviews: [createReview(4)],
         totalMatches: 10,
         acceptedJobs: 9,
         completedJobs: 9,
@@ -175,7 +188,7 @@ describe('Vendor Scoring System', () => {
       });
 
       const metricsLow = createMetrics({
-        reviews: [{ rating: 4, createdAt: new Date() }],
+        reviews: [createReview(4)],
         totalMatches: 10,
         acceptedJobs: 3,
         completedJobs: 3,
@@ -192,7 +205,7 @@ describe('Vendor Scoring System', () => {
   describe('Penalties', () => {
     it('no-shows reduce score', () => {
       const metricsNoNoShows = createMetrics({
-        reviews: Array(5).fill(null).map(() => ({ rating: 4, createdAt: new Date() })),
+        reviews: Array(5).fill(null).map(() => (createReview(4))),
         totalMatches: 5,
         acceptedJobs: 5,
         completedJobs: 5,
@@ -200,7 +213,7 @@ describe('Vendor Scoring System', () => {
       });
 
       const metricsWithNoShows = createMetrics({
-        reviews: Array(5).fill(null).map(() => ({ rating: 4, createdAt: new Date() })),
+        reviews: Array(5).fill(null).map(() => (createReview(4))),
         totalMatches: 5,
         acceptedJobs: 5,
         completedJobs: 3,
@@ -216,16 +229,16 @@ describe('Vendor Scoring System', () => {
 
     it('1-star reviews add extra penalty', () => {
       const metricsNoOneStar = createMetrics({
-        reviews: Array(5).fill(null).map(() => ({ rating: 2, createdAt: new Date() })),
+        reviews: Array(5).fill(null).map(() => (createReview(2))),
       });
 
       const metricsWithOneStar = createMetrics({
         reviews: [
-          { rating: 1, createdAt: new Date() },
-          { rating: 2, createdAt: new Date() },
-          { rating: 2, createdAt: new Date() },
-          { rating: 2, createdAt: new Date() },
-          { rating: 2, createdAt: new Date() },
+          createReview(1),
+          createReview(2),
+          createReview(2),
+          createReview(2),
+          createReview(2),
         ],
       });
 
@@ -239,12 +252,12 @@ describe('Vendor Scoring System', () => {
   describe('Volume and recency bonuses', () => {
     it('more completed jobs increase volume bonus', () => {
       const metricsLow = createMetrics({
-        reviews: [{ rating: 4, createdAt: new Date() }],
+        reviews: [createReview(4)],
         completedJobs: 2,
       });
 
       const metricsHigh = createMetrics({
-        reviews: [{ rating: 4, createdAt: new Date() }],
+        reviews: [createReview(4)],
         completedJobs: 15,
       });
 
@@ -256,14 +269,14 @@ describe('Vendor Scoring System', () => {
 
     it('recent activity gives recency bonus', () => {
       const metricsRecent = createMetrics({
-        reviews: [{ rating: 4, createdAt: new Date() }],
+        reviews: [createReview(4)],
         lastActivityDate: new Date(),
       });
 
       const oldDate = new Date();
       oldDate.setDate(oldDate.getDate() - 200);
       const metricsOld = createMetrics({
-        reviews: [{ rating: 4, createdAt: oldDate }],
+        reviews: [createReview(4, oldDate)],
         lastActivityDate: oldDate,
       });
 
@@ -277,7 +290,7 @@ describe('Vendor Scoring System', () => {
   describe('Score bounds', () => {
     it('score never exceeds 100', () => {
       const metrics = createMetrics({
-        reviews: Array(20).fill(null).map(() => ({ rating: 5, createdAt: new Date() })),
+        reviews: Array(20).fill(null).map(() => (createReview(5))),
         totalMatches: 100,
         acceptedJobs: 100,
         completedJobs: 100,
@@ -290,7 +303,7 @@ describe('Vendor Scoring System', () => {
 
     it('score never goes below 0', () => {
       const metrics = createMetrics({
-        reviews: Array(20).fill(null).map(() => ({ rating: 1, createdAt: new Date() })),
+        reviews: Array(20).fill(null).map(() => (createReview(1))),
         totalMatches: 100,
         acceptedJobs: 10,
         completedJobs: 0,

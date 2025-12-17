@@ -14,6 +14,7 @@ import {
   RECENCY_CONFIG,
   PENALTY_CONFIG,
   SCORE_BOUNDS,
+  RESPONSE_TIME_CONFIG,
 } from './config';
 
 // ===========================================
@@ -23,9 +24,13 @@ import {
 export interface VendorMetrics {
   vendorId: string;
 
-  // Review data
+  // Review data (multi-dimensional)
   reviews: Array<{
-    rating: number;       // 1-5
+    rating: number;       // 1-5 (overall or calculated average)
+    quality: number | null;
+    price: number | null;
+    timeline: number | null;
+    treatment: number | null;
     createdAt: Date;
   }>;
 
@@ -34,6 +39,13 @@ export interface VendorMetrics {
   acceptedJobs: number;   // Jobs vendor accepted
   completedJobs: number;  // Jobs marked as completed
   noShows: number;        // Accepted but not completed (no-show)
+  declinesAfterAccept: number; // Accepted then declined
+
+  // Response time data
+  responseTimes: number[]; // Array of response times in seconds
+
+  // Vetting data
+  vettingScore: number | null; // Initial vetting score (0-45)
 
   // Activity
   lastActivityDate: Date | null;
@@ -44,6 +56,8 @@ export interface ScoreBreakdown {
   reviewScore: number;
   completionScore: number;
   acceptanceScore: number;
+  responseTimeScore: number;
+  vettingScore: number;
   volumeBonus: number;
   recencyBonus: number;
 
@@ -54,6 +68,8 @@ export interface ScoreBreakdown {
   weightedReview: number;
   weightedCompletion: number;
   weightedAcceptance: number;
+  weightedResponseTime: number;
+  weightedVetting: number;
   weightedVolume: number;
   weightedRecency: number;
 
@@ -65,6 +81,7 @@ export interface ScoreBreakdown {
   // Metadata
   reviewCount: number;
   confidence: number;
+  avgResponseTimeHours: number | null;
 }
 
 export interface ScoreResult {
@@ -77,6 +94,26 @@ export interface ScoreResult {
 // ===========================================
 // CALCULATION FUNCTIONS
 // ===========================================
+
+/**
+ * Calculate the effective rating for a review (multi-dimensional average or overall)
+ */
+function getEffectiveRating(review: VendorMetrics['reviews'][0]): number {
+  const dimensions = [
+    review.quality,
+    review.price,
+    review.timeline,
+    review.treatment,
+  ].filter((d): d is number => d !== null);
+
+  // If multi-dimensional ratings exist, use their average
+  if (dimensions.length > 0) {
+    return dimensions.reduce((a, b) => a + b, 0) / dimensions.length;
+  }
+
+  // Fall back to overall rating
+  return review.rating;
+}
 
 /**
  * Calculate the review component score
@@ -106,7 +143,9 @@ function calculateReviewScore(reviews: VendorMetrics['reviews']): number {
       recencyWeight = 1 - (decay * (1 - REVIEW_CONFIG.recencyMinWeight));
     }
 
-    const reviewScore = REVIEW_CONFIG.ratingToScore(review.rating);
+    // Use effective rating (multi-dimensional average or overall)
+    const effectiveRating = getEffectiveRating(review);
+    const reviewScore = REVIEW_CONFIG.ratingToScore(effectiveRating);
     weightedSum += reviewScore * recencyWeight;
     totalWeight += recencyWeight;
   }
@@ -163,6 +202,33 @@ function calculateRecencyBonus(metrics: VendorMetrics): number {
 }
 
 /**
+ * Calculate response time score
+ */
+function calculateResponseTimeScore(responseTimes: number[]): { score: number; avgHours: number | null } {
+  if (responseTimes.length < RESPONSE_TIME_CONFIG.minResponsesForScore) {
+    return { score: SCORE_BOUNDS.defaultScore, avgHours: null }; // Not enough data
+  }
+
+  const avgSeconds = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
+  const avgHours = avgSeconds / 3600;
+  const score = RESPONSE_TIME_CONFIG.hoursToScore(avgHours);
+
+  return { score, avgHours };
+}
+
+/**
+ * Calculate vetting score component
+ */
+function calculateVettingScoreComponent(vettingScore: number | null): number {
+  if (vettingScore === null) {
+    return SCORE_BOUNDS.defaultScore; // No vetting data
+  }
+
+  // Vetting score is 0-45, normalize to 0-100
+  return Math.min(100, (vettingScore / 45) * 100);
+}
+
+/**
  * Calculate penalties
  */
 function calculatePenalties(metrics: VendorMetrics): number {
@@ -175,8 +241,18 @@ function calculatePenalties(metrics: VendorMetrics): number {
   );
   totalPenalty += noShowPenalty;
 
-  // 1-star review penalties
-  const oneStarCount = metrics.reviews.filter(r => r.rating === 1).length;
+  // Decline-after-accept penalties
+  const declinePenalty = Math.min(
+    metrics.declinesAfterAccept * PENALTY_CONFIG.declineAfterAcceptPenalty,
+    PENALTY_CONFIG.maxDeclineAfterAcceptPenalty
+  );
+  totalPenalty += declinePenalty;
+
+  // 1-star review penalties (use effective rating for multi-dimensional)
+  const oneStarCount = metrics.reviews.filter(r => {
+    const effectiveRating = getEffectiveRating(r);
+    return effectiveRating <= 1.5; // Treat anything <= 1.5 as a 1-star equivalent
+  }).length;
   totalPenalty += oneStarCount * PENALTY_CONFIG.oneStarPenalty;
 
   return totalPenalty;
@@ -194,6 +270,8 @@ export function calculateVendorScore(metrics: VendorMetrics): ScoreResult {
   const reviewScore = calculateReviewScore(metrics.reviews);
   const completionScore = calculateCompletionScore(metrics);
   const acceptanceScore = calculateAcceptanceScore(metrics);
+  const { score: responseTimeScore, avgHours: avgResponseTimeHours } = calculateResponseTimeScore(metrics.responseTimes);
+  const vettingScoreNormalized = calculateVettingScoreComponent(metrics.vettingScore);
   const volumeBonus = calculateVolumeBonus(metrics);
   const recencyBonus = calculateRecencyBonus(metrics);
   const penalties = calculatePenalties(metrics);
@@ -202,11 +280,14 @@ export function calculateVendorScore(metrics: VendorMetrics): ScoreResult {
   const weightedReview = reviewScore * SCORING_WEIGHTS.reviewScore;
   const weightedCompletion = completionScore * SCORING_WEIGHTS.completionRate;
   const weightedAcceptance = acceptanceScore * SCORING_WEIGHTS.acceptanceRate;
+  const weightedResponseTime = responseTimeScore * SCORING_WEIGHTS.responseTime;
+  const weightedVetting = vettingScoreNormalized * SCORING_WEIGHTS.vettingScore;
   const weightedVolume = volumeBonus * SCORING_WEIGHTS.volumeBonus;
   const weightedRecency = recencyBonus * SCORING_WEIGHTS.recencyBonus;
 
   // Calculate raw score
   const rawScore = weightedReview + weightedCompletion + weightedAcceptance +
+                   weightedResponseTime + weightedVetting +
                    weightedVolume + weightedRecency - penalties;
 
   // Apply confidence dampening based on review count
@@ -232,12 +313,16 @@ export function calculateVendorScore(metrics: VendorMetrics): ScoreResult {
       reviewScore,
       completionScore,
       acceptanceScore,
+      responseTimeScore,
+      vettingScore: vettingScoreNormalized,
       volumeBonus,
       recencyBonus,
       penalties,
       weightedReview,
       weightedCompletion,
       weightedAcceptance,
+      weightedResponseTime,
+      weightedVetting,
       weightedVolume,
       weightedRecency,
       rawScore,
@@ -245,6 +330,7 @@ export function calculateVendorScore(metrics: VendorMetrics): ScoreResult {
       finalScore,
       reviewCount,
       confidence,
+      avgResponseTimeHours,
     },
     calculatedAt: new Date(),
   };

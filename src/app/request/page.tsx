@@ -26,25 +26,25 @@ const trustSignals = [
     icon: <ClockCircleOutlined style={{ fontSize: 28 }} />,
     title: '24-48 Hour Response',
     description: 'Get matched with vendors quickly',
-    color: brandColors.accent,
+    color: brandColors.primary,
   },
   {
     icon: <SafetyCertificateOutlined style={{ fontSize: 28 }} />,
     title: 'Vetted Vendors',
     description: 'All contractors checked for rental experience',
-    color: '#52c41a',
+    color: brandColors.primary,
   },
   {
     icon: <CheckCircleOutlined style={{ fontSize: 28 }} />,
     title: 'No Membership Required',
     description: 'Free to submit requests',
-    color: '#722ed1',
+    color: brandColors.accent,
   },
   {
     icon: <TeamOutlined style={{ fontSize: 28 }} />,
     title: '2,900+ Landlords',
     description: 'Join Philadelphia\'s trusted community',
-    color: brandColors.accent,
+    color: brandColors.secondary,
   },
 ];
 
@@ -82,7 +82,7 @@ export default function ServiceRequestPage() {
       {/* Hero Section */}
       <div
         style={{
-          background: `linear-gradient(135deg, ${brandColors.backgroundDark} 0%, #23282d 100%)`,
+          background: `linear-gradient(135deg, ${brandColors.secondary} 0%, #3d5a6b 100%)`,
           padding: '64px 24px',
           textAlign: 'center',
         }}
@@ -93,7 +93,7 @@ export default function ServiceRequestPage() {
               display: 'inline-flex',
               alignItems: 'center',
               gap: 8,
-              background: 'rgba(212, 168, 71, 0.15)',
+              background: 'rgba(75, 117, 87, 0.25)',
               padding: '8px 16px',
               borderRadius: 20,
               marginBottom: 24,
@@ -214,7 +214,7 @@ export default function ServiceRequestPage() {
                 style={{
                   marginTop: 32,
                   padding: 24,
-                  background: `linear-gradient(135deg, ${brandColors.primary} 0%, #23282d 100%)`,
+                  background: `linear-gradient(135deg, ${brandColors.primary} 0%, #3d6047 100%)`,
                   borderRadius: 12,
                 }}
               >

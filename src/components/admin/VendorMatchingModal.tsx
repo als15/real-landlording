@@ -12,16 +12,32 @@ import {
   Checkbox,
   Alert,
   Descriptions,
+  Tooltip,
 } from 'antd';
+import {
+  StarFilled,
+  WarningOutlined,
+  TrophyOutlined,
+} from '@ant-design/icons';
 import {
   Vendor,
   ServiceRequest,
   SERVICE_TYPE_LABELS,
   VENDOR_STATUS_LABELS,
 } from '@/types/database';
+import { getScoreTier, SCORE_TIERS, type ScoreTier } from '@/lib/scoring/config';
 import type { ColumnsType } from 'antd/es/table';
 
 const { Text, Title } = Typography;
+
+// Helper to get tier display info
+function getTierDisplay(score: number, hasReviews: boolean): { tier: ScoreTier; color: string; label: string; isRecommended: boolean; isWarning: boolean } {
+  const tier = getScoreTier(score, hasReviews);
+  const config = SCORE_TIERS[tier];
+  const isRecommended = tier === 'excellent' || tier === 'good';
+  const isWarning = tier === 'below_average' || tier === 'poor';
+  return { tier, color: config.color, label: config.label, isRecommended, isWarning };
+}
 
 interface VendorMatchingModalProps {
   open: boolean;
@@ -55,9 +71,15 @@ export default function VendorMatchingModal({
     try {
       const params = new URLSearchParams({
         service_type: request.service_type,
-        location: request.property_location,
         status: 'active',
       });
+
+      // Use zip_code if available, otherwise use property_location
+      if (request.zip_code) {
+        params.set('zip_code', request.zip_code);
+      } else if (request.property_location) {
+        params.set('location', request.property_location);
+      }
 
       const response = await fetch(`/api/vendors?${params}`);
       if (response.ok) {
@@ -164,9 +186,36 @@ export default function VendorMatchingModal({
       title: 'Rating',
       dataIndex: 'performance_score',
       key: 'performance_score',
-      render: (score, record) =>
-        record.total_reviews > 0 ? `${score.toFixed(1)} (${record.total_reviews})` : 'New',
+      width: 180,
+      render: (score, record) => {
+        const hasReviews = record.total_reviews > 0;
+        const tierInfo = getTierDisplay(score, hasReviews);
+
+        return (
+          <Space>
+            {tierInfo.isRecommended && (
+              <Tooltip title="Recommended vendor">
+                <TrophyOutlined style={{ color: '#faad14' }} />
+              </Tooltip>
+            )}
+            {tierInfo.isWarning && (
+              <Tooltip title="Low performance - use with caution">
+                <WarningOutlined style={{ color: '#ff4d4f' }} />
+              </Tooltip>
+            )}
+            <Tag color={tierInfo.color} style={{ margin: 0 }}>
+              {tierInfo.label}
+            </Tag>
+            {hasReviews && (
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {score.toFixed(0)} ({record.total_reviews})
+              </Text>
+            )}
+          </Space>
+        );
+      },
       sorter: (a, b) => a.performance_score - b.performance_score,
+      defaultSortOrder: 'descend',
     },
     {
       title: 'Status',

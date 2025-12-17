@@ -7,9 +7,10 @@
  * SCORING PHILOSOPHY:
  * - Base score starts at 50 (neutral)
  * - Reviews are the primary factor (weighted heavily)
- * - Engagement metrics (acceptance rate, response time) are secondary
+ * - Response time rewards fast-responding vendors
+ * - Vetting score provides initial baseline for new vendors
  * - Recency matters - recent performance weighted more than old
- * - Penalties for bad behavior (no-shows, rejections)
+ * - Penalties for bad behavior (no-shows, rejections, decline-after-accept)
  */
 
 // ===========================================
@@ -20,10 +21,12 @@ export const SCORING_WEIGHTS = {
   /**
    * How much each factor contributes to the final score (should sum to 1.0)
    */
-  reviewScore: 0.50,      // 50% - Average rating from landlord reviews
+  reviewScore: 0.35,      // 35% - Average rating from landlord reviews (multi-dimensional)
   completionRate: 0.20,   // 20% - Job completion rate
-  acceptanceRate: 0.15,   // 15% - How often vendor accepts matched jobs
-  volumeBonus: 0.10,      // 10% - Bonus for handling more jobs
+  responseTime: 0.15,     // 15% - How quickly vendor responds to intros
+  vettingScore: 0.10,     // 10% - Initial vetting assessment
+  acceptanceRate: 0.10,   // 10% - How often vendor accepts matched jobs
+  volumeBonus: 0.05,      // 5%  - Bonus for handling more jobs
   recencyBonus: 0.05,     // 5%  - Bonus for recent activity
 };
 
@@ -175,6 +178,105 @@ export const PENALTY_CONFIG = {
    * Points deducted for each 1-star review
    */
   oneStarPenalty: 5,
+
+  /**
+   * Points deducted when vendor accepts then declines
+   */
+  declineAfterAcceptPenalty: 15,
+
+  /**
+   * Maximum penalty from decline-after-accept incidents
+   */
+  maxDeclineAfterAcceptPenalty: 30,
+};
+
+// ===========================================
+// RESPONSE TIME SCORING
+// ===========================================
+
+export const RESPONSE_TIME_CONFIG = {
+  /**
+   * Response time thresholds (in hours) and their scores
+   */
+  excellentHours: 4,    // <= 4 hours = 100 points
+  goodHours: 12,        // <= 12 hours = 75 points
+  averageHours: 24,     // <= 24 hours = 50 points
+  poorHours: 48,        // <= 48 hours = 25 points
+  // > 48 hours = 0 points
+
+  /**
+   * Minimum responses needed to calculate response time score
+   */
+  minResponsesForScore: 3,
+
+  /**
+   * Convert average response time to score (0-100)
+   */
+  hoursToScore: (avgHours: number): number => {
+    if (avgHours <= RESPONSE_TIME_CONFIG.excellentHours) return 100;
+    if (avgHours <= RESPONSE_TIME_CONFIG.goodHours) return 75;
+    if (avgHours <= RESPONSE_TIME_CONFIG.averageHours) return 50;
+    if (avgHours <= RESPONSE_TIME_CONFIG.poorHours) return 25;
+    return 0;
+  },
+};
+
+// ===========================================
+// VETTING SCORE CONFIGURATION
+// ===========================================
+
+export const VETTING_CONFIG = {
+  /**
+   * Points awarded for having valid license
+   */
+  licensedPoints: 15,
+
+  /**
+   * Points awarded for having insurance
+   */
+  insuredPoints: 10,
+
+  /**
+   * Maximum points for years in business
+   */
+  yearsInBusinessMax: 10,
+
+  /**
+   * Years needed for maximum points (5+ years = full 10 points)
+   */
+  yearsForMaxPoints: 5,
+
+  /**
+   * Admin can adjust vetting score by ±10 points
+   */
+  adminAdjustmentRange: 10,
+
+  /**
+   * Maximum possible vetting score (before admin adjustment)
+   */
+  maxVettingScore: 35,
+
+  /**
+   * Maximum total vetting score (with admin adjustment)
+   */
+  maxTotalVettingScore: 45,
+};
+
+// ===========================================
+// AUTO-SUSPEND CONFIGURATION
+// ===========================================
+
+export const AUTO_SUSPEND_CONFIG = {
+  /**
+   * Score threshold below which vendors are auto-suspended
+   */
+  threshold: 30,
+
+  /**
+   * Minimum reviews before auto-suspend can trigger
+   * (prevents suspending new vendors with limited data)
+   */
+  minReviewsBeforeSuspend: 3,
 };
 
 // ===========================================

@@ -1,87 +1,86 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { Layout, Typography, Space, Button, Avatar, Dropdown } from 'antd';
-import { UserOutlined, FormOutlined, DashboardOutlined, LogoutOutlined } from '@ant-design/icons';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { brandColors } from '@/theme/config';
-import type { MenuProps } from 'antd';
+import { useEffect, useState } from 'react'
+import { Layout, Typography, Space, Button, Avatar, Dropdown } from 'antd'
+import { UserOutlined, FormOutlined, DashboardOutlined, LogoutOutlined } from '@ant-design/icons'
+import Link from 'next/link'
+import Image from 'next/image'
+import { useRouter } from 'next/navigation'
+import { brandColors } from '@/theme/config'
+import type { MenuProps } from 'antd'
 
-const { Header } = Layout;
-const { Text } = Typography;
+const { Header } = Layout
+const { Text } = Typography
 
 interface PublicHeaderProps {
-  showRequestButton?: boolean;
-  showSignIn?: boolean;
+  showRequestButton?: boolean
+  showSignIn?: boolean
 }
 
 interface UserInfo {
-  email: string;
-  name?: string;
+  email: string
+  name?: string
 }
 
-export default function PublicHeader({
-  showRequestButton = true,
-  showSignIn = true
-}: PublicHeaderProps) {
-  const [user, setUser] = useState<UserInfo | null>(null);
-  const [loading, setLoading] = useState(true);
-  const router = useRouter();
+export default function PublicHeader({ showRequestButton = true, showSignIn = true }: PublicHeaderProps) {
+  const [user, setUser] = useState<UserInfo | null>(null)
+  const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     // Check if user is logged in
-    checkAuth();
-  }, []);
+    checkAuth()
+  }, [])
 
   const checkAuth = async () => {
     try {
-      const response = await fetch('/api/landlord/profile');
+      const response = await fetch('/api/landlord/profile')
       if (response.ok) {
-        const data = await response.json();
-        setUser({ email: data.email, name: data.name || data.first_name });
+        const data = await response.json()
+        setUser({ email: data.email, name: data.name || data.first_name })
       }
     } catch {
       // Not logged in, that's fine
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    setUser(null);
-    router.refresh();
-  };
+    await fetch('/api/auth/logout', { method: 'POST' })
+    setUser(null)
+    router.refresh()
+  }
 
   const userMenuItems: MenuProps['items'] = [
     {
       key: 'dashboard',
       icon: <DashboardOutlined />,
-      label: 'My Dashboard',
+      label: 'My Dashboard'
     },
     {
-      type: 'divider',
+      type: 'divider'
     },
     {
       key: 'logout',
       icon: <LogoutOutlined />,
       label: 'Logout',
-      danger: true,
-    },
-  ];
-
-  const handleUserMenuClick: MenuProps['onClick'] = (e) => {
-    if (e.key === 'dashboard') {
-      router.push('/dashboard');
-    } else if (e.key === 'logout') {
-      handleLogout();
+      danger: true
     }
-  };
+  ]
+
+  const handleUserMenuClick: MenuProps['onClick'] = e => {
+    if (e.key === 'dashboard') {
+      router.push('/dashboard')
+    } else if (e.key === 'logout') {
+      handleLogout()
+    }
+  }
+
   return (
     <Header
       style={{
-        background: brandColors.backgroundDark,
+        background: brandColors.white,
         padding: '0 24px',
         display: 'flex',
         alignItems: 'center',
@@ -89,7 +88,9 @@ export default function PublicHeader({
         position: 'sticky',
         top: 0,
         zIndex: 100,
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+        borderBottom: `1px solid ${brandColors.border}`,
+        height: 70
       }}
     >
       <a
@@ -98,48 +99,11 @@ export default function PublicHeader({
           display: 'flex',
           alignItems: 'center',
           gap: 12,
-          textDecoration: 'none',
+          textDecoration: 'none'
         }}
       >
-        {/* Logo mark */}
-        <div
-          style={{
-            width: 36,
-            height: 36,
-            background: `linear-gradient(135deg, ${brandColors.accent} 0%, #c49a3d 100%)`,
-            borderRadius: 8,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 700,
-            fontSize: 18,
-            color: brandColors.backgroundDark,
-          }}
-        >
-          RL
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-          <Text
-            strong
-            style={{
-              color: brandColors.white,
-              fontSize: 16,
-              letterSpacing: '-0.02em',
-            }}
-          >
-            Real Landlording
-          </Text>
-          <Text
-            style={{
-              color: brandColors.accent,
-              fontSize: 11,
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-            }}
-          >
-            ProLink Services
-          </Text>
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/rl-logo.svg" alt="Real Landlording" style={{ height: 45, width: 'auto' }} />
       </a>
 
       <Space size="middle">
@@ -148,11 +112,15 @@ export default function PublicHeader({
             <Button
               type="primary"
               icon={<FormOutlined />}
+              size="large"
               style={{
-                background: brandColors.accent,
-                borderColor: brandColors.accent,
-                color: brandColors.backgroundDark,
+                background: brandColors.primary,
+                borderColor: brandColors.primary,
                 fontWeight: 500,
+                borderRadius: 8,
+                height: 44,
+                paddingLeft: 20,
+                paddingRight: 20
               }}
             >
               Submit Request
@@ -162,22 +130,22 @@ export default function PublicHeader({
         {!loading && user ? (
           <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenuClick }} placement="bottomRight">
             <Space style={{ cursor: 'pointer' }}>
-              <Avatar
-                icon={<UserOutlined />}
-                style={{ backgroundColor: brandColors.accent, color: brandColors.backgroundDark }}
-              />
-              <Text style={{ color: brandColors.white, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {user.name || user.email.split('@')[0]}
-              </Text>
+              <Avatar icon={<UserOutlined />} style={{ backgroundColor: brandColors.primary, color: brandColors.white }} />
+              <Text style={{ color: brandColors.textPrimary, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name || user.email.split('@')[0]}</Text>
             </Space>
           </Dropdown>
         ) : showSignIn && !loading ? (
           <Link href="/auth/login">
             <Button
-              type="text"
+              type="default"
               icon={<UserOutlined />}
+              size="large"
               style={{
-                color: brandColors.white,
+                borderColor: brandColors.primary,
+                color: brandColors.primary,
+                fontWeight: 500,
+                borderRadius: 8,
+                height: 44
               }}
             >
               Sign In
@@ -186,5 +154,5 @@ export default function PublicHeader({
         ) : null}
       </Space>
     </Header>
-  );
+  )
 }

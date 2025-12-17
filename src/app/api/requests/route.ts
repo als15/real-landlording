@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { ServiceRequestInput } from '@/types/database';
 import { sendRequestReceivedEmail } from '@/lib/email/send';
 
@@ -23,7 +23,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    // Use admin client to bypass RLS for public request submission
+    const supabase = createAdminClient();
 
     // Check if landlord exists with this email and get request count
     const { data: existingLandlord } = await supabase

@@ -4,7 +4,7 @@ import { updateVendorScore } from '@/lib/scoring';
 
 export async function POST(request: NextRequest) {
   try {
-    const { match_id, rating, review_text } = await request.json();
+    const { match_id, rating, quality, price, timeline, treatment, review_text } = await request.json();
 
     if (!match_id || !rating) {
       return NextResponse.json(
@@ -13,11 +13,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (rating < 1 || rating > 5) {
-      return NextResponse.json(
-        { message: 'Rating must be between 1 and 5' },
-        { status: 400 }
-      );
+    // Validate rating values (1-5 range)
+    const validateRating = (value: number | null | undefined, name: string) => {
+      if (value !== null && value !== undefined && (value < 1 || value > 5)) {
+        return `${name} must be between 1 and 5`;
+      }
+      return null;
+    };
+
+    const ratingError = validateRating(rating, 'Rating');
+    if (ratingError) {
+      return NextResponse.json({ message: ratingError }, { status: 400 });
+    }
+
+    for (const [value, name] of [
+      [quality, 'Quality'],
+      [price, 'Price'],
+      [timeline, 'Timeline'],
+      [treatment, 'Treatment'],
+    ] as const) {
+      const error = validateRating(value, name);
+      if (error) {
+        return NextResponse.json({ message: error }, { status: 400 });
+      }
     }
 
     const supabase = await createClient();
@@ -73,6 +91,10 @@ export async function POST(request: NextRequest) {
       .from('request_vendor_matches')
       .update({
         review_rating: rating,
+        review_quality: quality || null,
+        review_price: price || null,
+        review_timeline: timeline || null,
+        review_treatment: treatment || null,
         review_text: review_text || null,
         review_submitted_at: new Date().toISOString(),
         job_completed: true,

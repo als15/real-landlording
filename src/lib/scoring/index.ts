@@ -7,4 +7,5 @@
 
 export * from './config';
 export * from './calculate';
+export * from './vetting';
 export { updateVendorScore, updateAllVendorScores, getVendorMetricsFromDb } from './database';

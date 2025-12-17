@@ -27,6 +27,7 @@ import {
   SERVICE_TYPE_LABELS,
 } from '@/types/database';
 import type { ColumnsType } from 'antd/es/table';
+import ServiceAreaDisplay from '@/components/ServiceAreaDisplay';
 
 const { Title, Text } = Typography;
 const { TextArea, Search } = Input;
@@ -305,11 +306,7 @@ export default function ApplicationsPage() {
             </Space>
 
             <Divider>Service Areas</Divider>
-            <Space wrap>
-              {selectedApp.service_areas.map((area) => (
-                <Tag key={area}>{area}</Tag>
-              ))}
-            </Space>
+            <ServiceAreaDisplay zipCodes={selectedApp.service_areas} />
 
             <Divider>Qualifications</Divider>
             <Descriptions column={3} size="small">

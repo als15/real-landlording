@@ -1,10 +1,12 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { Table, Card, Tag, Space, Button, Select, Input, Typography, Drawer, Descriptions, Divider, App, Badge, Modal, Form, Checkbox, Rate } from 'antd'
-import { ReloadOutlined, PlusOutlined, EditOutlined, EyeOutlined, FilterOutlined } from '@ant-design/icons'
-import { Vendor, VendorStatus, VENDOR_STATUS_LABELS, SERVICE_TYPE_LABELS } from '@/types/database'
+import { Table, Card, Tag, Space, Button, Select, Input, Typography, Drawer, Descriptions, Divider, App, Badge, Modal, Form, Checkbox, Rate, Slider, InputNumber, Tooltip } from 'antd'
+import { ReloadOutlined, PlusOutlined, EditOutlined, EyeOutlined, FilterOutlined, InfoCircleOutlined } from '@ant-design/icons'
+import { Vendor, VendorStatus, VENDOR_STATUS_LABELS, SERVICE_TYPE_LABELS, getGroupedServiceCategories } from '@/types/database'
 import type { ColumnsType } from 'antd/es/table'
+import ServiceAreaAutocomplete from '@/components/ServiceAreaAutocomplete'
+import ServiceAreaDisplay from '@/components/ServiceAreaDisplay'
 
 const { Title, Text } = Typography
 const { Search, TextArea } = Input
@@ -154,6 +156,8 @@ export default function VendorsPage() {
       insured: vendor.insured,
       rental_experience: vendor.rental_experience,
       qualifications: vendor.qualifications,
+      years_in_business: vendor.years_in_business,
+      vetting_admin_adjustment: vendor.vetting_admin_adjustment || 0,
       admin_notes: vendor.admin_notes,
     })
     setEditModalOpen(true)
@@ -273,10 +277,7 @@ export default function VendorsPage() {
     }
   ]
 
-  const serviceOptions = Object.entries(SERVICE_TYPE_LABELS).map(([value, label]) => ({
-    value,
-    label
-  }))
+  const groupedCategories = getGroupedServiceCategories()
 
   return (
     <div>
@@ -404,11 +405,7 @@ export default function VendorsPage() {
 
             <Divider>Service Areas</Divider>
 
-            <Space wrap>
-              {selectedVendor.service_areas.map(area => (
-                <Tag key={area}>{area}</Tag>
-              ))}
-            </Space>
+            <ServiceAreaDisplay zipCodes={selectedVendor.service_areas} />
 
             <Divider>Qualifications</Divider>
 
@@ -424,6 +421,27 @@ export default function VendorsPage() {
                 <Text>{selectedVendor.qualifications}</Text>
               </>
             )}
+
+            <Divider>Vetting Score</Divider>
+
+            <Descriptions column={2} size="small">
+              <Descriptions.Item label="Years in Business">
+                {selectedVendor.years_in_business != null ? `${selectedVendor.years_in_business}+ years` : 'Not set'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Base Score">{selectedVendor.vetting_score ?? 'N/A'}</Descriptions.Item>
+              <Descriptions.Item label="Admin Adjustment">
+                <Text style={{ color: (selectedVendor.vetting_admin_adjustment || 0) > 0 ? 'green' : (selectedVendor.vetting_admin_adjustment || 0) < 0 ? 'red' : undefined }}>
+                  {(selectedVendor.vetting_admin_adjustment || 0) > 0 ? '+' : ''}{selectedVendor.vetting_admin_adjustment || 0}
+                </Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Total Vetting">
+                <Text strong>
+                  {selectedVendor.vetting_score != null
+                    ? Math.min(45, Math.max(0, selectedVendor.vetting_score + (selectedVendor.vetting_admin_adjustment || 0)))
+                    : 'N/A'}
+                </Text>
+              </Descriptions.Item>
+            </Descriptions>
 
             <Divider>Performance</Divider>
 
@@ -481,11 +499,32 @@ export default function VendorsPage() {
           <Title level={5}>Services</Title>
 
           <Form.Item name="services" label="Services Offered" rules={[{ required: true, message: 'Select at least one service' }]}>
-            <Select mode="multiple" placeholder="Select services" options={serviceOptions} />
+            <Select
+              mode="multiple"
+              placeholder="Select services"
+              showSearch
+              filterOption={(input, option) => {
+                const children = option?.children
+                if (children && typeof children === 'string') {
+                  return (children as string).toLowerCase().includes(input.toLowerCase())
+                }
+                return false
+              }}
+            >
+              {groupedCategories.map((group) => (
+                <Select.OptGroup key={group.group} label={group.label}>
+                  {group.categories.map((cat) => (
+                    <Select.Option key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </Select.Option>
+                  ))}
+                </Select.OptGroup>
+              ))}
+            </Select>
           </Form.Item>
 
-          <Form.Item name="service_areas" label="Service Areas (Zip Codes)" rules={[{ required: true, message: 'Enter at least one zip code' }]} extra="Enter zip codes separated by commas">
-            <Select mode="tags" placeholder="19103, 19104, 19106" tokenSeparators={[',']} />
+          <Form.Item name="service_areas" label="Service Areas" rules={[{ required: true, message: 'Add at least one service area' }]}>
+            <ServiceAreaAutocomplete placeholder="Search for neighborhoods, cities, or enter zip codes..." />
           </Form.Item>
 
           <Divider />
@@ -567,11 +606,32 @@ export default function VendorsPage() {
           <Title level={5}>Services</Title>
 
           <Form.Item name="services" label="Services Offered" rules={[{ required: true, message: 'Select at least one service' }]}>
-            <Select mode="multiple" placeholder="Select services" options={serviceOptions} />
+            <Select
+              mode="multiple"
+              placeholder="Select services"
+              showSearch
+              filterOption={(input, option) => {
+                const children = option?.children
+                if (children && typeof children === 'string') {
+                  return (children as string).toLowerCase().includes(input.toLowerCase())
+                }
+                return false
+              }}
+            >
+              {groupedCategories.map((group) => (
+                <Select.OptGroup key={group.group} label={group.label}>
+                  {group.categories.map((cat) => (
+                    <Select.Option key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </Select.Option>
+                  ))}
+                </Select.OptGroup>
+              ))}
+            </Select>
           </Form.Item>
 
-          <Form.Item name="service_areas" label="Service Areas (Zip Codes)" rules={[{ required: true, message: 'Enter at least one zip code' }]} extra="Enter zip codes separated by commas">
-            <Select mode="tags" placeholder="19103, 19104, 19106" tokenSeparators={[',']} />
+          <Form.Item name="service_areas" label="Service Areas" rules={[{ required: true, message: 'Add at least one service area' }]}>
+            <ServiceAreaAutocomplete placeholder="Search for neighborhoods, cities, or enter zip codes..." />
           </Form.Item>
 
           <Divider />
@@ -589,8 +649,77 @@ export default function VendorsPage() {
             </Form.Item>
           </Space>
 
+          <Form.Item name="years_in_business" label="Years in Business">
+            <Select
+              placeholder="Select years of experience"
+              allowClear
+              options={[
+                { value: 0, label: 'Less than 1 year' },
+                { value: 1, label: '1 year' },
+                { value: 2, label: '2 years' },
+                { value: 3, label: '3 years' },
+                { value: 4, label: '4 years' },
+                { value: 5, label: '5+ years' },
+                { value: 10, label: '10+ years' },
+                { value: 20, label: '20+ years' },
+              ]}
+            />
+          </Form.Item>
+
           <Form.Item name="qualifications" label="Additional Qualifications">
             <TextArea rows={3} placeholder="Certifications, years of experience, etc." />
+          </Form.Item>
+
+          <Divider />
+          <Title level={5}>
+            Vetting Score{' '}
+            <Tooltip title="Auto-calculated based on license, insurance, and years in business. Admin adjustment allows ±10 points.">
+              <InfoCircleOutlined style={{ fontSize: 14, color: '#999' }} />
+            </Tooltip>
+          </Title>
+
+          {editingVendor && (
+            <div style={{ background: '#f5f5f5', padding: 16, borderRadius: 8, marginBottom: 16 }}>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Text>Base Vetting Score:</Text>
+                  <Text strong>{editingVendor.vetting_score ?? 'Not calculated'}</Text>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Text>Admin Adjustment:</Text>
+                  <Text strong style={{ color: (editingVendor.vetting_admin_adjustment || 0) > 0 ? 'green' : (editingVendor.vetting_admin_adjustment || 0) < 0 ? 'red' : undefined }}>
+                    {(editingVendor.vetting_admin_adjustment || 0) > 0 ? '+' : ''}{editingVendor.vetting_admin_adjustment || 0}
+                  </Text>
+                </div>
+                <Divider style={{ margin: '8px 0' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Text strong>Total Vetting Score:</Text>
+                  <Text strong style={{ fontSize: 16 }}>
+                    {editingVendor.vetting_score != null
+                      ? Math.min(45, Math.max(0, editingVendor.vetting_score + (editingVendor.vetting_admin_adjustment || 0)))
+                      : 'N/A'}
+                  </Text>
+                </div>
+              </Space>
+            </div>
+          )}
+
+          <Form.Item
+            name="vetting_admin_adjustment"
+            label="Admin Vetting Adjustment"
+            extra="Adjust vetting score by -10 to +10 points based on your assessment"
+          >
+            <Slider
+              min={-10}
+              max={10}
+              marks={{
+                '-10': '-10',
+                '-5': '-5',
+                0: '0',
+                5: '+5',
+                10: '+10',
+              }}
+            />
           </Form.Item>
 
           <Divider />

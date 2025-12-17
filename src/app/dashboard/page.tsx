@@ -57,6 +57,10 @@ export default function DashboardPage() {
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<(RequestVendorMatch & { vendor: Vendor }) | null>(null);
   const [reviewRating, setReviewRating] = useState(0);
+  const [reviewQuality, setReviewQuality] = useState(0);
+  const [reviewPrice, setReviewPrice] = useState(0);
+  const [reviewTimeline, setReviewTimeline] = useState(0);
+  const [reviewTreatment, setReviewTreatment] = useState(0);
   const [reviewText, setReviewText] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
   const { message } = App.useApp();
@@ -99,13 +103,17 @@ export default function DashboardPage() {
   const handleOpenReview = (match: RequestVendorMatch & { vendor: Vendor }) => {
     setSelectedMatch(match);
     setReviewRating(match.review_rating || 0);
+    setReviewQuality(match.review_quality || 0);
+    setReviewPrice(match.review_price || 0);
+    setReviewTimeline(match.review_timeline || 0);
+    setReviewTreatment(match.review_treatment || 0);
     setReviewText(match.review_text || '');
     setReviewModalOpen(true);
   };
 
   const handleSubmitReview = async () => {
     if (!selectedMatch || !reviewRating) {
-      message.error('Please select a rating');
+      message.error('Please select an overall rating');
       return;
     }
 
@@ -117,6 +125,10 @@ export default function DashboardPage() {
         body: JSON.stringify({
           match_id: selectedMatch.id,
           rating: reviewRating,
+          quality: reviewQuality || null,
+          price: reviewPrice || null,
+          timeline: reviewTimeline || null,
+          treatment: reviewTreatment || null,
           review_text: reviewText,
         }),
       });
@@ -320,21 +332,52 @@ export default function DashboardPage() {
         onOk={handleSubmitReview}
         confirmLoading={submittingReview}
         okText="Submit Review"
+        width={500}
       >
-        <Space direction="vertical" style={{ width: '100%' }} size="large">
+        <Space direction="vertical" style={{ width: '100%' }} size="middle">
           <div>
-            <Text>How would you rate your experience?</Text>
+            <Text strong>Overall Rating *</Text>
             <div style={{ marginTop: 8 }}>
-              <Rate value={reviewRating} onChange={setReviewRating} style={{ fontSize: 32 }} />
+              <Rate value={reviewRating} onChange={setReviewRating} style={{ fontSize: 28 }} />
             </div>
           </div>
-          <div>
-            <Text>Tell us about your experience (optional)</Text>
+
+          <Divider style={{ margin: '12px 0' }}>Rate Specific Areas (Optional)</Divider>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div>
+              <Text type="secondary" style={{ fontSize: 13 }}>Quality of Work</Text>
+              <div style={{ marginTop: 4 }}>
+                <Rate value={reviewQuality} onChange={setReviewQuality} style={{ fontSize: 18 }} />
+              </div>
+            </div>
+            <div>
+              <Text type="secondary" style={{ fontSize: 13 }}>Price / Value</Text>
+              <div style={{ marginTop: 4 }}>
+                <Rate value={reviewPrice} onChange={setReviewPrice} style={{ fontSize: 18 }} />
+              </div>
+            </div>
+            <div>
+              <Text type="secondary" style={{ fontSize: 13 }}>Timeliness</Text>
+              <div style={{ marginTop: 4 }}>
+                <Rate value={reviewTimeline} onChange={setReviewTimeline} style={{ fontSize: 18 }} />
+              </div>
+            </div>
+            <div>
+              <Text type="secondary" style={{ fontSize: 13 }}>Professionalism</Text>
+              <div style={{ marginTop: 4 }}>
+                <Rate value={reviewTreatment} onChange={setReviewTreatment} style={{ fontSize: 18 }} />
+              </div>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 8 }}>
+            <Text type="secondary" style={{ fontSize: 13 }}>Additional Comments (optional)</Text>
             <TextArea
-              rows={4}
+              rows={3}
               value={reviewText}
               onChange={(e) => setReviewText(e.target.value)}
-              placeholder="How was the quality of work? Were they professional and on time?"
+              placeholder="Share any additional feedback about your experience..."
               style={{ marginTop: 8 }}
             />
           </div>

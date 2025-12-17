@@ -7,6 +7,7 @@
 
 import { SupabaseClient } from '@supabase/supabase-js';
 import { VendorMetrics, calculateVendorScore, ScoreResult } from './calculate';
+import { AUTO_SUSPEND_CONFIG } from './config';
 
 // ===========================================
 // FETCH METRICS FROM DATABASE
@@ -19,6 +20,18 @@ export async function getVendorMetricsFromDb(
   supabase: SupabaseClient,
   vendorId: string
 ): Promise<VendorMetrics | null> {
+  // Get vendor record for vetting score
+  const { data: vendor, error: vendorError } = await supabase
+    .from('vendors')
+    .select('vetting_score')
+    .eq('id', vendorId)
+    .single();
+
+  if (vendorError && vendorError.code !== 'PGRST116') {
+    console.error('Error fetching vendor:', vendorError);
+    return null;
+  }
+
   // Get all matches for this vendor with their reviews
   const { data: matches, error: matchError } = await supabase
     .from('request_vendor_matches')
@@ -27,7 +40,13 @@ export async function getVendorMetricsFromDb(
       vendor_accepted,
       job_completed,
       review_rating,
+      review_quality,
+      review_price,
+      review_timeline,
+      review_treatment,
       review_submitted_at,
+      response_time_seconds,
+      declined_after_accept,
       created_at
     `)
     .eq('vendor_id', vendorId);
@@ -46,15 +65,20 @@ export async function getVendorMetricsFromDb(
       acceptedJobs: 0,
       completedJobs: 0,
       noShows: 0,
+      declinesAfterAccept: 0,
+      responseTimes: [],
+      vettingScore: vendor?.vetting_score ?? null,
       lastActivityDate: null,
     };
   }
 
   // Process matches into metrics
   const reviews: VendorMetrics['reviews'] = [];
+  const responseTimes: number[] = [];
   let acceptedJobs = 0;
   let completedJobs = 0;
   let noShows = 0;
+  let declinesAfterAccept = 0;
   let lastActivityDate: Date | null = null;
 
   for (const match of matches) {
@@ -71,10 +95,24 @@ export async function getVendorMetricsFromDb(
       }
     }
 
-    // Collect reviews
+    // Track decline-after-accept
+    if (match.declined_after_accept === true) {
+      declinesAfterAccept++;
+    }
+
+    // Collect response times
+    if (match.response_time_seconds !== null && match.response_time_seconds > 0) {
+      responseTimes.push(match.response_time_seconds);
+    }
+
+    // Collect reviews (with multi-dimensional data)
     if (match.review_rating !== null && match.review_submitted_at) {
       reviews.push({
         rating: match.review_rating,
+        quality: match.review_quality,
+        price: match.review_price,
+        timeline: match.review_timeline,
+        treatment: match.review_treatment,
         createdAt: new Date(match.review_submitted_at),
       });
     }
@@ -93,6 +131,9 @@ export async function getVendorMetricsFromDb(
     acceptedJobs,
     completedJobs,
     noShows,
+    declinesAfterAccept,
+    responseTimes,
+    vettingScore: vendor?.vetting_score ?? null,
     lastActivityDate,
   };
 }
@@ -127,6 +168,45 @@ export async function getAllVendorMetricsFromDb(
 // ===========================================
 
 /**
+ * Check if vendor should be auto-suspended based on score
+ */
+async function checkAndAutoSuspend(
+  supabase: SupabaseClient,
+  vendorId: string,
+  score: number,
+  reviewCount: number
+): Promise<boolean> {
+  // Don't suspend if score is above threshold
+  if (score >= AUTO_SUSPEND_CONFIG.threshold) {
+    return false;
+  }
+
+  // Don't suspend vendors with insufficient data
+  if (reviewCount < AUTO_SUSPEND_CONFIG.minReviewsBeforeSuspend) {
+    return false;
+  }
+
+  // Suspend the vendor
+  const { error } = await supabase
+    .from('vendors')
+    .update({
+      status: 'inactive',
+      suspended_at: new Date().toISOString(),
+      suspension_reason: `Auto-suspended: Performance score dropped to ${score} (below threshold of ${AUTO_SUSPEND_CONFIG.threshold})`,
+    })
+    .eq('id', vendorId)
+    .eq('status', 'active'); // Only suspend if currently active
+
+  if (error) {
+    console.error('Error auto-suspending vendor:', error);
+    return false;
+  }
+
+  console.log(`Vendor ${vendorId} auto-suspended with score ${score}`);
+  return true;
+}
+
+/**
  * Calculate and update a single vendor's score
  */
 export async function updateVendorScore(
@@ -155,6 +235,9 @@ export async function updateVendorScore(
     console.error('Error updating vendor score:', updateError);
     return null;
   }
+
+  // Check for auto-suspension
+  await checkAndAutoSuspend(supabase, vendorId, result.score, metrics.reviews.length);
 
   return result;
 }

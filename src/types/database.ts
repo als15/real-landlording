@@ -4,6 +4,18 @@ export type VendorStatus = 'active' | 'inactive' | 'pending_review' | 'rejected'
 export type RequestStatus = 'new' | 'matching' | 'matched' | 'completed' | 'cancelled';
 export type UrgencyLevel = 'low' | 'medium' | 'high' | 'emergency';
 
+// Match status for tracking vendor-request lifecycle
+export type MatchStatus =
+  | 'pending'
+  | 'intro_sent'
+  | 'vendor_accepted'
+  | 'vendor_declined'
+  | 'no_response'
+  | 'in_progress'
+  | 'completed'
+  | 'cancelled'
+  | 'no_show';
+
 // Property types for service requests
 export type PropertyType =
   | 'row_home'
@@ -694,6 +706,13 @@ export interface Vendor {
   terms_accepted_at: string | null;
   created_at: string;
   updated_at: string;
+  // Vetting score fields
+  years_in_business: number | null;
+  vetting_score: number | null;
+  vetting_admin_adjustment: number;
+  // Suspension tracking
+  suspended_at: string | null;
+  suspension_reason: string | null;
 }
 
 export interface ServiceRequest {
@@ -754,6 +773,15 @@ export interface RequestVendorMatch {
   review_text: string | null;
   review_submitted_at: string | null;
   created_at: string;
+  // Match status tracking
+  status: MatchStatus;
+  response_time_seconds: number | null;
+  declined_after_accept: boolean;
+  // Multi-dimensional review fields
+  review_quality: number | null;
+  review_price: number | null;
+  review_timeline: number | null;
+  review_treatment: number | null;
 }
 
 export interface AdminUser {
@@ -820,6 +848,8 @@ export interface VendorInput {
   rental_experience: boolean;
   service_areas: string[];
   call_preferences?: string;
+  // Vetting fields
+  years_in_business?: number;
 }
 
 export interface LandlordSignupInput {

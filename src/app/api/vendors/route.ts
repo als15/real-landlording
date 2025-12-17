@@ -1,16 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { VendorInput } from '@/types/database';
+
+// Helper to extract zip code from location string
+function extractZipCode(location: string): string | null {
+  // Match 5-digit zip code anywhere in the string
+  const match = location.match(/\b(\d{5})\b/);
+  return match ? match[1] : null;
+}
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    // Use admin client to bypass RLS for vendor listing
+    const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
 
     const status = searchParams.get('status');
     const search = searchParams.get('search');
     const service_type = searchParams.get('service_type');
     const location = searchParams.get('location');
+    const zip_code = searchParams.get('zip_code'); // Direct zip code parameter
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
 
@@ -27,9 +36,11 @@ export async function GET(request: NextRequest) {
       query = query.contains('services', [service_type]);
     }
 
-    if (location) {
+    // Handle location/zip code filtering
+    const targetZip = zip_code || (location ? extractZipCode(location) : null);
+    if (targetZip) {
       // Check if vendor serves this zip code area
-      query = query.contains('service_areas', [location.substring(0, 5)]);
+      query = query.contains('service_areas', [targetZip]);
     }
 
     // Server-side search across multiple fields

@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { calculateVettingScore } from '@/lib/scoring/vetting';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
     // Validate required fields
-    const required = ['contact_name', 'business_name', 'email', 'phone', 'services', 'service_areas', 'qualifications'];
+    const required = ['contact_name', 'business_name', 'email', 'phone', 'services', 'service_areas', 'qualifications', 'years_in_business'];
     for (const field of required) {
-      if (!body[field]) {
+      if (body[field] === undefined || body[field] === null || body[field] === '') {
         return NextResponse.json(
           { message: `${field} is required` },
           { status: 400 }
@@ -23,7 +24,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    // Use admin client to bypass RLS for public vendor applications
+    const supabase = createAdminClient();
 
     // Check if vendor with this email already exists
     const { data: existingVendor } = await supabase
@@ -45,6 +47,13 @@ export async function POST(request: NextRequest) {
         );
     }
 
+    // Calculate initial vetting score
+    const vettingBreakdown = calculateVettingScore({
+      licensed: body.licensed || false,
+      insured: body.insured || false,
+      years_in_business: body.years_in_business,
+    });
+
     // Create vendor application
     const { data, error } = await supabase
       .from('vendors')
@@ -62,6 +71,9 @@ export async function POST(request: NextRequest) {
         insured: body.insured || false,
         rental_experience: body.rental_experience || false,
         call_preferences: body.call_preferences || null,
+        years_in_business: body.years_in_business,
+        vetting_score: vettingBreakdown.totalScore,
+        vetting_admin_adjustment: 0,
         terms_accepted: true,
         terms_accepted_at: new Date().toISOString(),
         status: 'pending_review',

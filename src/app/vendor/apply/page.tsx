@@ -24,13 +24,13 @@ import {
   SafetyCertificateOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
-import { getServiceCategoryOptions } from '@/types/database';
+import { getGroupedServiceCategories, CONTACT_PREFERENCE_LABELS } from '@/types/database';
 import Link from 'next/link';
 import PublicHeader from '@/components/layout/PublicHeader';
 import PublicFooter from '@/components/layout/PublicFooter';
 import { brandColors } from '@/theme/config';
 import AddressAutocomplete, { AddressData } from '@/components/AddressAutocomplete';
-import ZipCodeAutocomplete from '@/components/ZipCodeAutocomplete';
+import ServiceAreaAutocomplete from '@/components/ServiceAreaAutocomplete';
 
 const { Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
@@ -65,7 +65,7 @@ export default function VendorApplyPage() {
   const [submitted, setSubmitted] = useState(false);
   const { message } = App.useApp();
 
-  const serviceOptions = getServiceCategoryOptions();
+  const groupedCategories = getGroupedServiceCategories();
 
   const onFinish = async (values: Record<string, unknown>) => {
     setLoading(true);
@@ -128,7 +128,7 @@ export default function VendorApplyPage() {
       {/* Hero Section */}
       <div
         style={{
-          background: `linear-gradient(135deg, ${brandColors.backgroundDark} 0%, #23282d 100%)`,
+          background: `linear-gradient(135deg, ${brandColors.secondary} 0%, #3d5a6b 100%)`,
           padding: '48px 24px',
           textAlign: 'center',
         }}
@@ -266,18 +266,36 @@ export default function VendorApplyPage() {
                   <Select
                     mode="multiple"
                     placeholder="Select all services you provide"
-                    options={serviceOptions}
                     size="large"
-                  />
+                    showSearch
+                    filterOption={(input, option) => {
+                      const children = option?.children;
+                      if (children && typeof children === 'string') {
+                        return (children as string).toLowerCase().includes(input.toLowerCase());
+                      }
+                      return false;
+                    }}
+                  >
+                    {groupedCategories.map((group) => (
+                      <Select.OptGroup key={group.group} label={group.label}>
+                        {group.categories.map((cat) => (
+                          <Select.Option key={cat.value} value={cat.value}>
+                            {cat.label}
+                          </Select.Option>
+                        ))}
+                      </Select.OptGroup>
+                    ))}
+                  </Select>
                 </Form.Item>
 
                 <Form.Item
                   name="service_areas"
                   label="Service Areas"
-                  rules={[{ required: true, message: 'Enter at least one zip code' }]}
+                  rules={[{ required: true, message: 'Add at least one service area' }]}
+                  extra="Search for neighborhoods, cities, or enter zip codes"
                 >
-                  <ZipCodeAutocomplete
-                    placeholder="Search for neighborhoods, cities, or type zip codes..."
+                  <ServiceAreaAutocomplete
+                    placeholder="Search for neighborhoods, cities, or enter zip codes..."
                   />
                 </Form.Item>
 
@@ -297,6 +315,31 @@ export default function VendorApplyPage() {
 
                 <Divider />
                 <Title level={4}>Qualifications</Title>
+
+                <Row gutter={16}>
+                  <Col xs={24} md={12}>
+                    <Form.Item
+                      name="years_in_business"
+                      label="Years in Business"
+                      rules={[{ required: true, message: 'Required' }]}
+                    >
+                      <Select
+                        placeholder="Select years of experience"
+                        size="large"
+                        options={[
+                          { value: 0, label: 'Less than 1 year' },
+                          { value: 1, label: '1 year' },
+                          { value: 2, label: '2 years' },
+                          { value: 3, label: '3 years' },
+                          { value: 4, label: '4 years' },
+                          { value: 5, label: '5+ years' },
+                          { value: 10, label: '10+ years' },
+                          { value: 20, label: '20+ years' },
+                        ]}
+                      />
+                    </Form.Item>
+                  </Col>
+                </Row>
 
                 <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
                   <Form.Item name="licensed" valuePropName="checked" noStyle>
@@ -323,7 +366,15 @@ export default function VendorApplyPage() {
                 </Form.Item>
 
                 <Form.Item name="call_preferences" label="Best way to reach you">
-                  <Input placeholder="Call or text anytime, email preferred, etc." size="large" />
+                  <Select
+                    placeholder="Select preference"
+                    size="large"
+                    allowClear
+                    options={Object.entries(CONTACT_PREFERENCE_LABELS).map(([value, label]) => ({
+                      value,
+                      label,
+                    }))}
+                  />
                 </Form.Item>
 
                 <Divider />
