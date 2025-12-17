@@ -22,7 +22,6 @@ import {
   UnitCount,
   OccupancyStatus,
   ContactPreference,
-  BudgetRange,
   FinishLevel,
   SimpleUrgency,
   SERVICE_TAXONOMY,
@@ -30,7 +29,6 @@ import {
   UNIT_COUNT_LABELS,
   OCCUPANCY_STATUS_LABELS,
   CONTACT_PREFERENCE_LABELS,
-  BUDGET_RANGE_LABELS,
   FINISH_LEVEL_LABELS,
   SIMPLE_URGENCY_OPTIONS,
   ServiceRequestInput,
@@ -102,11 +100,6 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
   }));
 
   const contactPreferenceOptions = Object.entries(CONTACT_PREFERENCE_LABELS).map(([value, label]) => ({
-    value,
-    label,
-  }));
-
-  const budgetOptions = Object.entries(BUDGET_RANGE_LABELS).map(([value, label]) => ({
     value,
     label,
   }));
@@ -241,7 +234,6 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
         job_description: values.job_description as string,
         urgency,
         finish_level: values.finish_level as FinishLevel | undefined,
-        budget_range: values.budget_range as BudgetRange | undefined,
         media_urls: mediaUrls.length > 0 ? mediaUrls : undefined,
       };
 
@@ -450,15 +442,6 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
             <MediaUpload
               value={mediaUrls}
               onChange={setMediaUrls}
-            />
-          </Form.Item>
-
-          <Form.Item name="budget_range" label="Budget Range (optional)">
-            <Select
-              placeholder="Select budget range"
-              options={budgetOptions}
-              size="large"
-              allowClear
             />
           </Form.Item>
 
