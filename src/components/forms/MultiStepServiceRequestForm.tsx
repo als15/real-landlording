@@ -13,6 +13,7 @@ import {
   Steps,
   Divider,
   Radio,
+  Checkbox,
 } from 'antd';
 import { ArrowLeftOutlined, ArrowRightOutlined, SendOutlined } from '@ant-design/icons';
 import {
@@ -55,6 +56,7 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
   const [isOwner, setIsOwner] = useState(true);
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const { message } = App.useApp();
 
   // Check if user is logged in and pre-fill their info
@@ -612,6 +614,21 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
             </Col>
           </Row>
 
+          <div style={{ marginTop: 24 }}>
+            <Checkbox
+              checked={termsAccepted}
+              onChange={(e) => setTermsAccepted(e.target.checked)}
+            >
+              <Text style={{ fontSize: 13 }}>
+                By clicking &quot;Accept,&quot; I acknowledge that I have read, understood, and agree to be bound by the{' '}
+                <a href="https://www.reallandlording.com/terms/" target="_blank" rel="noopener noreferrer">Terms of Service</a>,{' '}
+                <a href="https://www.reallandlording.com/disclosure/" target="_blank" rel="noopener noreferrer">Disclosure</a>, and{' '}
+                <a href="https://www.reallandlording.com/privacy/" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
+                I further understand that my use of the Prolink Service is at my own risk, and I agree to conduct my own due diligence regarding any third-party vendors or solutions provided.
+              </Text>
+            </Checkbox>
+          </div>
+
           <Row gutter={16} style={{ marginTop: 24 }}>
             <Col xs={24} md={8}>
               <Button
@@ -629,6 +646,7 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
                   type="primary"
                   htmlType="submit"
                   loading={loading}
+                  disabled={!termsAccepted}
                   size="large"
                   block
                   icon={<SendOutlined />}
