@@ -31,8 +31,8 @@ const benefits = [
 
 const nextSteps = [
   { title: 'Request Received', description: 'We got your request' },
-  { title: 'Matching', description: 'Finding best vendors' },
-  { title: 'Email Intro', description: 'You\'ll hear from us' },
+  { title: 'Matching', description: 'Finding vendors for your project' },
+  { title: 'Intro', description: 'Receive vendor(s) contact info via email or text' },
 ];
 
 export default function SignupNudge({ open, email, requestId, requestCount = 1, onClose }: SignupNudgeProps) {
@@ -138,7 +138,7 @@ export default function SignupNudge({ open, email, requestId, requestCount = 1, 
           style={{ marginBottom: 8 }}
         />
         <p style={{ margin: 0, fontSize: 12, color: brandColors.textSecondary, textAlign: 'center' }}>
-          Expect vendor introductions within <strong style={{ color: brandColors.accent }}>24-48 hours</strong>
+          Check your phone and email. Matches usually send immediately.
         </p>
       </div>
 

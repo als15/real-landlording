@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Upload, Typography, App, Image } from 'antd';
 import { InboxOutlined, DeleteOutlined, LoadingOutlined } from '@ant-design/icons';
 import type { UploadFile, UploadProps } from 'antd/es/upload/interface';
@@ -36,6 +36,13 @@ export default function MediaUpload({
   );
   const [uploading, setUploading] = useState(false);
   const { message } = App.useApp();
+
+  // Sync fileList when value prop changes (e.g., form reset)
+  useEffect(() => {
+    if (value.length === 0 && fileList.length > 0) {
+      setFileList([]);
+    }
+  }, [value, fileList.length]);
 
   const uploadedUrls = fileList
     .filter((f) => f.status === 'done' && f.url)

@@ -27,6 +27,8 @@ export default function VendorsPage() {
   const [statusFilter, setStatusFilter] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [sortField, setSortField] = useState<string>('business_name')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [addModalOpen, setAddModalOpen] = useState(false)
@@ -60,7 +62,9 @@ export default function VendorsPage() {
     try {
       const params = new URLSearchParams({
         limit: pageSize.toString(),
-        offset: ((page - 1) * pageSize).toString()
+        offset: ((page - 1) * pageSize).toString(),
+        sortField,
+        sortOrder
       })
 
       if (statusFilter) {
@@ -83,7 +87,7 @@ export default function VendorsPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, pageSize, statusFilter, debouncedSearch])
+  }, [page, pageSize, statusFilter, debouncedSearch, sortField, sortOrder])
 
   useEffect(() => {
     fetchVendors()
@@ -104,9 +108,13 @@ export default function VendorsPage() {
 
       if (response.ok) {
         message.success('Status updated')
-        fetchVendors()
+        // Update vendor in place instead of refetching to avoid position change
+        setVendors(prev => prev.map(v => v.id === vendorId ? { ...v, status: newStatus } : v))
         if (selectedVendor?.id === vendorId) {
           setSelectedVendor({ ...selectedVendor, status: newStatus })
+        }
+        if (editingVendor?.id === vendorId) {
+          setEditingVendor({ ...editingVendor, status: newStatus })
         }
       } else {
         throw new Error('Failed to update status')
@@ -144,6 +152,7 @@ export default function VendorsPage() {
   const handleOpenEditModal = (vendor: Vendor) => {
     setEditingVendor(vendor)
     editForm.setFieldsValue({
+      status: vendor.status,
       contact_name: vendor.contact_name,
       business_name: vendor.business_name,
       email: vendor.email,
@@ -175,15 +184,20 @@ export default function VendorsPage() {
       })
 
       if (response.ok) {
+        const result = await response.json()
+        const updatedVendor = result.data || { ...editingVendor, ...values }
+
         message.success('Vendor updated successfully')
         setEditModalOpen(false)
         setEditingVendor(null)
         editForm.resetFields()
-        fetchVendors()
+
+        // Update vendor in place instead of refetching to avoid position change
+        setVendors(prev => prev.map(v => v.id === editingVendor.id ? updatedVendor : v))
+
         // Update drawer if open with same vendor
         if (selectedVendor?.id === editingVendor.id) {
-          const updated = await response.json()
-          setSelectedVendor(updated.data || { ...selectedVendor, ...values })
+          setSelectedVendor(updatedVendor)
         }
       } else {
         const error = await response.json()
@@ -204,7 +218,9 @@ export default function VendorsPage() {
   const columns: ColumnsType<Vendor> = [
     {
       title: 'Business',
-      key: 'business',
+      key: 'business_name',
+      sorter: true,
+      sortOrder: sortField === 'business_name' ? (sortOrder === 'asc' ? 'ascend' : 'descend') : null,
       render: (_, record) => (
         <div>
           <div>{record.business_name}</div>
@@ -217,7 +233,9 @@ export default function VendorsPage() {
     },
     {
       title: 'Contact',
-      key: 'contact',
+      key: 'email',
+      sorter: true,
+      sortOrder: sortField === 'email' ? (sortOrder === 'asc' ? 'ascend' : 'descend') : null,
       render: (_, record) => (
         <div>
           <div>{record.email}</div>
@@ -248,7 +266,9 @@ export default function VendorsPage() {
     },
     {
       title: 'Rating',
-      key: 'rating',
+      key: 'performance_score',
+      sorter: true,
+      sortOrder: sortField === 'performance_score' ? (sortOrder === 'asc' ? 'ascend' : 'descend') : null,
       render: (_, record) => (
         <Space>
           <Rate disabled defaultValue={record.performance_score} allowHalf style={{ fontSize: 14 }} />
@@ -261,6 +281,8 @@ export default function VendorsPage() {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
+      sorter: true,
+      sortOrder: sortField === 'status' ? (sortOrder === 'asc' ? 'ascend' : 'descend') : null,
       render: status => <Tag color={statusColors[status as VendorStatus]}>{VENDOR_STATUS_LABELS[status as VendorStatus]}</Tag>,
       width: 120
     },
@@ -336,6 +358,15 @@ export default function VendorsPage() {
             },
             showSizeChanger: true,
             showTotal: t => `${t} vendors`
+          }}
+          onChange={(_, __, sorter) => {
+            if (!Array.isArray(sorter) && sorter.columnKey) {
+              const newSortField = sorter.columnKey as string
+              const newSortOrder = sorter.order === 'descend' ? 'desc' : 'asc'
+              setSortField(newSortField)
+              setSortOrder(newSortOrder)
+              setPage(1)
+            }
           }}
           scroll={{ x: 1000 }}
         />
@@ -570,6 +601,16 @@ export default function VendorsPage() {
         width={700}
       >
         <Form form={editForm} layout="vertical" onFinish={handleEditVendor}>
+          <Form.Item name="status" label="Status">
+            <Select
+              options={Object.entries(VENDOR_STATUS_LABELS).map(([v, l]) => ({
+                value: v,
+                label: l
+              }))}
+            />
+          </Form.Item>
+
+          <Divider />
           <Title level={5}>Contact Information</Title>
           <Form.Item name="contact_name" label="Contact Name" rules={[{ required: true, message: 'Required' }]}>
             <Input placeholder="John Smith" />

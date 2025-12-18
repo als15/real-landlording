@@ -22,11 +22,18 @@ export async function GET(request: NextRequest) {
     const zip_code = searchParams.get('zip_code'); // Direct zip code parameter
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
+    const sortField = searchParams.get('sortField') || 'business_name';
+    const sortOrder = searchParams.get('sortOrder') || 'asc';
+
+    // Validate sort field to prevent SQL injection
+    const allowedSortFields = ['business_name', 'email', 'performance_score', 'status', 'created_at'];
+    const validSortField = allowedSortFields.includes(sortField) ? sortField : 'business_name';
+    const ascending = sortOrder === 'asc';
 
     let query = supabase
       .from('vendors')
       .select('*', { count: 'exact' })
-      .order('performance_score', { ascending: false });
+      .order(validSortField, { ascending });
 
     if (status) {
       query = query.eq('status', status);

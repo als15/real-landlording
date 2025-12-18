@@ -277,7 +277,7 @@ export default function ServiceRequestPage() {
         open={showSuccessMessage}
         onCancel={() => setShowSuccessMessage(false)}
         footer={null}
-        width={480}
+        width={560}
         centered
         styles={{ body: { padding: 0 } }}
       >
@@ -317,13 +317,13 @@ export default function ServiceRequestPage() {
             current={0}
             items={[
               { title: <span style={{ fontSize: 12 }}>Request Received</span>, description: <span style={{ fontSize: 11, color: brandColors.textSecondary }}>We got your request</span> },
-              { title: <span style={{ fontSize: 12 }}>Matching</span>, description: <span style={{ fontSize: 11, color: brandColors.textSecondary }}>Finding best vendors</span> },
-              { title: <span style={{ fontSize: 12 }}>Email Intro</span>, description: <span style={{ fontSize: 11, color: brandColors.textSecondary }}>You&apos;ll hear from us</span> },
+              { title: <span style={{ fontSize: 12 }}>Matching</span>, description: <span style={{ fontSize: 11, color: brandColors.textSecondary }}>Finding vendors for your project</span> },
+              { title: <span style={{ fontSize: 12 }}>Intro</span>, description: <span style={{ fontSize: 11, color: brandColors.textSecondary }}>Receive vendor(s) contact info via email or text</span> },
             ]}
             style={{ marginBottom: 8 }}
           />
           <p style={{ margin: 0, fontSize: 12, color: brandColors.textSecondary, textAlign: 'center' }}>
-            Expect vendor introductions within <strong style={{ color: brandColors.accent }}>24-48 hours</strong>
+            Check your phone and email. Matches usually send immediately.
           </p>
         </div>
 
