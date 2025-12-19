@@ -828,7 +828,7 @@ Contact the development team when:
 ### Data Hygiene
 
 1. **Keep information current:**
-   - Update vendor info when notified of changes
+- Update vendor info when notified of changes
    - Remove outdated service areas
    - Correct contact information errors
 

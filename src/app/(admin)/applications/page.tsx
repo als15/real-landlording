@@ -25,6 +25,8 @@ import {
 import {
   Vendor,
   SERVICE_TYPE_LABELS,
+  SERVICE_TAXONOMY,
+  ServiceCategory,
 } from '@/types/database';
 import type { ColumnsType } from 'antd/es/table';
 import ServiceAreaDisplay from '@/components/ServiceAreaDisplay';
@@ -296,14 +298,56 @@ export default function ApplicationsPage() {
               </Descriptions.Item>
             </Descriptions>
 
-            <Divider>Services</Divider>
-            <Space wrap>
-              {selectedApp.services.map((s) => (
-                <Tag key={s} color="blue">
-                  {SERVICE_TYPE_LABELS[s as keyof typeof SERVICE_TYPE_LABELS] || s}
-                </Tag>
-              ))}
-            </Space>
+            <Divider>Services & Specialties</Divider>
+            {selectedApp.services.map((service) => {
+              const serviceKey = service as ServiceCategory;
+              const serviceLabel = SERVICE_TYPE_LABELS[serviceKey] || service;
+              const config = SERVICE_TAXONOMY[serviceKey];
+              const specialties = selectedApp.service_specialties?.[serviceKey] || [];
+
+              return (
+                <div key={service} style={{ marginBottom: 16 }}>
+                  <Tag color="blue" style={{ marginBottom: 8 }}>
+                    {serviceLabel}
+                  </Tag>
+                  {config?.classifications && config.classifications.length > 0 && (
+                    <div style={{ marginLeft: 8, marginTop: 4 }}>
+                      {config.classifications.map((classification) => {
+                        // Find which options from this classification the vendor selected
+                        const selectedOptions = specialties.filter(s =>
+                          classification.options.includes(s)
+                        );
+
+                        if (selectedOptions.length === 0) return null;
+
+                        // Use vendor-friendly label
+                        const displayLabel = classification.label === 'Service Needed'
+                          ? 'Services Provided'
+                          : classification.label;
+
+                        return (
+                          <div key={classification.label} style={{ marginBottom: 4 }}>
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                              {displayLabel}:{' '}
+                            </Text>
+                            <Space size={4} wrap>
+                              {selectedOptions.map(opt => (
+                                <Tag key={opt} style={{ fontSize: 11 }}>{opt}</Tag>
+                              ))}
+                            </Space>
+                          </div>
+                        );
+                      })}
+                      {specialties.length === 0 && (
+                        <Text type="secondary" style={{ fontSize: 12, fontStyle: 'italic' }}>
+                          No specialties specified
+                        </Text>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
 
             <Divider>Service Areas</Divider>
             <ServiceAreaDisplay zipCodes={selectedApp.service_areas} />

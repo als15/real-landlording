@@ -54,6 +54,26 @@ export async function POST(request: NextRequest) {
       years_in_business: body.years_in_business,
     });
 
+    // Process service_specialties - flatten the nested structure
+    // Form sends: { hvac: { "Equipment Type": ["Gas Furnace"], "Service Needed": ["No Heat"] } }
+    // We store: { hvac: ["Gas Furnace", "No Heat"] } (flat array per service)
+    let serviceSpecialties: Record<string, string[]> = {};
+    if (body.service_specialties && typeof body.service_specialties === 'object') {
+      for (const [service, classifications] of Object.entries(body.service_specialties)) {
+        if (classifications && typeof classifications === 'object') {
+          const allOptions: string[] = [];
+          for (const options of Object.values(classifications as Record<string, string[]>)) {
+            if (Array.isArray(options)) {
+              allOptions.push(...options);
+            }
+          }
+          if (allOptions.length > 0) {
+            serviceSpecialties[service] = allOptions;
+          }
+        }
+      }
+    }
+
     // Create vendor application
     const { data, error } = await supabase
       .from('vendors')
@@ -65,6 +85,7 @@ export async function POST(request: NextRequest) {
         website: body.website || null,
         location: body.location || null,
         services: body.services,
+        service_specialties: Object.keys(serviceSpecialties).length > 0 ? serviceSpecialties : null,
         service_areas: body.service_areas,
         qualifications: body.qualifications,
         licensed: body.licensed || false,

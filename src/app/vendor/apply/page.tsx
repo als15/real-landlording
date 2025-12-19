@@ -24,7 +24,7 @@ import {
   SafetyCertificateOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
-import { getGroupedServiceCategories, CONTACT_PREFERENCE_LABELS } from '@/types/database';
+import { getGroupedServiceCategories, CONTACT_PREFERENCE_LABELS, SERVICE_TAXONOMY, ServiceCategory } from '@/types/database';
 import Link from 'next/link';
 import PublicHeader from '@/components/layout/PublicHeader';
 import PublicFooter from '@/components/layout/PublicFooter';
@@ -63,9 +63,31 @@ export default function VendorApplyPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [selectedServices, setSelectedServices] = useState<ServiceCategory[]>([]);
   const { message } = App.useApp();
 
   const groupedCategories = getGroupedServiceCategories();
+
+  // Get classifications (equipment types) for selected services
+  const getServiceClassifications = (services: ServiceCategory[]) => {
+    return services
+      .map(service => {
+        const config = SERVICE_TAXONOMY[service];
+        if (!config || config.classifications.length === 0) return null;
+        return {
+          service,
+          label: config.label,
+          classifications: config.classifications,
+        };
+      })
+      .filter(Boolean) as Array<{
+        service: ServiceCategory;
+        label: string;
+        classifications: Array<{ label: string; options: string[] }>;
+      }>;
+  };
+
+  const serviceClassifications = getServiceClassifications(selectedServices);
 
   const onFinish = async (values: Record<string, unknown>) => {
     setLoading(true);
@@ -268,6 +290,7 @@ export default function VendorApplyPage() {
                     placeholder="Select all services you provide"
                     size="large"
                     showSearch
+                    onChange={(values: ServiceCategory[]) => setSelectedServices(values)}
                     filterOption={(input, option) => {
                       const children = option?.children;
                       if (children && typeof children === 'string') {
@@ -287,6 +310,55 @@ export default function VendorApplyPage() {
                     ))}
                   </Select>
                 </Form.Item>
+
+                {/* Dynamic Equipment Types based on selected services */}
+                {serviceClassifications.length > 0 && (
+                  <div style={{ marginBottom: 24 }}>
+                    <Text strong style={{ display: 'block', marginBottom: 12 }}>
+                      What equipment/types do you work with?
+                    </Text>
+                    <Text type="secondary" style={{ display: 'block', marginBottom: 16, fontSize: 13 }}>
+                      Select all that apply for each service category
+                    </Text>
+                    {serviceClassifications.map(({ service, label, classifications }) => (
+                      <div
+                        key={service}
+                        style={{
+                          marginBottom: 16,
+                          padding: 16,
+                          background: `${brandColors.accent}08`,
+                          borderRadius: 8,
+                          border: `1px solid ${brandColors.border}`,
+                        }}
+                      >
+                        <Text strong style={{ display: 'block', marginBottom: 12, color: brandColors.secondary }}>
+                          {label}
+                        </Text>
+                        {classifications.map((classification) => {
+                          // Adjust labels for vendor context
+                          const vendorLabel = classification.label === 'Service Needed'
+                            ? 'Services Provided'
+                            : classification.label;
+                          return (
+                            <Form.Item
+                              key={`${service}_${classification.label}`}
+                              name={['service_specialties', service, classification.label]}
+                              label={vendorLabel}
+                              style={{ marginBottom: 12 }}
+                            >
+                              <Select
+                                mode="multiple"
+                                placeholder={`Select ${vendorLabel.toLowerCase()}`}
+                                size="middle"
+                                options={classification.options.map(opt => ({ value: opt, label: opt }))}
+                              />
+                            </Form.Item>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 <Form.Item
                   name="service_areas"

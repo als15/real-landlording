@@ -713,6 +713,8 @@ export interface Vendor {
   // Suspension tracking
   suspended_at: string | null;
   suspension_reason: string | null;
+  // Service specialties (equipment types per service category)
+  service_specialties: Record<ServiceCategory, string[]> | null;
 }
 
 export interface ServiceRequest {
@@ -850,6 +852,8 @@ export interface VendorInput {
   call_preferences?: string;
   // Vetting fields
   years_in_business?: number;
+  // Service specialties (equipment types per service category)
+  service_specialties?: Record<string, string[]>;
 }
 
 export interface LandlordSignupInput {
