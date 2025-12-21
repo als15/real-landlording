@@ -294,7 +294,7 @@ export default function RequestsPage() {
       <Drawer
         title="Request Details"
         placement="right"
-        width={600}
+        styles={{ wrapper: { width: 600 } }}
         onClose={() => setDrawerOpen(false)}
         open={drawerOpen}
       >

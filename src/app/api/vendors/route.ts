@@ -44,8 +44,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Handle location/zip code filtering
+    // Only filter by location if explicitly requested with require_location=true
+    // This allows matching to find all vendors for a service type first
+    const requireLocation = searchParams.get('require_location') === 'true';
     const targetZip = zip_code || (location ? extractZipCode(location) : null);
-    if (targetZip) {
+    if (targetZip && requireLocation) {
       // Check if vendor serves this zip code area
       query = query.contains('service_areas', [targetZip]);
     }
