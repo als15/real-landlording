@@ -149,37 +149,12 @@ export default function MediaUpload({
   const uploadProps: UploadProps = {
     name: 'files',
     multiple: true,
-    fileList,
-    listType: 'picture-card',
     beforeUpload: (file) => {
       handleUpload(file);
       return false; // Prevent default upload behavior
     },
-    onRemove: handleRemove,
     accept: FILE_UPLOAD_CONSTRAINTS.allowedMimeTypes.join(','),
-    showUploadList: {
-      showPreviewIcon: true,
-      showRemoveIcon: true,
-      showDownloadIcon: false,
-    },
-    itemRender: (originNode, file) => {
-      if (file.status === 'uploading') {
-        return (
-          <div style={{
-            width: 104,
-            height: 104,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: '1px dashed #d9d9d9',
-            borderRadius: 8,
-          }}>
-            <LoadingOutlined />
-          </div>
-        );
-      }
-      return originNode;
-    },
+    showUploadList: false,
   };
 
   const canUploadMore = fileList.length < maxFiles && !uploading;

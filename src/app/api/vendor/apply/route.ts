@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { calculateVettingScore } from '@/lib/scoring/vetting';
+import { sendVendorApplicationReceivedEmail } from '@/lib/email/send';
 
 export async function POST(request: NextRequest) {
   try {
@@ -109,6 +110,13 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Send confirmation email to vendor
+    await sendVendorApplicationReceivedEmail({
+      contact_name: body.contact_name,
+      business_name: body.business_name,
+      email: body.email,
+    });
 
     return NextResponse.json({
       message: 'Application submitted successfully',

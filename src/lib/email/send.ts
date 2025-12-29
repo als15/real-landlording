@@ -6,6 +6,8 @@ import {
   followUpEmail,
   vendorWelcomeEmail,
   vendorRejectedEmail,
+  noVendorMatchedEmail,
+  vendorApplicationReceivedEmail,
 } from './templates';
 import { ServiceRequest, Vendor } from '@/types/database';
 
@@ -84,5 +86,21 @@ export async function sendVendorWelcomeEmail(
 // Send rejection email to vendor
 export async function sendVendorRejectedEmail(vendor: Vendor): Promise<boolean> {
   const { subject, html } = vendorRejectedEmail(vendor);
+  return sendEmail(vendor.email, subject, html);
+}
+
+// Send email when no vendors matched for a request
+export async function sendNoVendorMatchedEmail(request: ServiceRequest): Promise<boolean> {
+  const { subject, html } = noVendorMatchedEmail(request);
+  return sendEmail(request.landlord_email, subject, html);
+}
+
+// Send confirmation email when vendor submits an application
+export async function sendVendorApplicationReceivedEmail(vendor: {
+  contact_name: string;
+  business_name: string;
+  email: string;
+}): Promise<boolean> {
+  const { subject, html } = vendorApplicationReceivedEmail(vendor);
   return sendEmail(vendor.email, subject, html);
 }

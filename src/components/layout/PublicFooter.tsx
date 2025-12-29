@@ -1,10 +1,7 @@
 'use client';
 
 import { Layout, Typography, Space, Row, Col } from 'antd';
-import {
-  MailOutlined,
-  EnvironmentOutlined,
-} from '@ant-design/icons';
+import { EnvironmentOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { brandColors } from '@/theme/config';
 
@@ -34,19 +31,11 @@ export default function PublicFooter() {
               />
             </div>
             <Text style={{ color: 'rgba(255,255,255,0.8)', display: 'block', marginBottom: 16, lineHeight: 1.6 }}>
-              Philadelphia&apos;s trusted community connecting landlords with vetted contractors since 2019.
+              Connecting landlords with reliable solutions.
             </Text>
-            <Space direction="vertical" size={8}>
-              <Space>
-                <EnvironmentOutlined style={{ color: brandColors.accent }} />
-                <Text style={{ color: 'rgba(255,255,255,0.8)' }}>Philadelphia, PA</Text>
-              </Space>
-              <Space>
-                <MailOutlined style={{ color: brandColors.accent }} />
-                <a href="mailto:hello@reallandlording.com" style={{ color: 'rgba(255,255,255,0.8)' }}>
-                  hello@reallandlording.com
-                </a>
-              </Space>
+            <Space>
+              <EnvironmentOutlined style={{ color: brandColors.accent }} />
+              <Text style={{ color: 'rgba(255,255,255,0.8)' }}>Philadelphia, PA</Text>
             </Space>
           </Col>
 

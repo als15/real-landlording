@@ -1,79 +1,72 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { Typography, Row, Col, Layout, Space, Modal, Button, Steps } from 'antd';
-import {
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  SafetyCertificateOutlined,
-  TeamOutlined,
-  StarFilled,
-  DashboardOutlined,
-} from '@ant-design/icons';
-import MultiStepServiceRequestForm from '@/components/forms/MultiStepServiceRequestForm';
-import SignupNudge from '@/components/SignupNudge';
-import FAQ from '@/components/FAQ';
-import PublicHeader from '@/components/layout/PublicHeader';
-import PublicFooter from '@/components/layout/PublicFooter';
-import { brandColors } from '@/theme/config';
-import Link from 'next/link';
+import { useState } from 'react'
+import { Typography, Row, Col, Layout, Space, Modal, Button, Steps } from 'antd'
+import { CheckCircleOutlined, ClockCircleOutlined, SafetyCertificateOutlined, TeamOutlined, StarFilled, DashboardOutlined } from '@ant-design/icons'
+import MultiStepServiceRequestForm from '@/components/forms/MultiStepServiceRequestForm'
+import SignupNudge from '@/components/SignupNudge'
+import FAQ from '@/components/FAQ'
+import PublicHeader from '@/components/layout/PublicHeader'
+import PublicFooter from '@/components/layout/PublicFooter'
+import { brandColors } from '@/theme/config'
+import Link from 'next/link'
 
-const { Title, Text, Paragraph } = Typography;
-const { Content } = Layout;
+const { Title, Text, Paragraph } = Typography
+const { Content } = Layout
 
 const trustSignals = [
   {
     icon: <ClockCircleOutlined style={{ fontSize: 28 }} />,
-    title: '24-48 Hour Response',
-    description: 'Get matched with vendors quickly',
-    color: brandColors.primary,
+    title: 'Fast Response',
+    description: 'Connect to reliable vendors in 24-48 hrs',
+    color: brandColors.primary
   },
   {
     icon: <SafetyCertificateOutlined style={{ fontSize: 28 }} />,
-    title: 'Vetted Vendors',
-    description: 'All contractors checked for rental experience',
-    color: brandColors.primary,
+    title: 'Vetted Vendors with Rental Experience',
+    description: 'Providers go through a vetting process',
+    color: brandColors.primary
   },
   {
     icon: <CheckCircleOutlined style={{ fontSize: 28 }} />,
     title: 'No Membership Required',
     description: 'Free to submit requests',
-    color: brandColors.accent,
+    color: brandColors.accent
   },
   {
     icon: <TeamOutlined style={{ fontSize: 28 }} />,
-    title: '2,900+ Landlords',
-    description: 'Join Philadelphia\'s trusted community',
-    color: brandColors.secondary,
-  },
-];
+    title: '2,900+ Landlords and growing',
+    description: "Philadelphia's trusted landlord community",
+    color: brandColors.secondary
+  }
+]
 
 const stats = [
   { value: '800+', label: 'Referrals Made' },
   { value: '2,900+', label: 'Landlords Served' },
-  { value: '100+', label: 'Vetted Vendors' },
-];
+  { value: '100+', label: 'Vetted Vendors' }
+]
 
 export default function ServiceRequestPage() {
-  const [showSignupNudge, setShowSignupNudge] = useState(false);
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-  const [submittedEmail, setSubmittedEmail] = useState('');
-  const [submittedRequestId, setSubmittedRequestId] = useState('');
-  const [submittedRequestCount, setSubmittedRequestCount] = useState(1);
+  const [showSignupNudge, setShowSignupNudge] = useState(false)
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
+  const [submittedEmail, setSubmittedEmail] = useState('')
+  const [submittedRequestId, setSubmittedRequestId] = useState('')
+  const [submittedRequestCount, setSubmittedRequestCount] = useState(1)
 
   const handleFormSuccess = (requestId: string, email: string, isLoggedIn: boolean, requestCount: number) => {
-    setSubmittedRequestId(requestId);
-    setSubmittedEmail(email);
-    setSubmittedRequestCount(requestCount);
+    setSubmittedRequestId(requestId)
+    setSubmittedEmail(email)
+    setSubmittedRequestCount(requestCount)
 
     if (isLoggedIn) {
       // User is already logged in, show success message instead of signup nudge
-      setShowSuccessMessage(true);
+      setShowSuccessMessage(true)
     } else {
       // User is not logged in, show signup nudge
-      setShowSignupNudge(true);
+      setShowSignupNudge(true)
     }
-  };
+  }
 
   return (
     <Layout style={{ minHeight: '100vh', background: brandColors.background }}>
@@ -84,7 +77,7 @@ export default function ServiceRequestPage() {
         style={{
           background: `linear-gradient(135deg, ${brandColors.secondary} 0%, #3d5a6b 100%)`,
           padding: '64px 24px',
-          textAlign: 'center',
+          textAlign: 'center'
         }}
       >
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
@@ -96,25 +89,23 @@ export default function ServiceRequestPage() {
               background: 'rgba(75, 117, 87, 0.25)',
               padding: '8px 16px',
               borderRadius: 20,
-              marginBottom: 24,
+              marginBottom: 24
             }}
           >
             <StarFilled style={{ color: brandColors.accent }} />
-            <Text style={{ color: brandColors.accent, fontWeight: 500 }}>
-              Trusted by 2,900+ Philadelphia Landlords
-            </Text>
+            <Text style={{ color: brandColors.accent, fontWeight: 500 }}>Trusted by 2,900+ Philadelphia Landlords</Text>
           </div>
           <Title
             style={{
               color: brandColors.white,
               fontSize: 42,
               marginBottom: 16,
-              fontWeight: 600,
+              fontWeight: 600
             }}
           >
             Get Matched with Trusted
             <br />
-            Philadelphia Contractors
+            Philadelphia Service Providers
           </Title>
           <Paragraph
             style={{
@@ -122,11 +113,10 @@ export default function ServiceRequestPage() {
               fontSize: 18,
               marginBottom: 32,
               maxWidth: 600,
-              margin: '0 auto',
+              margin: '0 auto'
             }}
           >
-            Tell us about your project and we&apos;ll connect you with vetted vendors
-            who specialize in rental properties.
+            Tell us about your project and we&apos;ll connect you with vetted vendors who specialize in rental properties.
           </Paragraph>
 
           {/* Stats */}
@@ -139,14 +129,12 @@ export default function ServiceRequestPage() {
                       color: brandColors.accent,
                       fontSize: 32,
                       fontWeight: 700,
-                      display: 'block',
+                      display: 'block'
                     }}
                   >
                     {stat.value}
                   </Text>
-                  <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>
-                    {stat.label}
-                  </Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>{stat.label}</Text>
                 </div>
               </Col>
             ))}
@@ -162,9 +150,7 @@ export default function ServiceRequestPage() {
               <Title level={3} style={{ marginBottom: 8, color: brandColors.primary }}>
                 Why Landlords Trust Us
               </Title>
-              <Paragraph style={{ color: brandColors.textSecondary, marginBottom: 32 }}>
-                We&apos;ve helped hundreds of Philadelphia landlords find reliable contractors for their rental properties.
-              </Paragraph>
+              <Paragraph style={{ color: brandColors.textSecondary, marginBottom: 32 }}>We&apos;ve helped hundreds of local landlords find reliable solutions for their rental properties from maintenance to construction to consulting and compliance challenges.</Paragraph>
 
               {/* Trust Signals */}
               <Space direction="vertical" size="large" style={{ width: '100%' }}>
@@ -179,7 +165,7 @@ export default function ServiceRequestPage() {
                       background: brandColors.white,
                       borderRadius: 12,
                       boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
-                      border: `1px solid ${brandColors.border}`,
+                      border: `1px solid ${brandColors.border}`
                     }}
                   >
                     <div
@@ -192,7 +178,7 @@ export default function ServiceRequestPage() {
                         alignItems: 'center',
                         justifyContent: 'center',
                         color: signal.color,
-                        flexShrink: 0,
+                        flexShrink: 0
                       }}
                     >
                       {signal.icon}
@@ -215,21 +201,16 @@ export default function ServiceRequestPage() {
                   marginTop: 32,
                   padding: 24,
                   background: `linear-gradient(135deg, ${brandColors.primary} 0%, #3d6047 100%)`,
-                  borderRadius: 12,
+                  borderRadius: 12
                 }}
               >
                 <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
-                  {[1, 2, 3, 4, 5].map((star) => (
+                  {[1, 2, 3, 4, 5].map(star => (
                     <StarFilled key={star} style={{ color: brandColors.accent, fontSize: 16 }} />
                   ))}
                 </div>
-                <Paragraph style={{ color: 'rgba(255,255,255,0.9)', fontSize: 15, marginBottom: 16, fontStyle: 'italic' }}>
-                  &ldquo;Real Landlording connected me with an amazing plumber within hours.
-                  They understood the urgency of a rental emergency.&rdquo;
-                </Paragraph>
-                <Text style={{ color: brandColors.accent, fontWeight: 500 }}>
-                  — Mike T., Fishtown Landlord
-                </Text>
+                <Paragraph style={{ color: 'rgba(255,255,255,0.9)', fontSize: 15, marginBottom: 16, fontStyle: 'italic' }}>&ldquo;Real Landlording connected me with an amazing plumber within hours. They understood the urgency of a rental emergency.&rdquo;</Paragraph>
+                <Text style={{ color: brandColors.accent, fontWeight: 500 }}>— Mike T., Fishtown Landlord</Text>
               </div>
             </div>
           </Col>
@@ -242,7 +223,7 @@ export default function ServiceRequestPage() {
                 borderRadius: 16,
                 padding: 32,
                 boxShadow: '0 4px 24px rgba(0, 0, 0, 0.06)',
-                border: `1px solid ${brandColors.border}`,
+                border: `1px solid ${brandColors.border}`
               }}
             >
               <Title level={3} style={{ marginBottom: 8, color: brandColors.primary }}>
@@ -264,35 +245,20 @@ export default function ServiceRequestPage() {
 
       <PublicFooter />
 
-      <SignupNudge
-        open={showSignupNudge}
-        email={submittedEmail}
-        requestId={submittedRequestId}
-        requestCount={submittedRequestCount}
-        onClose={() => setShowSignupNudge(false)}
-      />
+      <SignupNudge open={showSignupNudge} email={submittedEmail} requestId={submittedRequestId} requestCount={submittedRequestCount} onClose={() => setShowSignupNudge(false)} />
 
       {/* Success Modal for Logged-in Users */}
-      <Modal
-        open={showSuccessMessage}
-        onCancel={() => setShowSuccessMessage(false)}
-        footer={null}
-        width={560}
-        centered
-        styles={{ body: { padding: 0 } }}
-      >
+      <Modal open={showSuccessMessage} onCancel={() => setShowSuccessMessage(false)} footer={null} width={560} centered styles={{ body: { padding: 0 } }}>
         {/* Success Banner */}
         <div
           style={{
             background: `linear-gradient(135deg, #52c41a 0%, #237804 100%)`,
             padding: '24px 24px 20px',
-            textAlign: 'center',
+            textAlign: 'center'
           }}
         >
           <CheckCircleOutlined style={{ fontSize: 40, color: '#fff', marginBottom: 12 }} />
-          <h2 style={{ color: '#fff', margin: 0, fontSize: 24, fontWeight: 700 }}>
-            Request Submitted!
-          </h2>
+          <h2 style={{ color: '#fff', margin: 0, fontSize: 24, fontWeight: 700 }}>Request Submitted!</h2>
           <p style={{ color: 'rgba(255,255,255,0.9)', margin: '8px 0 0', fontSize: 14 }}>
             We&apos;ll email matches to <strong>{submittedEmail}</strong>
           </p>
@@ -303,14 +269,12 @@ export default function ServiceRequestPage() {
           style={{
             background: brandColors.background,
             padding: '16px 24px',
-            borderBottom: `1px solid ${brandColors.border}`,
+            borderBottom: `1px solid ${brandColors.border}`
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <ClockCircleOutlined style={{ color: brandColors.accent }} />
-            <span style={{ fontWeight: 600, fontSize: 13, color: brandColors.primary }}>
-              What happens next
-            </span>
+            <span style={{ fontWeight: 600, fontSize: 13, color: brandColors.primary }}>What happens next</span>
           </div>
           <Steps
             size="small"
@@ -318,13 +282,11 @@ export default function ServiceRequestPage() {
             items={[
               { title: <span style={{ fontSize: 12 }}>Request Received</span>, description: <span style={{ fontSize: 11, color: brandColors.textSecondary }}>We got your request</span> },
               { title: <span style={{ fontSize: 12 }}>Matching</span>, description: <span style={{ fontSize: 11, color: brandColors.textSecondary }}>Finding vendors for your project</span> },
-              { title: <span style={{ fontSize: 12 }}>Intro</span>, description: <span style={{ fontSize: 11, color: brandColors.textSecondary }}>Receive vendor(s) contact info via email or text</span> },
+              { title: <span style={{ fontSize: 12 }}>Intro</span>, description: <span style={{ fontSize: 11, color: brandColors.textSecondary }}>Receive vendor(s) contact info via email or text</span> }
             ]}
             style={{ marginBottom: 8 }}
           />
-          <p style={{ margin: 0, fontSize: 12, color: brandColors.textSecondary, textAlign: 'center' }}>
-            Check your phone and email. Matches usually send immediately.
-          </p>
+          <p style={{ margin: 0, fontSize: 12, color: brandColors.textSecondary, textAlign: 'center' }}>Check your phone and email. Matches usually send immediately.</p>
         </div>
 
         {/* Actions */}
@@ -342,5 +304,5 @@ export default function ServiceRequestPage() {
         </div>
       </Modal>
     </Layout>
-  );
+  )
 }

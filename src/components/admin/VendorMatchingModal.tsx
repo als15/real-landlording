@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Modal,
   Table,
@@ -13,11 +13,14 @@ import {
   Alert,
   Descriptions,
   Tooltip,
+  Input,
+  Switch,
 } from 'antd';
 import {
   StarFilled,
   WarningOutlined,
   TrophyOutlined,
+  SearchOutlined,
 } from '@ant-design/icons';
 import {
   Vendor,
@@ -56,29 +59,70 @@ export default function VendorMatchingModal({
   const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [showAllVendors, setShowAllVendors] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const { message } = App.useApp();
+
+  // Debounce search input
+  useEffect(() => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, [searchTerm]);
 
   useEffect(() => {
     if (open && request) {
-      fetchMatchingVendors();
+      fetchVendors();
     }
-  }, [open, request]);
+  }, [open, request, showAllVendors, debouncedSearch]);
 
-  const fetchMatchingVendors = async () => {
+  // Reset state when modal closes
+  useEffect(() => {
+    if (!open) {
+      setShowAllVendors(false);
+      setSearchTerm('');
+      setDebouncedSearch('');
+      setSelectedVendors([]);
+    }
+  }, [open]);
+
+  const fetchVendors = async () => {
     if (!request) return;
 
     setLoading(true);
     try {
       const params = new URLSearchParams({
-        service_type: request.service_type,
         status: 'active',
       });
 
-      // Use zip_code if available, otherwise use property_location
-      if (request.zip_code) {
-        params.set('zip_code', request.zip_code);
-      } else if (request.property_location) {
-        params.set('location', request.property_location);
+      const hasSearch = debouncedSearch.trim().length > 0;
+
+      // Only filter by service type if not showing all vendors AND not searching
+      // When searching, we want to find any vendor by name regardless of service type
+      if (!showAllVendors && !hasSearch) {
+        params.set('service_type', request.service_type);
+        // Use zip_code if available, otherwise use property_location
+        if (request.zip_code) {
+          params.set('zip_code', request.zip_code);
+        } else if (request.property_location) {
+          params.set('location', request.property_location);
+        }
+      }
+
+      // Add search if present
+      if (hasSearch) {
+        params.set('search', debouncedSearch.trim());
       }
 
       const response = await fetch(`/api/vendors?${params}`);
@@ -271,9 +315,30 @@ export default function VendorMatchingModal({
             style={{ marginBottom: 16 }}
           />
 
-          <Title level={5}>
-            Matching Vendors ({vendors.length} found)
-          </Title>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <Title level={5} style={{ margin: 0 }}>
+              {showAllVendors ? 'All Active Vendors' : 'Matching Vendors'} ({vendors.length} found)
+            </Title>
+            <Space>
+              <Input
+                placeholder="Search vendors..."
+                prefix={<SearchOutlined />}
+                allowClear
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{ width: 200 }}
+              />
+              <Tooltip title="Enable to search all active vendors, not just those matching the service type">
+                <Space>
+                  <Text type="secondary">Show all vendors</Text>
+                  <Switch
+                    checked={showAllVendors}
+                    onChange={setShowAllVendors}
+                  />
+                </Space>
+              </Tooltip>
+            </Space>
+          </div>
 
           <Table
             columns={columns}
