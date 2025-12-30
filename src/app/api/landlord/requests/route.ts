@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 export async function GET() {
   try {
@@ -15,45 +15,14 @@ export async function GET() {
       );
     }
 
-    // Get landlord profile
-    const { data: landlord } = await supabase
-      .from('landlords')
-      .select('id')
-      .eq('auth_user_id', user.id)
-      .single();
+    // Use admin client to bypass RLS for fetching user's own requests
+    const adminClient = createAdminClient();
 
-    if (!landlord) {
-      // Try to find by email
-      const { data: landlordByEmail } = await supabase
-        .from('landlords')
-        .select('id')
-        .eq('email', user.email)
-        .single();
-
-      if (!landlordByEmail) {
-        return NextResponse.json({ data: [] });
-      }
-
-      // Get requests for this landlord
-      const { data: requests, error } = await supabase
-        .from('service_requests')
-        .select('*')
-        .or(`landlord_id.eq.${landlordByEmail.id},landlord_email.eq.${user.email}`)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching requests:', error);
-        return NextResponse.json({ data: [] });
-      }
-
-      return NextResponse.json({ data: requests });
-    }
-
-    // Get requests for this landlord
-    const { data: requests, error } = await supabase
+    // Get requests by email (most reliable - works for pre-signup and post-signup requests)
+    const { data: requests, error } = await adminClient
       .from('service_requests')
       .select('*')
-      .or(`landlord_id.eq.${landlord.id},landlord_email.eq.${user.email}`)
+      .eq('landlord_email', user.email)
       .order('created_at', { ascending: false });
 
     if (error) {
