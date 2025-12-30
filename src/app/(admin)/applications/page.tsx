@@ -21,6 +21,7 @@ import {
   CloseOutlined,
   EyeOutlined,
   SearchOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons';
 import {
   Vendor,
@@ -28,6 +29,13 @@ import {
   SERVICE_TAXONOMY,
   ServiceCategory,
 } from '@/types/database';
+import {
+  objectsToCsv,
+  downloadCsv,
+  formatDateTimeForCsv,
+  formatArrayForCsv,
+  formatBooleanForCsv,
+} from '@/lib/utils/csv-export';
 import type { ColumnsType } from 'antd/es/table';
 import ServiceAreaDisplay from '@/components/ServiceAreaDisplay';
 
@@ -91,6 +99,40 @@ export default function ApplicationsPage() {
   const handleViewApp = (app: Vendor) => {
     setSelectedApp(app);
     setDetailModalOpen(true);
+  };
+
+  const handleExportCsv = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (debouncedSearch.trim()) params.append('search', debouncedSearch.trim());
+
+      const response = await fetch(`/api/admin/applications?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch data');
+
+      const { data } = await response.json();
+
+      const csv = objectsToCsv(data, [
+        { key: 'id', header: 'ID' },
+        { key: 'business_name', header: 'Business Name' },
+        { key: 'contact_name', header: 'Contact Name' },
+        { key: 'email', header: 'Email' },
+        { key: 'phone', header: 'Phone' },
+        { key: 'website', header: 'Website' },
+        { key: 'services', header: 'Services', formatter: (v) => formatArrayForCsv(v as unknown as string[]) },
+        { key: 'service_areas', header: 'Service Areas', formatter: (v) => formatArrayForCsv(v as unknown as string[]) },
+        { key: 'licensed', header: 'Licensed', formatter: (v) => formatBooleanForCsv(v as boolean) },
+        { key: 'insured', header: 'Insured', formatter: (v) => formatBooleanForCsv(v as boolean) },
+        { key: 'rental_experience', header: 'Rental Experience', formatter: (v) => formatBooleanForCsv(v as boolean) },
+        { key: 'qualifications', header: 'Qualifications' },
+        { key: 'created_at', header: 'Applied', formatter: (v) => formatDateTimeForCsv(v as string) },
+      ]);
+
+      downloadCsv(csv, `applications-${new Date().toISOString().split('T')[0]}`);
+      message.success('Export complete');
+    } catch (error) {
+      console.error('Export error:', error);
+      message.error('Failed to export data');
+    }
   };
 
   const handleApprove = async (vendorId: string) => {
@@ -220,9 +262,14 @@ export default function ApplicationsPage() {
           Vendor Applications
           <Badge count={applications.length} style={{ marginLeft: 12 }} showZero />
         </Title>
-        <Button icon={<ReloadOutlined />} onClick={fetchApplications}>
-          Refresh
-        </Button>
+        <Space>
+          <Button icon={<DownloadOutlined />} onClick={handleExportCsv}>
+            Export CSV
+          </Button>
+          <Button icon={<ReloadOutlined />} onClick={fetchApplications}>
+            Refresh
+          </Button>
+        </Space>
       </div>
 
       <Card style={{ marginBottom: 16 }}>

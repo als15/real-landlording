@@ -20,8 +20,15 @@ import {
   EyeOutlined,
   SearchOutlined,
   EnvironmentOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons';
 import { Landlord } from '@/types/database';
+import {
+  objectsToCsv,
+  downloadCsv,
+  formatDateTimeForCsv,
+  formatArrayForCsv,
+} from '@/lib/utils/csv-export';
 import type { ColumnsType } from 'antd/es/table';
 
 const { Title, Text } = Typography;
@@ -116,6 +123,32 @@ export default function LandlordsPage() {
     setDrawerOpen(true);
   };
 
+  const handleExportCsv = async () => {
+    try {
+      const params = new URLSearchParams({ limit: '10000', offset: '0' });
+      if (debouncedSearch.trim()) params.append('search', debouncedSearch.trim());
+
+      const response = await fetch(`/api/admin/landlords?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch data');
+
+      const { data } = await response.json();
+
+      const csv = objectsToCsv(data, [
+        { key: 'id', header: 'ID' },
+        { key: 'name', header: 'Name' },
+        { key: 'email', header: 'Email' },
+        { key: 'phone', header: 'Phone' },
+        { key: 'properties', header: 'Properties', formatter: (v) => formatArrayForCsv(v as unknown as string[]) },
+        { key: 'request_count', header: 'Request Count' },
+        { key: 'created_at', header: 'Created', formatter: (v) => formatDateTimeForCsv(v as string) },
+      ]);
+
+      downloadCsv(csv, `landlords-${new Date().toISOString().split('T')[0]}`);
+    } catch (error) {
+      console.error('Export error:', error);
+    }
+  };
+
   const columns: ColumnsType<Landlord> = [
     {
       title: 'Name',
@@ -183,9 +216,14 @@ export default function LandlordsPage() {
           Landlords
           <Badge count={total} style={{ marginLeft: 12 }} showZero />
         </Title>
-        <Button icon={<ReloadOutlined />} onClick={fetchLandlords}>
-          Refresh
-        </Button>
+        <Space>
+          <Button icon={<DownloadOutlined />} onClick={handleExportCsv}>
+            Export CSV
+          </Button>
+          <Button icon={<ReloadOutlined />} onClick={fetchLandlords}>
+            Refresh
+          </Button>
+        </Space>
       </div>
 
       <Card style={{ marginBottom: 16 }}>

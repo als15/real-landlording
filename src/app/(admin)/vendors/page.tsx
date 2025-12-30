@@ -2,11 +2,18 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { Table, Card, Tag, Space, Button, Select, Input, Typography, Drawer, Descriptions, Divider, App, Badge, Modal, Form, Checkbox, Rate, Slider, InputNumber, Tooltip } from 'antd'
-import { ReloadOutlined, PlusOutlined, EditOutlined, EyeOutlined, FilterOutlined, InfoCircleOutlined } from '@ant-design/icons'
+import { ReloadOutlined, PlusOutlined, EditOutlined, EyeOutlined, FilterOutlined, InfoCircleOutlined, DownloadOutlined } from '@ant-design/icons'
 import { Vendor, VendorStatus, VENDOR_STATUS_LABELS, SERVICE_TYPE_LABELS, getGroupedServiceCategories } from '@/types/database'
 import type { ColumnsType } from 'antd/es/table'
 import ServiceAreaAutocomplete from '@/components/ServiceAreaAutocomplete'
 import ServiceAreaDisplay from '@/components/ServiceAreaDisplay'
+import {
+  objectsToCsv,
+  downloadCsv,
+  formatDateTimeForCsv,
+  formatArrayForCsv,
+  formatBooleanForCsv,
+} from '@/lib/utils/csv-export'
 
 const { Title, Text } = Typography
 const { Search, TextArea } = Input
@@ -96,6 +103,43 @@ export default function VendorsPage() {
   const handleViewVendor = (vendor: Vendor) => {
     setSelectedVendor(vendor)
     setDrawerOpen(true)
+  }
+
+  const handleExportCsv = async () => {
+    try {
+      const params = new URLSearchParams({ limit: '10000', offset: '0' })
+      if (statusFilter) params.append('status', statusFilter)
+      if (debouncedSearch.trim()) params.append('search', debouncedSearch.trim())
+
+      const response = await fetch(`/api/vendors?${params}`)
+      if (!response.ok) throw new Error('Failed to fetch data')
+
+      const { data } = await response.json()
+
+      const csv = objectsToCsv(data, [
+        { key: 'id', header: 'ID' },
+        { key: 'business_name', header: 'Business Name' },
+        { key: 'contact_name', header: 'Contact Name' },
+        { key: 'email', header: 'Email' },
+        { key: 'phone', header: 'Phone' },
+        { key: 'website', header: 'Website' },
+        { key: 'services', header: 'Services', formatter: (v) => formatArrayForCsv(v as unknown as string[]) },
+        { key: 'service_areas', header: 'Service Areas', formatter: (v) => formatArrayForCsv(v as unknown as string[]) },
+        { key: 'licensed', header: 'Licensed', formatter: (v) => formatBooleanForCsv(v as boolean) },
+        { key: 'insured', header: 'Insured', formatter: (v) => formatBooleanForCsv(v as boolean) },
+        { key: 'rental_experience', header: 'Rental Experience', formatter: (v) => formatBooleanForCsv(v as boolean) },
+        { key: 'status', header: 'Status', formatter: (v) => VENDOR_STATUS_LABELS[v as VendorStatus] || String(v) },
+        { key: 'performance_score', header: 'Performance Score' },
+        { key: 'total_reviews', header: 'Total Reviews' },
+        { key: 'created_at', header: 'Created', formatter: (v) => formatDateTimeForCsv(v as string) },
+      ])
+
+      downloadCsv(csv, `vendors-${new Date().toISOString().split('T')[0]}`)
+      message.success('Export complete')
+    } catch (error) {
+      console.error('Export error:', error)
+      message.error('Failed to export data')
+    }
   }
 
   const handleStatusChange = async (vendorId: string, newStatus: VendorStatus) => {
@@ -309,6 +353,9 @@ export default function VendorsPage() {
           <Badge count={total} style={{ marginLeft: 12 }} showZero />
         </Title>
         <Space>
+          <Button icon={<DownloadOutlined />} onClick={handleExportCsv}>
+            Export CSV
+          </Button>
           <Button icon={<ReloadOutlined />} onClick={fetchVendors}>
             Refresh
           </Button>

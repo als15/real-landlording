@@ -21,6 +21,7 @@ import {
   EyeOutlined,
   TeamOutlined,
   FilterOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons';
 import {
   ServiceRequest,
@@ -31,6 +32,11 @@ import {
 } from '@/types/database';
 import type { ColumnsType } from 'antd/es/table';
 import VendorMatchingModal from '@/components/admin/VendorMatchingModal';
+import {
+  objectsToCsv,
+  downloadCsv,
+  formatDateTimeForCsv,
+} from '@/lib/utils/csv-export';
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -150,6 +156,40 @@ export default function RequestsPage() {
     setPage(1); // Reset to first page on filter change
   };
 
+  const handleExportCsv = async () => {
+    try {
+      // Fetch all requests (no pagination)
+      const params = new URLSearchParams({ limit: '10000', offset: '0' });
+      if (statusFilter) params.append('status', statusFilter);
+      if (debouncedSearch.trim()) params.append('search', debouncedSearch.trim());
+
+      const response = await fetch(`/api/requests?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch data');
+
+      const { data } = await response.json();
+
+      const csv = objectsToCsv(data, [
+        { key: 'id', header: 'ID' },
+        { key: 'service_type', header: 'Service Type', formatter: (v) => SERVICE_TYPE_LABELS[v as keyof typeof SERVICE_TYPE_LABELS] || String(v) },
+        { key: 'landlord_name', header: 'Landlord Name' },
+        { key: 'landlord_email', header: 'Landlord Email' },
+        { key: 'landlord_phone', header: 'Landlord Phone' },
+        { key: 'property_location', header: 'Location' },
+        { key: 'property_address', header: 'Address' },
+        { key: 'job_description', header: 'Description' },
+        { key: 'urgency', header: 'Urgency', formatter: (v) => URGENCY_LABELS[v as keyof typeof URGENCY_LABELS]?.split(' - ')[0] || String(v) },
+        { key: 'status', header: 'Status', formatter: (v) => REQUEST_STATUS_LABELS[v as RequestStatus] || String(v) },
+        { key: 'created_at', header: 'Created', formatter: (v) => formatDateTimeForCsv(v as string) },
+      ]);
+
+      downloadCsv(csv, `requests-${new Date().toISOString().split('T')[0]}`);
+      message.success('Export complete');
+    } catch (error) {
+      console.error('Export error:', error);
+      message.error('Failed to export data');
+    }
+  };
+
   const columns: ColumnsType<ServiceRequest> = [
     {
       title: 'Service',
@@ -240,9 +280,14 @@ export default function RequestsPage() {
           Service Requests
           <Badge count={total} style={{ marginLeft: 12 }} showZero />
         </Title>
-        <Button icon={<ReloadOutlined />} onClick={fetchRequests}>
-          Refresh
-        </Button>
+        <Space>
+          <Button icon={<DownloadOutlined />} onClick={handleExportCsv}>
+            Export CSV
+          </Button>
+          <Button icon={<ReloadOutlined />} onClick={fetchRequests}>
+            Refresh
+          </Button>
+        </Space>
       </div>
 
       <Card style={{ marginBottom: 16 }}>
