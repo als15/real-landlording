@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 export async function GET(
   request: NextRequest,
@@ -19,8 +19,11 @@ export async function GET(
       );
     }
 
-    // Get the request with matches and verify ownership
-    const { data: serviceRequest, error } = await supabase
+    // Use admin client to bypass RLS
+    const adminClient = createAdminClient();
+
+    // Get the request with matches
+    const { data: serviceRequest, error } = await adminClient
       .from('service_requests')
       .select(`
         *,
@@ -42,24 +45,15 @@ export async function GET(
       .single();
 
     if (error || !serviceRequest) {
+      console.error('Error fetching request:', error);
       return NextResponse.json(
         { message: 'Request not found' },
         { status: 404 }
       );
     }
 
-    // Verify the request belongs to this user
-    const { data: landlord } = await supabase
-      .from('landlords')
-      .select('id')
-      .eq('auth_user_id', user.id)
-      .single();
-
-    const isOwner =
-      serviceRequest.landlord_email === user.email ||
-      (landlord && serviceRequest.landlord_id === landlord.id);
-
-    if (!isOwner) {
+    // Verify the request belongs to this user (by email)
+    if (serviceRequest.landlord_email !== user.email) {
       return NextResponse.json(
         { message: 'Unauthorized' },
         { status: 403 }

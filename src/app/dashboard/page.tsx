@@ -93,6 +93,10 @@ export default function DashboardPage() {
         const data = await response.json();
         setSelectedRequest(data);
         setDetailModalOpen(true);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Error fetching request details:', response.status, errorData);
+        message.error(errorData.message || 'Failed to load request details');
       }
     } catch (error) {
       console.error('Error fetching request details:', error);

@@ -261,6 +261,12 @@ export function vendorApplicationReceivedEmail(vendor: { contact_name: string; b
       <p>We appreciate your interest and look forward to working with you!</p>
 
       <p style="margin-top: 24px;">
+        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://app.reallandlording.com'}/vendor/login" class="button">
+          Vendor Portal
+        </a>
+      </p>
+
+      <p style="margin-top: 24px;">
         Best,<br>
         <strong>Real Landlording LLC</strong><br>
         <a href="https://reallandlording.com">https://reallandlording.com</a>
