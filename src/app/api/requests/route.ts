@@ -114,8 +114,14 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Send confirmation email (async, don't wait)
-    sendRequestReceivedEmail(data).catch(console.error);
+    // Send confirmation email
+    try {
+      const emailSent = await sendRequestReceivedEmail(data);
+      console.log(`[Request API] Email send result: ${emailSent}`);
+    } catch (emailError) {
+      console.error('[Request API] Email send failed:', emailError);
+      // Don't fail the request if email fails
+    }
 
     return NextResponse.json({
       id: data.id,

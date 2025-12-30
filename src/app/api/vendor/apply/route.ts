@@ -112,11 +112,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Send confirmation email to vendor
-    await sendVendorApplicationReceivedEmail({
-      contact_name: body.contact_name,
-      business_name: body.business_name,
-      email: body.email,
-    });
+    try {
+      const emailSent = await sendVendorApplicationReceivedEmail({
+        contact_name: body.contact_name,
+        business_name: body.business_name,
+        email: body.email,
+      });
+      console.log(`[Vendor Apply API] Email send result: ${emailSent}`);
+    } catch (emailError) {
+      console.error('[Vendor Apply API] Email send failed:', emailError);
+      // Don't fail the application if email fails
+    }
 
     return NextResponse.json({
       message: 'Application submitted successfully',
