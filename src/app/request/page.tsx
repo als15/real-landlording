@@ -153,7 +153,7 @@ export default function ServiceRequestPage() {
               <Paragraph style={{ color: brandColors.textSecondary, marginBottom: 32 }}>We&apos;ve helped hundreds of local landlords find reliable solutions for their rental properties from maintenance to construction to consulting and compliance challenges.</Paragraph>
 
               {/* Trust Signals */}
-              <Space direction="vertical" size="large" style={{ width: '100%' }}>
+              <Space orientation="vertical" size="large" style={{ width: '100%' }}>
                 {trustSignals.map((signal, index) => (
                   <div
                     key={index}
@@ -291,7 +291,7 @@ export default function ServiceRequestPage() {
 
         {/* Actions */}
         <div style={{ padding: '20px 24px', textAlign: 'center' }}>
-          <Space direction="vertical" style={{ width: '100%' }} size="middle">
+          <Space orientation="vertical" style={{ width: '100%' }} size="middle">
             <Link href="/dashboard">
               <Button type="primary" icon={<DashboardOutlined />} size="large" block>
                 Go to My Dashboard

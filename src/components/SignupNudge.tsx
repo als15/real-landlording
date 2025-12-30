@@ -82,7 +82,7 @@ export default function SignupNudge({ open, email, requestId, requestCount = 1, 
       open={open}
       onCancel={onClose}
       footer={null}
-      width={440}
+      width={560}
       centered
       closable={true}
       styles={{ body: { padding: 0 } }}
@@ -131,8 +131,10 @@ export default function SignupNudge({ open, email, requestId, requestCount = 1, 
         <Steps
           size="small"
           current={0}
+          direction="horizontal"
+          labelPlacement="vertical"
           items={nextSteps.map((step) => ({
-            title: <span style={{ fontSize: 12 }}>{step.title}</span>,
+            title: <span style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{step.title}</span>,
             description: <span style={{ fontSize: 11, color: brandColors.textSecondary }}>{step.description}</span>,
           }))}
           style={{ marginBottom: 8 }}
@@ -143,32 +145,28 @@ export default function SignupNudge({ open, email, requestId, requestCount = 1, 
       </div>
 
       {/* Account Upsell */}
-      <div style={{ padding: '24px' }}>
-        <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, textAlign: 'center', color: brandColors.primary }}>
+      <div style={{ padding: '20px 24px' }}>
+        <h3 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 600, textAlign: 'center', color: brandColors.primary }}>
           {isRepeatRequester
-            ? 'Manage all your requests in one dashboard:'
-            : 'Create an account to unlock:'}
+            ? 'Manage all your requests in one dashboard'
+            : 'Create an account to unlock'}
         </h3>
 
-        {/* 4 Benefit Squares */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
+        {/* Benefits Row */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
           {benefits.map((benefit, i) => (
             <div
               key={i}
               style={{
-                background: brandColors.background,
-                border: `1px solid ${brandColors.border}`,
-                borderRadius: 10,
-                padding: '14px',
-                textAlign: 'center',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: 12,
+                color: brandColors.textSecondary,
               }}
             >
-              <div style={{ fontSize: 22, color: brandColors.accent, marginBottom: 6 }}>
-                {benefit.icon}
-              </div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: brandColors.textPrimary }}>
-                {benefit.title}
-              </div>
+              <span style={{ color: brandColors.accent }}>{benefit.icon}</span>
+              <span>{benefit.title}</span>
             </div>
           ))}
         </div>
