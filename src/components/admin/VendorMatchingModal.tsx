@@ -309,7 +309,7 @@ export default function VendorMatchingModal({
           </Descriptions>
 
           <Alert
-            message="Select up to 3 vendors to match with this request"
+            title="Select up to 3 vendors to match with this request"
             type="info"
             showIcon
             style={{ marginBottom: 16 }}

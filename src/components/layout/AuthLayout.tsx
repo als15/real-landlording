@@ -40,32 +40,8 @@ export default function AuthLayout({ children, title, subtitle }: AuthLayoutProp
         >
           {/* Logo */}
           <Link href="https://www.reallandlording.com" style={{ textDecoration: 'none' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div
-                style={{
-                  width: 44,
-                  height: 44,
-                  background: `linear-gradient(135deg, ${brandColors.accent} 0%, #c49a3d 100%)`,
-                  borderRadius: 10,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 700,
-                  fontSize: 18,
-                  color: brandColors.backgroundDark,
-                }}
-              >
-                RL
-              </div>
-              <div>
-                <Text strong style={{ color: brandColors.white, fontSize: 18, display: 'block' }}>
-                  Real Landlording
-                </Text>
-                <Text style={{ color: brandColors.accent, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  ProLink Services
-                </Text>
-              </div>
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/rl-logo.svg" alt="Real Landlording" style={{ height: 50, width: 'auto', filter: 'brightness(0) invert(1)' }} />
           </Link>
 
           {/* Middle Content */}
@@ -150,27 +126,8 @@ export default function AuthLayout({ children, title, subtitle }: AuthLayoutProp
               className="md-hidden"
             >
               <Link href="https://www.reallandlording.com" style={{ textDecoration: 'none' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div
-                    style={{
-                      width: 36,
-                      height: 36,
-                      background: `linear-gradient(135deg, ${brandColors.accent} 0%, #c49a3d 100%)`,
-                      borderRadius: 8,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 700,
-                      fontSize: 16,
-                      color: brandColors.backgroundDark,
-                    }}
-                  >
-                    RL
-                  </div>
-                  <Text strong style={{ color: brandColors.primary, fontSize: 16 }}>
-                    Real Landlording
-                  </Text>
-                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/rl-logo.svg" alt="Real Landlording" style={{ height: 40, width: 'auto' }} />
               </Link>
             </div>
 

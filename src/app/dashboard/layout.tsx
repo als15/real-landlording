@@ -1,9 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Layout, Menu, Typography, theme, Button, Space, Dropdown, Avatar } from 'antd';
+import { Layout, Menu, Button, Space, Dropdown, Avatar } from 'antd';
 import {
-  HomeOutlined,
   FileTextOutlined,
   UserOutlined,
   LogoutOutlined,
@@ -12,13 +11,12 @@ import {
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import Link from 'next/link';
+import { brandColors } from '@/theme/config';
 
 const { Header, Content, Footer } = Layout;
-const { Title } = Typography;
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { token } = theme.useToken();
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -66,26 +64,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <Layout style={{ minHeight: '100vh' }}>
       <Header
         style={{
-          background: '#fff',
+          background: brandColors.white,
           padding: '0 24px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderBottom: `1px solid ${token.colorBorderSecondary}`,
+          borderBottom: `1px solid ${brandColors.border}`,
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
           position: 'sticky',
           top: 0,
           zIndex: 100,
+          height: 70,
         }}
       >
         <Space size="large">
-          <a href="https://www.reallandlording.com" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <HomeOutlined style={{ fontSize: 24, color: token.colorPrimary }} />
-            <Title level={4} style={{ margin: 0 }}>Real Landlording</Title>
+          <a href="https://www.reallandlording.com" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/rl-logo.svg" alt="Real Landlording" style={{ height: 45, width: 'auto' }} />
           </a>
           <Menu
             mode="horizontal"
             selectedKeys={[]}
-            style={{ border: 'none' }}
+            style={{ border: 'none', lineHeight: '68px' }}
             items={[
               {
                 key: 'dashboard',

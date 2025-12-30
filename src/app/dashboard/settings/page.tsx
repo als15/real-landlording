@@ -118,7 +118,7 @@ export default function SettingsPage() {
       <Card style={{ marginTop: 24 }}>
         <Title level={4}>Notification Preferences</Title>
         <Alert
-          message="Coming Soon"
+          title="Coming Soon"
           description="Email notification preferences will be available in a future update."
           type="info"
           showIcon

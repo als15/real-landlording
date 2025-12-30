@@ -78,30 +78,11 @@ export default function VendorDashboardLayout({ children }: { children: React.Re
               textDecoration: 'none',
             }}
           >
-            <div
-              style={{
-                width: 32,
-                height: 32,
-                background: `linear-gradient(135deg, ${brandColors.accent} 0%, #c49a3d 100%)`,
-                borderRadius: 6,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 700,
-                fontSize: 14,
-                color: brandColors.backgroundDark,
-              }}
-            >
-              RL
-            </div>
-            <div style={{ lineHeight: 1.2 }}>
-              <Text strong style={{ color: brandColors.white, fontSize: 14, display: 'block' }}>
-                Real Landlording
-              </Text>
-              <Text style={{ color: brandColors.accent, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Vendor Portal
-              </Text>
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/rl-logo.svg" alt="Real Landlording" style={{ height: 40, width: 'auto', filter: 'brightness(0) invert(1)' }} />
+            <Text style={{ color: brandColors.accent, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', marginLeft: -4 }}>
+              Vendor Portal
+            </Text>
           </a>
           <Menu
             mode="horizontal"

@@ -139,7 +139,8 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    // Use admin client to bypass RLS for admin dashboard
+    const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
 
     const status = searchParams.get('status');

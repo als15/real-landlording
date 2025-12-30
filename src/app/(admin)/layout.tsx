@@ -107,7 +107,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             display: 'flex',
             alignItems: 'center',
             justifyContent: collapsed ? 'center' : 'flex-start',
-            padding: collapsed ? 0 : '0 20px',
+            padding: collapsed ? 0 : '0 16px',
             borderBottom: '1px solid rgba(255,255,255,0.1)',
           }}
         >
@@ -129,31 +129,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               RL
             </div>
           ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  background: `linear-gradient(135deg, ${brandColors.accent} 0%, #c49a3d 100%)`,
-                  borderRadius: 6,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 700,
-                  fontSize: 14,
-                  color: brandColors.backgroundDark,
-                }}
-              >
-                RL
-              </div>
-              <div style={{ lineHeight: 1.2 }}>
-                <Text strong style={{ color: brandColors.white, fontSize: 14, display: 'block' }}>
-                  Real Landlording
-                </Text>
-                <Text style={{ color: brandColors.accent, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Admin Portal
-                </Text>
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/rl-logo.svg" alt="Real Landlording" style={{ height: 32, width: 'auto', filter: 'brightness(0) invert(1)' }} />
+              <Text style={{ color: brandColors.accent, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Admin
+              </Text>
             </div>
           )}
         </div>

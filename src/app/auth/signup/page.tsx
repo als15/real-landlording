@@ -71,7 +71,7 @@ export default function SignupPage() {
               <Alert
                 type="info"
                 showIcon
-                message="Next Steps"
+                title="Next Steps"
                 description={
                   <ol style={{ margin: '8px 0 0 0', paddingLeft: 20 }}>
                     <li>Check your email inbox</li>
