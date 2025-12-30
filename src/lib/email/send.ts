@@ -13,13 +13,22 @@ import { ServiceRequest, Vendor } from '@/types/database';
 
 // Send email with error handling
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+  console.log(`[Email] ========== EMAIL ATTEMPT ==========`);
+  console.log(`[Email] To: ${to}`);
+  console.log(`[Email] Subject: ${subject}`);
+  console.log(`[Email] From: ${FROM_EMAIL}`);
+  console.log(`[Email] isEmailEnabled: ${isEmailEnabled}`);
+  console.log(`[Email] RESEND_API_KEY exists: ${!!process.env.RESEND_API_KEY}`);
+  console.log(`[Email] RESEND_API_KEY prefix: ${process.env.RESEND_API_KEY?.substring(0, 10)}...`);
+
   if (!isEmailEnabled) {
-    console.log(`[Email Skipped - No API Key] To: ${to}, Subject: ${subject}`);
+    console.log(`[Email] SKIPPED - RESEND_API_KEY not configured in environment`);
     return false;
   }
 
   try {
-    const { error } = await resend.emails.send({
+    console.log(`[Email] Calling Resend API...`);
+    const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to,
       subject,
@@ -27,14 +36,16 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
     });
 
     if (error) {
-      console.error('Email send error:', error);
+      console.error(`[Email] ERROR from Resend API:`, JSON.stringify(error, null, 2));
       return false;
     }
 
-    console.log(`[Email Sent] To: ${to}, Subject: ${subject}`);
+    console.log(`[Email] SUCCESS - Email ID: ${data?.id}`);
+    console.log(`[Email] ====================================`);
     return true;
   } catch (error) {
-    console.error('Email error:', error);
+    console.error(`[Email] EXCEPTION caught:`, error instanceof Error ? error.message : String(error));
+    console.error(`[Email] Full error:`, error);
     return false;
   }
 }

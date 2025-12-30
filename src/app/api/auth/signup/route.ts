@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
 
     // Get the site URL for email redirect
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || request.headers.get('origin') || '';
+    const siteUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || request.headers.get('origin') || '';
 
     // Create auth user
     const { data: authData, error: authError } = await supabase.auth.signUp({
