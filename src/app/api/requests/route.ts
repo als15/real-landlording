@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { verifyAdmin } from '@/lib/api/admin';
 import { ServiceRequestInput } from '@/types/database';
 import { sendRequestReceivedEmail } from '@/lib/email/send';
 
@@ -139,8 +140,13 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    // Use admin client to bypass RLS for admin dashboard
-    const supabase = createAdminClient();
+    // Verify admin access
+    const adminResult = await verifyAdmin();
+    if (!adminResult.success) {
+      return adminResult.response;
+    }
+    const { adminClient } = adminResult.context;
+
     const { searchParams } = new URL(request.url);
 
     const status = searchParams.get('status');
@@ -148,7 +154,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    let query = supabase
+    let query = adminClient
       .from('service_requests')
       .select('*', { count: 'exact' })
       .order('created_at', { ascending: false });

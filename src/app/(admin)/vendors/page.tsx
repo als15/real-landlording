@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Table, Card, Tag, Space, Button, Select, Input, Typography, Drawer, Descriptions, Divider, App, Badge, Modal, Form, Checkbox, Rate, Slider, InputNumber, Tooltip } from 'antd'
 import { ReloadOutlined, PlusOutlined, EditOutlined, EyeOutlined, FilterOutlined, InfoCircleOutlined, DownloadOutlined } from '@ant-design/icons'
 import { Vendor, VendorStatus, VENDOR_STATUS_LABELS, SERVICE_TYPE_LABELS, getGroupedServiceCategories } from '@/types/database'
@@ -46,6 +47,9 @@ export default function VendorsPage() {
   const [editForm] = Form.useForm()
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
   const { message } = App.useApp()
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const viewVendorId = searchParams.get('view')
 
   // Debounce search input
   useEffect(() => {
@@ -100,9 +104,39 @@ export default function VendorsPage() {
     fetchVendors()
   }, [fetchVendors])
 
+  // Handle view query parameter to open vendor drawer directly
+  useEffect(() => {
+    if (viewVendorId) {
+      const fetchAndOpenVendor = async () => {
+        try {
+          const response = await fetch(`/api/vendors/${viewVendorId}`)
+          if (response.ok) {
+            const vendor = await response.json()
+            setSelectedVendor(vendor)
+            setDrawerOpen(true)
+          } else {
+            message.error('Vendor not found')
+          }
+        } catch (error) {
+          console.error('Error fetching vendor:', error)
+          message.error('Failed to load vendor')
+        }
+      }
+      fetchAndOpenVendor()
+    }
+  }, [viewVendorId, message])
+
   const handleViewVendor = (vendor: Vendor) => {
     setSelectedVendor(vendor)
     setDrawerOpen(true)
+  }
+
+  const handleCloseDrawer = () => {
+    setDrawerOpen(false)
+    // Clear the view param from URL if present
+    if (viewVendorId) {
+      router.replace('/vendors')
+    }
   }
 
   const handleExportCsv = async () => {
@@ -424,7 +458,7 @@ export default function VendorsPage() {
         title="Vendor Details"
         placement="right"
         size="large"
-        onClose={() => setDrawerOpen(false)}
+        onClose={handleCloseDrawer}
         open={drawerOpen}
         extra={
           selectedVendor && (

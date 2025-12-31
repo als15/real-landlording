@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { verifyAdmin } from '@/lib/api/admin';
 import { calculateVettingScore } from '@/lib/scoring/vetting';
 
 export async function GET(
@@ -7,10 +7,16 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
-    const supabase = await createClient();
+    // Verify admin access
+    const adminResult = await verifyAdmin();
+    if (!adminResult.success) {
+      return adminResult.response;
+    }
+    const { adminClient } = adminResult.context;
 
-    const { data, error } = await supabase
+    const { id } = await params;
+
+    const { data, error } = await adminClient
       .from('vendors')
       .select(`
         *,
@@ -44,9 +50,15 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Verify admin access
+    const adminResult = await verifyAdmin();
+    if (!adminResult.success) {
+      return adminResult.response;
+    }
+    const { adminClient } = adminResult.context;
+
     const { id } = await params;
     const body = await request.json();
-    const supabase = await createClient();
 
     // Check if vetting-related fields are being updated
     const vettingFieldsChanged = 'licensed' in body || 'insured' in body || 'years_in_business' in body;
@@ -56,7 +68,7 @@ export async function PATCH(
     // If vetting fields changed, recalculate the vetting score
     if (vettingFieldsChanged) {
       // Get current vendor data to merge with updates
-      const { data: currentVendor } = await supabase
+      const { data: currentVendor } = await adminClient
         .from('vendors')
         .select('licensed, insured, years_in_business')
         .eq('id', id)
@@ -79,7 +91,7 @@ export async function PATCH(
       }
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await adminClient
       .from('vendors')
       .update(updateData)
       .eq('id', id)
@@ -108,10 +120,16 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
-    const supabase = await createClient();
+    // Verify admin access
+    const adminResult = await verifyAdmin();
+    if (!adminResult.success) {
+      return adminResult.response;
+    }
+    const { adminClient } = adminResult.context;
 
-    const { error } = await supabase
+    const { id } = await params;
+
+    const { error } = await adminClient
       .from('vendors')
       .delete()
       .eq('id', id);

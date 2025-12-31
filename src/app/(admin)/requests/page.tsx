@@ -47,8 +47,22 @@ import {
   formatDateTimeForCsv,
 } from '@/lib/utils/csv-export';
 
-const { Title, Text } = Typography;
+const { Title, Text, Link } = Typography;
 const { Search } = Input;
+
+interface VendorMatch {
+  id: string;
+  vendor_id: string;
+  intro_sent: boolean;
+  intro_sent_at: string | null;
+  vendor: {
+    id: string;
+    business_name: string;
+    contact_name: string;
+    email: string;
+    phone: string;
+  };
+}
 
 const statusColors: Record<RequestStatus, string> = {
   new: 'blue',
@@ -75,7 +89,9 @@ export default function RequestsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null);
+  const [selectedRequestMatches, setSelectedRequestMatches] = useState<VendorMatch[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerLoading, setDrawerLoading] = useState(false);
   const [matchingModalOpen, setMatchingModalOpen] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const { message } = App.useApp();
@@ -131,9 +147,25 @@ export default function RequestsPage() {
     fetchRequests();
   }, [fetchRequests]);
 
-  const handleViewRequest = (request: ServiceRequest) => {
+  const handleViewRequest = async (request: ServiceRequest) => {
     setSelectedRequest(request);
+    setSelectedRequestMatches([]);
     setDrawerOpen(true);
+    setDrawerLoading(true);
+
+    try {
+      // Fetch full request details including matches
+      const response = await fetch(`/api/requests/${request.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSelectedRequest(data);
+        setSelectedRequestMatches(data.matches || []);
+      }
+    } catch (error) {
+      console.error('Error fetching request details:', error);
+    } finally {
+      setDrawerLoading(false);
+    }
   };
 
   const handleMatchVendors = (request: ServiceRequest) => {
@@ -525,6 +557,62 @@ export default function RequestsPage() {
                 </div>
               </>
             )}
+
+            {/* Matched Vendors */}
+            {drawerLoading ? (
+              <>
+                <Divider orientationMargin={0}>Matched Vendors</Divider>
+                <div style={{ textAlign: 'center', padding: 20 }}>Loading...</div>
+              </>
+            ) : selectedRequestMatches.length > 0 ? (
+              <>
+                <Divider orientationMargin={0}>Matched Vendors ({selectedRequestMatches.length})</Divider>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {selectedRequestMatches.map((match) => (
+                    <Card key={match.id} size="small" style={{ background: '#f6ffed', border: '1px solid #b7eb8f' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                          <Link
+                            href={`/vendors?view=${match.vendor_id}`}
+                            target="_blank"
+                            strong
+                          >
+                            {match.vendor?.business_name || 'Unknown Vendor'}
+                          </Link>
+                          <br />
+                          <Text type="secondary">{match.vendor?.contact_name}</Text>
+                          <br />
+                          {match.vendor?.email && (
+                            <Link href={`mailto:${match.vendor.email}`}>{match.vendor.email}</Link>
+                          )}
+                          {match.vendor?.phone && (
+                            <>
+                              <Text type="secondary"> • </Text>
+                              <Link href={`tel:${match.vendor.phone}`}>{match.vendor.phone}</Link>
+                            </>
+                          )}
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          {match.intro_sent && (
+                            <Tag color="green">Intro Sent</Tag>
+                          )}
+                          {match.intro_sent_at && (
+                            <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>
+                              {new Date(match.intro_sent_at).toLocaleDateString()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </>
+            ) : (selectedRequest.status === 'matched' || selectedRequest.status === 'completed') ? (
+              <>
+                <Divider orientationMargin={0}>Matched Vendors</Divider>
+                <Text type="secondary">No match records found</Text>
+              </>
+            ) : null}
 
             {/* Metadata */}
             <Divider orientationMargin={0}>Metadata</Divider>

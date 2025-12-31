@@ -1,15 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { verifyAdmin } from '@/lib/api/admin';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
-    const supabase = await createClient();
+    // Verify admin access
+    const adminResult = await verifyAdmin();
+    if (!adminResult.success) {
+      return adminResult.response;
+    }
+    const { adminClient } = adminResult.context;
 
-    const { data, error } = await supabase
+    const { id } = await params;
+
+    const { data, error } = await adminClient
       .from('service_requests')
       .select(`
         *,
@@ -43,11 +49,17 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Verify admin access
+    const adminResult = await verifyAdmin();
+    if (!adminResult.success) {
+      return adminResult.response;
+    }
+    const { adminClient } = adminResult.context;
+
     const { id } = await params;
     const body = await request.json();
-    const supabase = await createClient();
 
-    const { data, error } = await supabase
+    const { data, error } = await adminClient
       .from('service_requests')
       .update(body)
       .eq('id', id)
@@ -76,10 +88,16 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
-    const supabase = await createClient();
+    // Verify admin access
+    const adminResult = await verifyAdmin();
+    if (!adminResult.success) {
+      return adminResult.response;
+    }
+    const { adminClient } = adminResult.context;
 
-    const { error } = await supabase
+    const { id } = await params;
+
+    const { error } = await adminClient
       .from('service_requests')
       .delete()
       .eq('id', id);

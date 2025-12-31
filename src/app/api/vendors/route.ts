@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { verifyAdmin } from '@/lib/api/admin';
 import { VendorInput } from '@/types/database';
 
 // Helper to extract zip code from location string
@@ -11,8 +12,13 @@ function extractZipCode(location: string): string | null {
 
 export async function GET(request: NextRequest) {
   try {
-    // Use admin client to bypass RLS for vendor listing
-    const supabase = createAdminClient();
+    // Verify admin access
+    const adminResult = await verifyAdmin();
+    if (!adminResult.success) {
+      return adminResult.response;
+    }
+    const { adminClient } = adminResult.context;
+
     const { searchParams } = new URL(request.url);
 
     const status = searchParams.get('status');
@@ -30,7 +36,7 @@ export async function GET(request: NextRequest) {
     const validSortField = allowedSortFields.includes(sortField) ? sortField : 'business_name';
     const ascending = sortOrder === 'asc';
 
-    let query = supabase
+    let query = adminClient
       .from('vendors')
       .select('*', { count: 'exact' })
       .order(validSortField, { ascending });
@@ -86,6 +92,13 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Verify admin access
+    const adminResult = await verifyAdmin();
+    if (!adminResult.success) {
+      return adminResult.response;
+    }
+    const { adminClient } = adminResult.context;
+
     const body: VendorInput = await request.json();
 
     // Validate required fields
@@ -96,9 +109,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
-
-    const { data, error } = await supabase
+    const { data, error } = await adminClient
       .from('vendors')
       .insert({
         contact_name: body.contact_name,
