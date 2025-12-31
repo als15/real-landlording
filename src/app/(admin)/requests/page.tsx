@@ -15,6 +15,9 @@ import {
   Divider,
   App,
   Badge,
+  Image,
+  Row,
+  Col,
 } from 'antd';
 import {
   ReloadOutlined,
@@ -29,6 +32,12 @@ import {
   REQUEST_STATUS_LABELS,
   SERVICE_TYPE_LABELS,
   URGENCY_LABELS,
+  PROPERTY_TYPE_LABELS,
+  UNIT_COUNT_LABELS,
+  OCCUPANCY_STATUS_LABELS,
+  CONTACT_PREFERENCE_LABELS,
+  BUDGET_RANGE_LABELS,
+  FINISH_LEVEL_LABELS,
 } from '@/types/database';
 import type { ColumnsType } from 'antd/es/table';
 import VendorMatchingModal from '@/components/admin/VendorMatchingModal';
@@ -339,14 +348,16 @@ export default function RequestsPage() {
       <Drawer
         title="Request Details"
         placement="right"
-        styles={{ wrapper: { width: 600 } }}
+        styles={{ wrapper: { width: 700 } }}
         onClose={() => setDrawerOpen(false)}
         open={drawerOpen}
       >
         {selectedRequest && (
           <>
-            <Descriptions column={1} bordered size="small">
-              <Descriptions.Item label="Status">
+            {/* Status & Actions */}
+            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Space>
+                <Text strong>Status:</Text>
                 <Select
                   value={selectedRequest.status}
                   style={{ width: 150 }}
@@ -356,46 +367,7 @@ export default function RequestsPage() {
                     label: l,
                   }))}
                 />
-              </Descriptions.Item>
-              <Descriptions.Item label="Service Type">
-                {SERVICE_TYPE_LABELS[selectedRequest.service_type]}
-              </Descriptions.Item>
-              <Descriptions.Item label="Urgency">
-                <Tag color={urgencyColors[selectedRequest.urgency]}>
-                  {URGENCY_LABELS[selectedRequest.urgency]}
-                </Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Property Location">
-                {selectedRequest.property_location}
-              </Descriptions.Item>
-              {selectedRequest.budget_min || selectedRequest.budget_max ? (
-                <Descriptions.Item label="Budget">
-                  ${selectedRequest.budget_min || 0} - ${selectedRequest.budget_max || '∞'}
-                </Descriptions.Item>
-              ) : null}
-            </Descriptions>
-
-            <Divider>Contact Information</Divider>
-
-            <Descriptions column={1} bordered size="small">
-              <Descriptions.Item label="Name">
-                {selectedRequest.landlord_name || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Email">
-                {selectedRequest.landlord_email}
-              </Descriptions.Item>
-              <Descriptions.Item label="Phone">
-                {selectedRequest.landlord_phone || '-'}
-              </Descriptions.Item>
-            </Descriptions>
-
-            <Divider>Job Description</Divider>
-
-            <Text>{selectedRequest.job_description}</Text>
-
-            <Divider />
-
-            <Space>
+              </Space>
               <Button
                 type="primary"
                 icon={<TeamOutlined />}
@@ -407,7 +379,170 @@ export default function RequestsPage() {
               >
                 Match Vendors
               </Button>
-            </Space>
+            </div>
+
+            <Divider orientationMargin={0}>Contact Information</Divider>
+
+            <Descriptions column={2} bordered size="small">
+              <Descriptions.Item label="Name" span={2}>
+                {selectedRequest.first_name && selectedRequest.last_name
+                  ? `${selectedRequest.first_name} ${selectedRequest.last_name}`
+                  : selectedRequest.landlord_name || '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Email">
+                <a href={`mailto:${selectedRequest.landlord_email}`}>{selectedRequest.landlord_email}</a>
+              </Descriptions.Item>
+              <Descriptions.Item label="Phone">
+                {selectedRequest.landlord_phone ? (
+                  <a href={`tel:${selectedRequest.landlord_phone}`}>{selectedRequest.landlord_phone}</a>
+                ) : '-'}
+              </Descriptions.Item>
+              {selectedRequest.contact_preference && (
+                <Descriptions.Item label="Preferred Contact">
+                  {CONTACT_PREFERENCE_LABELS[selectedRequest.contact_preference]}
+                </Descriptions.Item>
+              )}
+              {selectedRequest.is_owner !== null && (
+                <Descriptions.Item label="Owner">
+                  {selectedRequest.is_owner ? 'Yes' : 'No (Property Manager)'}
+                </Descriptions.Item>
+              )}
+              {selectedRequest.business_name && (
+                <Descriptions.Item label="Business Name" span={2}>
+                  {selectedRequest.business_name}
+                </Descriptions.Item>
+              )}
+            </Descriptions>
+
+            <Divider orientationMargin={0}>Property Details</Divider>
+
+            <Descriptions column={2} bordered size="small">
+              {selectedRequest.property_address && (
+                <Descriptions.Item label="Address" span={2}>
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedRequest.property_address + ', Philadelphia, PA')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {selectedRequest.property_address}
+                  </a>
+                </Descriptions.Item>
+              )}
+              <Descriptions.Item label="Zip Code">
+                {selectedRequest.zip_code || selectedRequest.property_location || '-'}
+              </Descriptions.Item>
+              {selectedRequest.property_type && (
+                <Descriptions.Item label="Property Type">
+                  {PROPERTY_TYPE_LABELS[selectedRequest.property_type]}
+                </Descriptions.Item>
+              )}
+              {selectedRequest.unit_count && (
+                <Descriptions.Item label="Unit Count">
+                  {UNIT_COUNT_LABELS[selectedRequest.unit_count]}
+                </Descriptions.Item>
+              )}
+              {selectedRequest.occupancy_status && (
+                <Descriptions.Item label="Occupancy">
+                  {OCCUPANCY_STATUS_LABELS[selectedRequest.occupancy_status]}
+                </Descriptions.Item>
+              )}
+            </Descriptions>
+
+            <Divider orientationMargin={0}>Service Request</Divider>
+
+            <Descriptions column={2} bordered size="small">
+              <Descriptions.Item label="Service Type" span={2}>
+                <Tag color="blue">{SERVICE_TYPE_LABELS[selectedRequest.service_type]}</Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Urgency">
+                <Tag color={urgencyColors[selectedRequest.urgency]}>
+                  {URGENCY_LABELS[selectedRequest.urgency]}
+                </Tag>
+              </Descriptions.Item>
+              {selectedRequest.finish_level && (
+                <Descriptions.Item label="Finish Level">
+                  {FINISH_LEVEL_LABELS[selectedRequest.finish_level]}
+                </Descriptions.Item>
+              )}
+              {selectedRequest.budget_range && (
+                <Descriptions.Item label="Budget Range" span={2}>
+                  {BUDGET_RANGE_LABELS[selectedRequest.budget_range]}
+                </Descriptions.Item>
+              )}
+              {(selectedRequest.budget_min || selectedRequest.budget_max) && !selectedRequest.budget_range && (
+                <Descriptions.Item label="Budget (Legacy)" span={2}>
+                  ${selectedRequest.budget_min || 0} - ${selectedRequest.budget_max || '∞'}
+                </Descriptions.Item>
+              )}
+            </Descriptions>
+
+            {/* Service-specific details */}
+            {selectedRequest.service_details && Object.keys(selectedRequest.service_details).length > 0 && (
+              <>
+                <Divider orientationMargin={0}>Service Details</Divider>
+                <Descriptions column={1} bordered size="small">
+                  {Object.entries(selectedRequest.service_details).map(([key, value]) => (
+                    <Descriptions.Item key={key} label={key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}>
+                      {value}
+                    </Descriptions.Item>
+                  ))}
+                </Descriptions>
+              </>
+            )}
+
+            <Divider orientationMargin={0}>Job Description</Divider>
+
+            <div style={{ background: '#f5f5f5', padding: 16, borderRadius: 8, whiteSpace: 'pre-wrap' }}>
+              {selectedRequest.job_description}
+            </div>
+
+            {/* Images */}
+            {selectedRequest.media_urls && selectedRequest.media_urls.length > 0 && (
+              <>
+                <Divider orientationMargin={0}>Uploaded Images ({selectedRequest.media_urls.length})</Divider>
+                <Image.PreviewGroup>
+                  <Row gutter={[8, 8]}>
+                    {selectedRequest.media_urls.map((url, index) => (
+                      <Col key={index} span={8}>
+                        <Image
+                          src={url}
+                          alt={`Upload ${index + 1}`}
+                          style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 8 }}
+                        />
+                      </Col>
+                    ))}
+                  </Row>
+                </Image.PreviewGroup>
+              </>
+            )}
+
+            {/* Admin Notes */}
+            {selectedRequest.admin_notes && (
+              <>
+                <Divider orientationMargin={0}>Admin Notes</Divider>
+                <div style={{ background: '#fffbe6', padding: 16, borderRadius: 8, border: '1px solid #ffe58f' }}>
+                  {selectedRequest.admin_notes}
+                </div>
+              </>
+            )}
+
+            {/* Metadata */}
+            <Divider orientationMargin={0}>Metadata</Divider>
+            <Descriptions column={2} size="small">
+              <Descriptions.Item label="Created">
+                {new Date(selectedRequest.created_at).toLocaleString()}
+              </Descriptions.Item>
+              {selectedRequest.intro_sent_at && (
+                <Descriptions.Item label="Intro Sent">
+                  {new Date(selectedRequest.intro_sent_at).toLocaleString()}
+                </Descriptions.Item>
+              )}
+              {selectedRequest.followup_sent_at && (
+                <Descriptions.Item label="Follow-up Sent">
+                  {new Date(selectedRequest.followup_sent_at).toLocaleString()}
+                </Descriptions.Item>
+              )}
+            </Descriptions>
           </>
         )}
       </Drawer>
