@@ -409,7 +409,13 @@ export default function VendorApplyPage() {
                     }
                   ]}
                 >
-                  <Checkbox>I agree to respond to referrals within 24 hours and maintain professional service standards. I understand Real Landlording may charge referral fees for successful jobs.</Checkbox>
+                  <Checkbox>
+                    I have read and agree to the{' '}
+                    <Link href="/terms/vendor" target="_blank" style={{ color: brandColors.accent }}>
+                      Vendor Terms of Service & Privacy Policy
+                    </Link>
+                    , including responding to referrals within 24 hours and maintaining professional service standards. I understand Real Landlording may charge referral fees for successful jobs.
+                  </Checkbox>
                 </Form.Item>
 
                 <Form.Item>

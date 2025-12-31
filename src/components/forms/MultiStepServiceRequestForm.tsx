@@ -620,11 +620,9 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
               onChange={(e) => setTermsAccepted(e.target.checked)}
             >
               <Text style={{ fontSize: 13 }}>
-                By clicking &quot;Accept,&quot; I acknowledge that I have read, understood, and agree to be bound by the{' '}
-                <a href="https://www.reallandlording.com/terms/" target="_blank" rel="noopener noreferrer">Terms of Service</a>,{' '}
-                <a href="https://www.reallandlording.com/disclosure/" target="_blank" rel="noopener noreferrer">Disclosure</a>, and{' '}
-                <a href="https://www.reallandlording.com/privacy/" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
-                I further understand that my use of the Prolink Service is at my own risk, and I agree to conduct my own due diligence regarding any third-party vendors or solutions provided.
+                By submitting this request, I acknowledge that I have read, understood, and agree to be bound by the{' '}
+                <a href="/terms/user" target="_blank" rel="noopener noreferrer">Terms of Service & Privacy Policy</a>.
+                I understand that my use of the Real Landlording platform is at my own risk, and I agree to conduct my own due diligence regarding any third-party vendors or solutions provided.
               </Text>
             </Checkbox>
           </div>

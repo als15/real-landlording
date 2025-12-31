@@ -1,0 +1,45 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e5]:
+    - generic [ref=e6]:
+      - img [ref=e7]
+      - generic:
+        - img
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - heading "INDIRECTUS" [level=3] [ref=e10]
+        - paragraph [ref=e11]: (Intentionally Not Directus)
+      - generic [ref=e13]:
+        - generic [ref=e14]:
+          - generic [ref=e15]: Email
+          - textbox "Email" [ref=e16]:
+            - /placeholder: "@brainpop.com (cms login)"
+        - generic [ref=e17]:
+          - generic [ref=e18]: Password
+          - textbox "Password" [ref=e19]:
+            - /placeholder: Enter your password
+            - text: Alaba1616
+        - button "Sign In" [disabled]
+    - generic [ref=e20]:
+      - link "Commit cf2e94a" [ref=e22] [cursor=pointer]:
+        - /url: https://github.com/BrainPOPLLC/indirectus/commit/cf2e94ac10d539da254550c846c4e1e63891442d
+      - generic [ref=e23]: Deployed 12/30/2025, 12:30:00 PM
+  - generic:
+    - img
+  - generic:
+    - generic:
+      - generic:
+        - button "Go to parent" [disabled]
+        - button "Open in editor"
+        - button "Close"
+  - generic [ref=e24]:
+    - button "Toggle Nuxt DevTools" [ref=e25] [cursor=pointer]:
+      - img [ref=e26]
+    - generic "Page load time" [ref=e29]:
+      - generic [ref=e30]: "145"
+      - generic [ref=e31]: ms
+    - button "Toggle Component Inspector" [ref=e33] [cursor=pointer]:
+      - img [ref=e34]
+```
