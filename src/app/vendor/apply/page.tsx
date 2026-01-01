@@ -411,9 +411,9 @@ export default function VendorApplyPage() {
                 >
                   <Checkbox>
                     I have read and agree to the{' '}
-                    <Link href="/terms/vendor" target="_blank" style={{ color: brandColors.accent }}>
+                    <a href="https://reallandlording.com/terms-and-disclosure-for-prolink-service/" target="_blank" rel="noopener noreferrer" style={{ color: brandColors.accent }}>
                       Vendor Terms of Service & Privacy Policy
-                    </Link>
+                    </a>
                     , including responding to referrals within 24 hours and maintaining professional service standards. I understand Real Landlording may charge referral fees for successful jobs.
                   </Checkbox>
                 </Form.Item>

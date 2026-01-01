@@ -99,10 +99,10 @@ export default function PublicFooter() {
             &copy; {currentYear} Real Landlording. All rights reserved.
           </Text>
           <Space split={<Text style={{ color: 'rgba(255,255,255,0.3)' }}>|</Text>}>
-            <a href="https://www.reallandlording.com/privacy/" style={{ color: 'rgba(255,255,255,0.6)' }}>
+            <a href="https://reallandlording.com/terms-and-disclosure-for-prolink-service/" style={{ color: 'rgba(255,255,255,0.6)' }}>
               Privacy Policy
             </a>
-            <a href="https://www.reallandlording.com/terms/" style={{ color: 'rgba(255,255,255,0.6)' }}>
+            <a href="https://reallandlording.com/terms-and-disclosure-for-prolink-service/" style={{ color: 'rgba(255,255,255,0.6)' }}>
               Terms of Service
             </a>
           </Space>

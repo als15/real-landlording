@@ -1,5 +1,24 @@
 Real Landlording Platform
 Product Requirements Document
+
+---
+
+## IMPORTANT: Development Guidelines
+
+**Before writing any code, review these documents:**
+
+1. **`docs/DEVELOPMENT_PATTERNS.md`** - Critical patterns for Supabase auth, RLS, and API routes
+   - Always use `createAdminClient()` for database operations in API routes
+   - Passwords are in Supabase Auth, NOT in database tables
+   - Common issues and their solutions are documented here
+
+**Key Rules:**
+- API routes should use `createAdminClient()` + manual authorization (not RLS)
+- Password operations use `supabase.auth.admin.updateUserById()`, never direct table updates
+- When adding new features, update `docs/DEVELOPMENT_PATTERNS.md` with any new patterns or issues
+
+---
+
 Overview
 What We're Building
 A platform that connects Philadelphia landlords with vetted service vendors. Landlords submit requests, we match them with the right vendors, and facilitate the introduction. The platform replaces our current WordPress-based manual process with a scalable, automated system.

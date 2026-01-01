@@ -621,7 +621,7 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
             >
               <Text style={{ fontSize: 13 }}>
                 By submitting this request, I acknowledge that I have read, understood, and agree to be bound by the{' '}
-                <a href="/terms/user" target="_blank" rel="noopener noreferrer">Terms of Service & Privacy Policy</a>.
+                <a href="https://reallandlording.com/terms-and-disclosure-for-prolink-service/" target="_blank" rel="noopener noreferrer">Terms of Service & Privacy Policy</a>.
                 I understand that my use of the Real Landlording platform is at my own risk, and I agree to conduct my own due diligence regarding any third-party vendors or solutions provided.
               </Text>
             </Checkbox>
