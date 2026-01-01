@@ -568,10 +568,10 @@ export const SERVICE_TYPE_LABELS: Record<ServiceCategory, string> = Object.fromE
 ) as Record<ServiceCategory, string>;
 
 export const URGENCY_LABELS: Record<UrgencyLevel, string> = {
-  low: 'Low - No rush',
-  medium: 'Medium - Within a week',
-  high: 'High - Within 2-3 days',
-  emergency: 'Emergency - ASAP',
+  low: 'Low',
+  medium: 'Standard',
+  high: 'High',
+  emergency: 'Emergency',
 };
 
 export const VENDOR_STATUS_LABELS: Record<VendorStatus, string> = {
@@ -647,8 +647,8 @@ export const SIMPLE_URGENCY_OPTIONS: Array<{
   description: string;
   mapsTo: UrgencyLevel;
 }> = [
-  { value: 'standard', label: 'Standard', description: 'Schedule in 1-2 weeks', mapsTo: 'medium' },
-  { value: 'emergency', label: 'Emergency', description: 'Need help ASAP (24hrs)', mapsTo: 'emergency' },
+  { value: 'standard', label: 'Standard', description: 'Flexible scheduling', mapsTo: 'medium' },
+  { value: 'emergency', label: 'Emergency', description: 'Need help ASAP', mapsTo: 'emergency' },
 ];
 
 // File upload constraints
