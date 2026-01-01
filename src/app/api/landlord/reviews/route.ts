@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { updateVendorScore } from '@/lib/scoring';
 
 export async function POST(request: NextRequest) {
@@ -50,8 +50,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Use admin client to bypass RLS for database operations
+    const adminClient = createAdminClient();
+
     // Get the match and verify ownership through the request
-    const { data: match, error: matchError } = await supabase
+    const { data: match, error: matchError } = await adminClient
       .from('request_vendor_matches')
       .select(`
         *,
@@ -68,7 +71,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify ownership
-    const { data: landlord } = await supabase
+    const { data: landlord } = await adminClient
       .from('landlords')
       .select('id')
       .eq('auth_user_id', user.id)
@@ -87,7 +90,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update the match with the review
-    const { error: updateError } = await supabase
+    const { error: updateError } = await adminClient
       .from('request_vendor_matches')
       .update({
         review_rating: rating,
@@ -110,7 +113,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update vendor's performance score (async, don't block response)
-    updateVendorScore(supabase, match.vendor_id).catch(err => {
+    updateVendorScore(adminClient, match.vendor_id).catch(err => {
       console.error('Error updating vendor score:', err);
     });
 
