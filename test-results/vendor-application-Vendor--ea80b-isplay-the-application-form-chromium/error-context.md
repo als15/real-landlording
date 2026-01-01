@@ -23,9 +23,9 @@
             - text: Alaba1616
         - button "Sign In" [disabled]
     - generic [ref=e20]:
-      - link "Commit cf2e94a" [ref=e22] [cursor=pointer]:
-        - /url: https://github.com/BrainPOPLLC/indirectus/commit/cf2e94ac10d539da254550c846c4e1e63891442d
-      - generic [ref=e23]: Deployed 12/30/2025, 12:30:00 PM
+      - link "Commit 4be1cd6" [ref=e22] [cursor=pointer]:
+        - /url: https://github.com/BrainPOPLLC/indirectus/commit/4be1cd6d18f8103a7434022fb0c33ae815a5bd50
+      - generic [ref=e23]: Deployed 12/31/2025, 2:33:43 PM
   - generic:
     - img
   - generic:
@@ -38,7 +38,7 @@
     - button "Toggle Nuxt DevTools" [ref=e25] [cursor=pointer]:
       - img [ref=e26]
     - generic "Page load time" [ref=e29]:
-      - generic [ref=e30]: "19"
+      - generic [ref=e30]: "28"
       - generic [ref=e31]: ms
     - button "Toggle Component Inspector" [ref=e33] [cursor=pointer]:
       - img [ref=e34]

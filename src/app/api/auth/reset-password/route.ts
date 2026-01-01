@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import bcrypt from 'bcryptjs';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,7 +19,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Find and validate token
     const { data: tokenData, error: tokenError } = await supabase
@@ -51,15 +50,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Hash new password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Update user's password
+    // Get the user's auth_user_id from the appropriate table
     const table = userType === 'vendor' ? 'vendors' : 'landlords';
-    const { error: updateError } = await supabase
+    const { data: userData, error: userError } = await supabase
       .from(table)
-      .update({ password: hashedPassword })
-      .eq('email', tokenData.email);
+      .select('auth_user_id')
+      .eq('email', tokenData.email)
+      .single();
+
+    if (userError || !userData?.auth_user_id) {
+      console.error('Error finding user:', userError);
+      return NextResponse.json(
+        { message: 'User account not found. Please sign up first.' },
+        { status: 400 }
+      );
+    }
+
+    // Update password in Supabase Auth using admin API
+    const { error: updateError } = await supabase.auth.admin.updateUserById(
+      userData.auth_user_id,
+      { password }
+    );
 
     if (updateError) {
       console.error('Error updating password:', updateError);
