@@ -30,6 +30,8 @@ import {
   REQUEST_STATUS_LABELS,
   SERVICE_TYPE_LABELS,
   URGENCY_LABELS,
+  PROPERTY_TYPE_LABELS,
+  FINISH_LEVEL_LABELS,
 } from '@/types/database';
 import type { ColumnsType } from 'antd/es/table';
 import Link from 'next/link';
@@ -261,11 +263,21 @@ export default function DashboardPage() {
                 {SERVICE_TYPE_LABELS[selectedRequest.service_type]}
               </Descriptions.Item>
               <Descriptions.Item label="Location">
-                {selectedRequest.property_location}
+                {selectedRequest.property_address || selectedRequest.zip_code || selectedRequest.property_location}
               </Descriptions.Item>
               <Descriptions.Item label="Urgency">
                 {URGENCY_LABELS[selectedRequest.urgency]}
               </Descriptions.Item>
+              {selectedRequest.property_type && (
+                <Descriptions.Item label="Property Type">
+                  {PROPERTY_TYPE_LABELS[selectedRequest.property_type]}
+                </Descriptions.Item>
+              )}
+              {selectedRequest.finish_level && (
+                <Descriptions.Item label="Finish Level">
+                  {FINISH_LEVEL_LABELS[selectedRequest.finish_level]}
+                </Descriptions.Item>
+              )}
               <Descriptions.Item label="Status" span={2}>
                 <Tag color={statusColors[selectedRequest.status]}>
                   {REQUEST_STATUS_LABELS[selectedRequest.status as keyof typeof REQUEST_STATUS_LABELS]}
@@ -275,6 +287,20 @@ export default function DashboardPage() {
                 {new Date(selectedRequest.created_at).toLocaleString()}
               </Descriptions.Item>
             </Descriptions>
+
+            {/* Service Details (Sub-categories) */}
+            {selectedRequest.service_details && Object.keys(selectedRequest.service_details).length > 0 && (
+              <>
+                <Divider>Service Details</Divider>
+                <Descriptions column={1} bordered size="small">
+                  {Object.entries(selectedRequest.service_details).map(([key, value]) => (
+                    <Descriptions.Item key={key} label={key}>
+                      {value}
+                    </Descriptions.Item>
+                  ))}
+                </Descriptions>
+              </>
+            )}
 
             <Divider>Job Description</Divider>
             <Paragraph>{selectedRequest.job_description}</Paragraph>

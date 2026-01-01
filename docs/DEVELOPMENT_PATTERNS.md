@@ -286,6 +286,58 @@ CREATE POLICY "Landlords can view own requests" ON service_requests
 
 ---
 
+## Service Request Data Model
+
+### Key Fields
+
+The `service_requests` table stores request data with these important fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `service_type` | `ServiceCategory` | Main service category (e.g., `plumber_sewer`, `electrician`) |
+| `service_details` | `JSONB` | Sub-categories and classification options selected in the form |
+| `job_description` | `TEXT` | Free-text description of the work needed |
+| `finish_level` | `VARCHAR` | For GC/renovation jobs: `premium`, `standard`, `budget` |
+| `property_type` | `VARCHAR` | Type of property (row home, single family, etc.) |
+| `urgency` | `UrgencyLevel` | `low`, `medium`, `high`, `emergency` |
+
+### Service Details (Sub-categories)
+
+The `service_details` JSONB field stores dynamic form fields based on the selected service type. Each service category in `SERVICE_TAXONOMY` (defined in `src/types/database.ts`) has `classifications` that define the sub-options.
+
+Example for a plumber request:
+```json
+{
+  "Service Needed": "Leak",
+  "Fixture Involved": "Kitchen Sink"
+}
+```
+
+### Displaying Service Details
+
+When showing request details, always check for and display `service_details`:
+
+```tsx
+{request.service_details && Object.keys(request.service_details).length > 0 && (
+  <>
+    <Divider>Service Details</Divider>
+    <Descriptions column={1} bordered size="small">
+      {Object.entries(request.service_details).map(([key, value]) => (
+        <Descriptions.Item key={key} label={key}>
+          {value}
+        </Descriptions.Item>
+      ))}
+    </Descriptions>
+  </>
+)}
+```
+
+**Files displaying request details:**
+- `src/app/dashboard/page.tsx` - Landlord dashboard (modal)
+- `src/app/(admin)/requests/page.tsx` - Admin requests page (drawer)
+
+---
+
 ## Checklist for New API Routes
 
 Before deploying a new API route, verify:

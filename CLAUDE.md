@@ -12,10 +12,20 @@ Product Requirements Document
    - Passwords are in Supabase Auth, NOT in database tables
    - Common issues and their solutions are documented here
 
+2. **`docs/CONFIGURATION.md`** - External URLs, configuration values, and integrations
+
 **Key Rules:**
 - API routes should use `createAdminClient()` + manual authorization (not RLS)
 - Password operations use `supabase.auth.admin.updateUserById()`, never direct table updates
-- When adding new features, update `docs/DEVELOPMENT_PATTERNS.md` with any new patterns or issues
+
+**MANDATORY: Keep Documentation Updated**
+After ANY code change, you MUST update the relevant documentation:
+- Bug fix or new pattern? → Update `docs/DEVELOPMENT_PATTERNS.md`
+- Changed URLs, config, or external links? → Update `docs/CONFIGURATION.md`
+- New feature or component? → Document in the appropriate docs file
+- Database schema change? → Update both `docs/DEVELOPMENT_PATTERNS.md` (RLS section) and migration files
+
+This is NOT optional. Documentation prevents recurring issues and saves debugging time.
 
 ---
 
