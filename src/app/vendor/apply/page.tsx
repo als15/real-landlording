@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Layout, Card, Form, Input, Select, Button, Checkbox, Typography, Space, Row, Col, Divider, App, Result } from 'antd'
-import { CheckCircleOutlined, DollarOutlined, ThunderboltOutlined, SafetyCertificateOutlined, TeamOutlined } from '@ant-design/icons'
+import { CheckCircleOutlined, DollarOutlined, ThunderboltOutlined, SafetyCertificateOutlined, TeamOutlined, AppstoreOutlined } from '@ant-design/icons'
 import { getGroupedServiceCategories, CONTACT_PREFERENCE_LABELS, SERVICE_TAXONOMY, ServiceCategory, FINISH_LEVEL_LABELS } from '@/types/database'
 import Link from 'next/link'
 import PublicHeader from '@/components/layout/PublicHeader'
@@ -33,8 +33,13 @@ const benefits = [
   },
   {
     icon: <TeamOutlined style={{ fontSize: 24 }} />,
-    title: 'Join 100+ Vendors',
-    description: "Be part of Philadelphia's trusted contractor network"
+    title: 'Join a Network of Trusted Pros',
+    description: 'Supporting Philly investors'
+  },
+  {
+    icon: <AppstoreOutlined style={{ fontSize: 24 }} />,
+    title: 'Diverse Service Requests',
+    description: 'From trades and maintenance to legal, financial, and advisory'
   }
 ]
 
@@ -147,7 +152,7 @@ export default function VendorApplyPage() {
       >
         <div style={{ maxWidth: 700, margin: '0 auto' }}>
           <Title style={{ color: brandColors.white, fontSize: 36, marginBottom: 16 }}>Join Our Vendor Network</Title>
-          <Paragraph style={{ color: 'rgba(255,255,255,0.8)', fontSize: 18 }}>Get connected with Philadelphia landlords who need your services. No marketing spend — we bring qualified leads directly to you.</Paragraph>
+          <Paragraph style={{ color: 'rgba(255,255,255,0.8)', fontSize: 18 }}>Get connected with Philadelphia landlords who need your services — from repairs and compliance to financial and professional support. No marketing spend – we bring qualified leads directly to you.</Paragraph>
         </div>
       </div>
 

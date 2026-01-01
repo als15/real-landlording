@@ -160,7 +160,7 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
       },
       {
         label: 'Fixture Involved',
-        options: ['Kitchen Sink', 'Bathroom Sink', 'Toilet', 'Shower/Tub', 'Water Heater', 'Main Line', 'Outdoor Spigot', 'Basement', 'Other'],
+        options: ['All', 'Kitchen Sink', 'Bathroom Sink', 'Toilet', 'Shower/Tub', 'Water Heater', 'Main Line', 'Outdoor Spigot', 'Basement', 'Other'],
       },
     ],
   },

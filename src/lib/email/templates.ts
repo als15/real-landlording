@@ -68,6 +68,15 @@ export function requestReceivedEmail(request: ServiceRequest): { subject: string
 
       <p>Most matches are made within 24-48 hours.</p>
 
+      <h3>Helpful tips when hiring a service provider:</h3>
+      <ul>
+        <li>Verify insurance & licensing before work begins</li>
+        <li>Get a detailed estimate including scope, cost, and timeline</li>
+        <li>Use clear payment terms – avoid full payment upfront</li>
+        <li>Check references and recent work</li>
+        <li>Always use a written contract</li>
+      </ul>
+
       <p style="margin-top: 24px;">
         <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard" class="button">
           Track Your Request
