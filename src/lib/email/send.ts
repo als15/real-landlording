@@ -1,4 +1,4 @@
-import { resend, FROM_EMAIL, isEmailEnabled } from './resend';
+import { resend, FROM_EMAIL, VENDOR_WELCOME_FROM_EMAIL, isEmailEnabled } from './resend';
 import {
   requestReceivedEmail,
   landlordIntroEmail,
@@ -12,11 +12,11 @@ import {
 import { ServiceRequest, Vendor } from '@/types/database';
 
 // Send email with error handling
-async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+async function sendEmail(to: string, subject: string, html: string, from: string = FROM_EMAIL): Promise<boolean> {
   console.log(`[Email] ========== EMAIL ATTEMPT ==========`);
   console.log(`[Email] To: ${to}`);
   console.log(`[Email] Subject: ${subject}`);
-  console.log(`[Email] From: ${FROM_EMAIL}`);
+  console.log(`[Email] From: ${from}`);
   console.log(`[Email] isEmailEnabled: ${isEmailEnabled}`);
   console.log(`[Email] RESEND_API_KEY exists: ${!!process.env.RESEND_API_KEY}`);
   console.log(`[Email] RESEND_API_KEY prefix: ${process.env.RESEND_API_KEY?.substring(0, 10)}...`);
@@ -29,7 +29,7 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
   try {
     console.log(`[Email] Calling Resend API...`);
     const { data, error } = await resend.emails.send({
-      from: FROM_EMAIL,
+      from,
       to,
       subject,
       html,
@@ -91,7 +91,7 @@ export async function sendVendorWelcomeEmail(
   tempPassword?: string
 ): Promise<boolean> {
   const { subject, html } = vendorWelcomeEmail(vendor, tempPassword);
-  return sendEmail(vendor.email, subject, html);
+  return sendEmail(vendor.email, subject, html, VENDOR_WELCOME_FROM_EMAIL);
 }
 
 // Send rejection email to vendor

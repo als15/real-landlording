@@ -10,12 +10,14 @@ This document tracks all external URLs, configuration values, and integrations u
 
 | Purpose | URL | Used In |
 |---------|-----|---------|
-| Terms of Service & Privacy Policy | `https://reallandlording.com/terms-and-disclosure-for-prolink-service/` | Footer, Request Form, Vendor Application |
+| Landlord Terms of Service & Privacy | `/terms/user` (internal) | Request Form |
+| Vendor Terms of Service & Privacy | `/terms/vendor` (internal) | Vendor Application |
+| Legacy Terms (WordPress) | `https://reallandlording.com/terms-and-disclosure-for-prolink-service/` | Footer |
 
 **Files using terms/privacy links:**
-- `src/components/layout/PublicFooter.tsx` - Footer links
-- `src/components/forms/MultiStepServiceRequestForm.tsx` - Landlord terms checkbox
-- `src/app/vendor/apply/page.tsx` - Vendor terms checkbox
+- `src/components/layout/PublicFooter.tsx` - Footer links (external WordPress URL)
+- `src/components/forms/MultiStepServiceRequestForm.tsx` - Landlord terms checkbox (`/terms/user`)
+- `src/app/vendor/apply/page.tsx` - Vendor terms checkbox (`/terms/vendor`)
 
 ### WordPress Integration
 
@@ -86,4 +88,6 @@ Located in `src/lib/email/resend.ts`
 
 | Date | Change | Files Affected |
 |------|--------|----------------|
+| 2026-01-06 | Vendor apply form terms link now points to internal `/terms/vendor` page | vendor/apply/page.tsx |
+| 2026-01-06 | Request form terms link now points to internal `/terms/user` page with updated content | MultiStepServiceRequestForm.tsx, terms/user/page.tsx |
 | 2026-01-01 | Changed terms/privacy links to `reallandlording.com/terms-and-disclosure-for-prolink-service/` | PublicFooter.tsx, MultiStepServiceRequestForm.tsx, vendor/apply/page.tsx |

@@ -48,9 +48,13 @@ export async function POST(request: NextRequest) {
         );
     }
 
+    // Determine if vendor is licensed based on licensed_areas
+    const licensedAreas = Array.isArray(body.licensed_areas) ? body.licensed_areas : [];
+    const isLicensed = licensedAreas.length > 0;
+
     // Calculate initial vetting score
     const vettingBreakdown = calculateVettingScore({
-      licensed: body.licensed || false,
+      licensed: isLicensed,
       insured: body.insured || false,
       years_in_business: body.years_in_business,
     });
@@ -89,7 +93,8 @@ export async function POST(request: NextRequest) {
         service_specialties: Object.keys(serviceSpecialties).length > 0 ? serviceSpecialties : null,
         service_areas: body.service_areas,
         qualifications: body.qualifications,
-        licensed: body.licensed || false,
+        licensed: isLicensed,
+        licensed_areas: licensedAreas,
         insured: body.insured || false,
         rental_experience: body.rental_experience || false,
         call_preferences: body.call_preferences || null,

@@ -375,10 +375,15 @@ export default function VendorApplyPage() {
                   </Col>
                 </Row>
 
+                <Form.Item
+                  name="licensed_areas"
+                  label="Licensed Locations"
+                  extra="Search for cities, states, or enter zip codes where you hold a license"
+                >
+                  <ServiceAreaAutocomplete placeholder="Search for locations where you are licensed..." />
+                </Form.Item>
+
                 <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
-                  <Form.Item name="licensed" valuePropName="checked" noStyle>
-                    <Checkbox>I am licensed in Pennsylvania</Checkbox>
-                  </Form.Item>
                   <Form.Item name="insured" valuePropName="checked" noStyle>
                     <Checkbox>I carry liability insurance</Checkbox>
                   </Form.Item>
@@ -416,7 +421,7 @@ export default function VendorApplyPage() {
                 >
                   <Checkbox>
                     I have read and agree to the{' '}
-                    <a href="https://reallandlording.com/terms-and-disclosure-for-prolink-service/" target="_blank" rel="noopener noreferrer" style={{ color: brandColors.accent }}>
+                    <a href="/terms/vendor" target="_blank" rel="noopener noreferrer" style={{ color: brandColors.accent }}>
                       Vendor Terms of Service & Privacy Policy
                     </a>
                     , including responding to referrals within 24 hours and maintaining professional service standards. I understand Real Landlording may charge referral fees for successful jobs.

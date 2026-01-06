@@ -15,6 +15,9 @@ export const isEmailEnabled = !!process.env.RESEND_API_KEY;
 // Default from email - update this to your verified domain
 export const FROM_EMAIL = process.env.FROM_EMAIL || 'Real Landlording <onboarding@resend.dev>';
 
+// Vendor welcome emails come from Sheryl
+export const VENDOR_WELCOME_FROM_EMAIL = 'Sheryl @ Real Landlording <sheryl@reallandlording.com>';
+
 // Email types
 export type EmailType =
   | 'vendor_intro'

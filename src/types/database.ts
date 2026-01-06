@@ -694,6 +694,7 @@ export interface Vendor {
   services_other: string | null;
   qualifications: string | null;
   licensed: boolean;
+  licensed_areas: string[];
   insured: boolean;
   rental_experience: boolean;
   service_areas: string[];
@@ -846,6 +847,7 @@ export interface VendorInput {
   services_other?: string;
   qualifications?: string;
   licensed: boolean;
+  licensed_areas?: string[];
   insured: boolean;
   rental_experience: boolean;
   service_areas: string[];

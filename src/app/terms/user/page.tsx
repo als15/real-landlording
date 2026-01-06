@@ -15,38 +15,49 @@ export default function UserTermsPage() {
 
       <Content style={{ padding: '48px 24px' }}>
         <div style={{ maxWidth: 800, margin: '0 auto', background: brandColors.white, padding: 48, borderRadius: 16, boxShadow: '0 4px 24px rgba(0, 0, 0, 0.06)' }}>
-          <Title level={1} style={{ color: brandColors.primary }}>Real Landlording</Title>
+          <Title level={1} style={{ color: brandColors.primary }}>Real Landlording LLC</Title>
           <Title level={2}>Terms of Service & Privacy Policy</Title>
           <Text type="secondary" style={{ fontSize: 16 }}>For Landlords / Users (Matching & Referrals)</Text>
+          <br />
+          <Text type="secondary" style={{ fontSize: 14 }}>Last Updated: January 2026</Text>
 
           <Divider />
 
           <Title level={3}>1. Scope of Services</Title>
           <Paragraph>
-            Real Landlording LLC (&quot;RL,&quot; &quot;we,&quot; &quot;us&quot;) operates a platform that facilitates introductions between landlords/property owners (&quot;Users&quot;) and independent third-party service providers (&quot;Vendors&quot;).
+            Real Landlording LLC (&quot;RL,&quot; &quot;we,&quot; &quot;us&quot;) operates a referral and information platform that facilitates introductions between landlords and property owners (&quot;Users&quot;) and independent third-party service providers (&quot;Vendors&quot;).
           </Paragraph>
           <Paragraph>
-            RL <Text strong>does not perform, supervise, manage, guarantee, or warrant</Text> any services provided by Vendors. RL&apos;s role is strictly limited to <Text strong>referrals and informational support</Text>.
+            RL does <Text strong>not</Text> perform, supervise, manage, control, guarantee, or warrant any services provided by Vendors. RL&apos;s role is strictly limited to facilitating referrals and providing general informational support.
           </Paragraph>
 
           <Divider />
 
           <Title level={3}>2. No Professional Advice</Title>
           <Paragraph>
-            Any information, tools, calculators, content, recommendations, or guidance provided through the platform are for <Text strong>general informational purposes only</Text>.
+            Any information, tools, calculators, content, recommendations, diagnostics, or guidance provided through the platform are for <Text strong>general informational purposes only</Text>.
           </Paragraph>
           <Paragraph>
-            RL does <Text strong>not</Text> provide legal, financial, construction, tax, engineering, or professional advice. Users are solely responsible for evaluating Vendors and making independent decisions.
+            RL does <Text strong>not</Text> provide legal, financial, tax, construction, engineering, insurance, or professional advice. Users are solely responsible for:
+          </Paragraph>
+          <ul>
+            <li>evaluating Vendors</li>
+            <li>conducting due diligence</li>
+            <li>determining suitability of services</li>
+            <li>making independent decisions</li>
+          </ul>
+          <Paragraph>
+            Users are encouraged to consult qualified professionals before making decisions.
           </Paragraph>
 
           <Divider />
 
           <Title level={3}>3. Vendor Relationship Disclaimer</Title>
           <Paragraph>
-            Vendors are <Text strong>independent third parties</Text>, not employees, agents, partners, or representatives of RL.
+            Vendors are independent third parties and are <Text strong>not</Text> employees, agents, partners, joint venturers, or representatives of RL.
           </Paragraph>
           <Paragraph>
-            RL does not control:
+            RL does not control or assume responsibility for:
           </Paragraph>
           <ul>
             <li>pricing</li>
@@ -54,13 +65,12 @@ export default function UserTermsPage() {
             <li>workmanship</li>
             <li>timelines</li>
             <li>warranties</li>
-            <li>compliance</li>
-            <li>licensing</li>
-            <li>insurance</li>
+            <li>permits, licensing, or insurance</li>
+            <li>compliance with laws</li>
             <li>dispute resolution</li>
           </ul>
           <Paragraph>
-            All contracts, payments, and obligations are <Text strong>directly between User and Vendor</Text>.
+            All agreements, payments, and obligations are strictly between User and Vendor.
           </Paragraph>
 
           <Divider />
@@ -70,9 +80,9 @@ export default function UserTermsPage() {
             By using the platform, Users acknowledge and accept that:
           </Paragraph>
           <ul>
-            <li>construction, repairs, inspections, and property services involve inherent risks</li>
+            <li>property-related services involve inherent risks</li>
             <li>RL cannot eliminate or control those risks</li>
-            <li>Users assume full responsibility for engaging Vendors</li>
+            <li>Users assume full responsibility for selecting, engaging, and contracting with Vendors</li>
           </ul>
 
           <Divider />
@@ -83,17 +93,15 @@ export default function UserTermsPage() {
           </Paragraph>
           <ul>
             <li>RL shall not be liable for any damages arising from Vendor services, including property damage, personal injury, delays, losses, regulatory issues, or financial harm.</li>
-            <li>RL&apos;s total liability, if any, shall not exceed <Text strong>the amount paid by the User to RL (if any)</Text> related to the referral giving rise to the claim.</li>
+            <li>RL&apos;s total liability, if any, shall not exceed the amount paid by the User to RL (if any) related to the referral giving rise to the claim.</li>
+            <li>RL shall not be liable for indirect, incidental, consequential, punitive, or special damages.</li>
           </ul>
-          <Paragraph>
-            RL shall not be liable for indirect, incidental, consequential, punitive, or special damages.
-          </Paragraph>
 
           <Divider />
 
           <Title level={3}>6. Indemnification</Title>
           <Paragraph>
-            User agrees to indemnify and hold harmless RL from any claims, damages, losses, or disputes arising out of:
+            User agrees to indemnify, defend, and hold harmless RL from any claims, damages, losses, costs, or disputes arising out of:
           </Paragraph>
           <ul>
             <li>Vendor services</li>
@@ -106,34 +114,44 @@ export default function UserTermsPage() {
 
           <Title level={3}>7. No Guarantee of Outcomes</Title>
           <Paragraph>
-            RL makes <Text strong>no guarantees</Text> regarding:
+            RL makes no guarantees regarding:
           </Paragraph>
           <ul>
             <li>Vendor availability</li>
             <li>quality of work</li>
-            <li>pricing</li>
+            <li>pricing or cost savings</li>
             <li>timelines</li>
-            <li>savings</li>
-            <li>regulatory outcomes</li>
-            <li>inspection or compliance results</li>
+            <li>regulatory, inspection, or compliance outcomes</li>
+            <li>financial or investment results</li>
           </ul>
 
           <Divider />
 
-          <Title level={3}>8. Data & Privacy</Title>
+          <Title level={3}>8. Data, Privacy & Communications</Title>
+
+          <Title level={4}>Data Use</Title>
           <Paragraph>
             RL collects and uses personal data solely to:
           </Paragraph>
           <ul>
             <li>facilitate referrals</li>
-            <li>communicate platform activity</li>
+            <li>communicate platform-related activity</li>
             <li>improve services</li>
           </ul>
           <Paragraph>
-            RL does not sell personal data. Information may be shared with Vendors <Text strong>only as necessary</Text> to facilitate a referral.
+            RL does <Text strong>not</Text> sell personal data. Information may be shared with Vendors <Text strong>only as necessary</Text> to facilitate a referral. Users are responsible for the accuracy of information submitted.
           </Paragraph>
+
+          <Title level={4}>Communications & Newsletter</Title>
           <Paragraph>
-            Users are responsible for the accuracy of information submitted.
+            By submitting a request or using the platform, Users acknowledge and agree that RL may send:
+          </Paragraph>
+          <ul>
+            <li>service-related communications (e.g. referral confirmations, follow-ups)</li>
+            <li>informational and educational communications, including newsletters</li>
+          </ul>
+          <Paragraph>
+            Users may unsubscribe from marketing or newsletter emails at any time using the &quot;unsubscribe&quot; link. Unsubscribing from marketing emails does <Text strong>not</Text> affect access to core platform functionality or service-related communications.
           </Paragraph>
 
           <Divider />
@@ -147,14 +165,14 @@ export default function UserTermsPage() {
 
           <Title level={3}>10. Governing Law</Title>
           <Paragraph>
-            These Terms are governed by the laws of the Commonwealth of Pennsylvania.
+            These Terms are governed by the laws of the Commonwealth of Pennsylvania, without regard to conflict-of-law principles.
           </Paragraph>
 
           <Divider />
 
           <Title level={3}>11. Acceptance</Title>
           <Paragraph>
-            By submitting a request or using the platform, User agrees to these Terms & Privacy Policy.
+            By submitting a request, checking the acceptance box, or using the platform, User acknowledges that they have read, understood, and agree to these Terms of Service & Privacy Policy.
           </Paragraph>
         </div>
       </Content>
