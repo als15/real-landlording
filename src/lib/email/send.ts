@@ -113,5 +113,5 @@ export async function sendVendorApplicationReceivedEmail(vendor: {
   email: string;
 }): Promise<boolean> {
   const { subject, html } = vendorApplicationReceivedEmail(vendor);
-  return sendEmail(vendor.email, subject, html);
+  return sendEmail(vendor.email, subject, html, VENDOR_WELCOME_FROM_EMAIL);
 }

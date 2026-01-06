@@ -398,7 +398,8 @@ export default function VendorApplyPage() {
 
                 <Form.Item name="call_preferences" label="Best way to reach you">
                   <Select
-                    placeholder="Select preference"
+                    mode="multiple"
+                    placeholder="Select preferences"
                     size="large"
                     allowClear
                     options={Object.entries(CONTACT_PREFERENCE_LABELS).map(([value, label]) => ({

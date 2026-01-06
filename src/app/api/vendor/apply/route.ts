@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
         licensed_areas: licensedAreas,
         insured: body.insured || false,
         rental_experience: body.rental_experience || false,
-        call_preferences: body.call_preferences || null,
+        call_preferences: Array.isArray(body.call_preferences) ? body.call_preferences.join(', ') : body.call_preferences || null,
         years_in_business: body.years_in_business,
         vetting_score: vettingBreakdown.totalScore,
         vetting_admin_adjustment: 0,
