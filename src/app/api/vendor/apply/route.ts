@@ -104,6 +104,22 @@ export async function POST(request: NextRequest) {
         terms_accepted: true,
         terms_accepted_at: new Date().toISOString(),
         status: 'pending_review',
+        // Social media
+        social_instagram: body.social_instagram || null,
+        social_facebook: body.social_facebook || null,
+        social_linkedin: body.social_linkedin || null,
+        // Business details
+        employee_count: body.employee_count || null,
+        emergency_services: body.emergency_services || false,
+        job_size_range: Array.isArray(body.job_size_range) ? body.job_size_range : null,
+        // Service hours
+        service_hours_weekdays: body.service_hours_weekdays || false,
+        service_hours_weekends: body.service_hours_weekends || false,
+        service_hours_24_7: body.service_hours_24_7 || false,
+        // Payment and referral
+        accepted_payments: Array.isArray(body.accepted_payments) ? body.accepted_payments : null,
+        referral_source: body.referral_source || null,
+        referral_source_name: body.referral_source_name || null,
       })
       .select()
       .single();

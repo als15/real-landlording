@@ -640,6 +640,42 @@ export const FINISH_LEVEL_LABELS: Record<FinishLevel, string> = {
   budget: 'Budget - Extend Lifespan',
 };
 
+// Vendor business details options
+export const EMPLOYEE_COUNT_OPTIONS = [
+  { value: 'just_me', label: 'Just me' },
+  { value: '2_5', label: '2-5 employees' },
+  { value: '6_10', label: '6-10 employees' },
+  { value: '11_25', label: '11-25 employees' },
+  { value: '26_50', label: '26-50 employees' },
+  { value: '50_plus', label: '50+ employees' },
+];
+
+export const JOB_SIZE_RANGE_OPTIONS = [
+  { value: 'under_500', label: 'Under $500' },
+  { value: '500_1k', label: '$500 - $1,000' },
+  { value: '1k_5k', label: '$1,000 - $5,000' },
+  { value: '5k_10k', label: '$5,000 - $10,000' },
+  { value: '10k_25k', label: '$10,000 - $25,000' },
+  { value: '25k_plus', label: '$25,000+' },
+];
+
+export const ACCEPTED_PAYMENTS_OPTIONS = [
+  { value: 'cash', label: 'Cash' },
+  { value: 'check', label: 'Check' },
+  { value: 'credit_debit', label: 'Credit/Debit Card' },
+  { value: 'venmo_zelle', label: 'Venmo/Zelle/CashApp' },
+  { value: 'financing', label: 'Financing Available' },
+];
+
+export const REFERRAL_SOURCE_OPTIONS = [
+  { value: 'google', label: 'Google Search' },
+  { value: 'social_media', label: 'Social Media' },
+  { value: 'friend_colleague', label: 'Friend or Colleague' },
+  { value: 'event', label: 'Event or Meetup' },
+  { value: 'podcast', label: 'Podcast' },
+  { value: 'other', label: 'Other' },
+];
+
 // Simplified urgency options for form UI
 export const SIMPLE_URGENCY_OPTIONS: Array<{
   value: SimpleUrgency;
@@ -716,6 +752,22 @@ export interface Vendor {
   suspension_reason: string | null;
   // Service specialties (equipment types per service category)
   service_specialties: Record<ServiceCategory, string[]> | null;
+  // Social media
+  social_instagram: string | null;
+  social_facebook: string | null;
+  social_linkedin: string | null;
+  // Business details
+  employee_count: string | null;
+  emergency_services: boolean;
+  job_size_range: string[] | null;
+  // Service hours
+  service_hours_weekdays: boolean;
+  service_hours_weekends: boolean;
+  service_hours_24_7: boolean;
+  // Payment and referral
+  accepted_payments: string[] | null;
+  referral_source: string | null;
+  referral_source_name: string | null;
 }
 
 export interface ServiceRequest {
@@ -856,6 +908,22 @@ export interface VendorInput {
   years_in_business?: number;
   // Service specialties (equipment types per service category)
   service_specialties?: Record<string, string[]>;
+  // Social media
+  social_instagram?: string;
+  social_facebook?: string;
+  social_linkedin?: string;
+  // Business details
+  employee_count?: string;
+  emergency_services?: boolean;
+  job_size_range?: string[];
+  // Service hours
+  service_hours_weekdays?: boolean;
+  service_hours_weekends?: boolean;
+  service_hours_24_7?: boolean;
+  // Payment and referral
+  accepted_payments?: string[];
+  referral_source?: string;
+  referral_source_name?: string;
 }
 
 export interface LandlordSignupInput {

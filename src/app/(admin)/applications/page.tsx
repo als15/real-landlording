@@ -22,12 +22,20 @@ import {
   EyeOutlined,
   SearchOutlined,
   DownloadOutlined,
+  InstagramOutlined,
+  FacebookOutlined,
+  LinkedinOutlined,
+  SaveOutlined,
 } from '@ant-design/icons';
 import {
   Vendor,
   SERVICE_TYPE_LABELS,
   SERVICE_TAXONOMY,
   ServiceCategory,
+  EMPLOYEE_COUNT_OPTIONS,
+  JOB_SIZE_RANGE_OPTIONS,
+  ACCEPTED_PAYMENTS_OPTIONS,
+  REFERRAL_SOURCE_OPTIONS,
 } from '@/types/database';
 import {
   objectsToCsv,
@@ -54,6 +62,13 @@ export default function ApplicationsPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const { message } = App.useApp();
+
+  // Editable fields state
+  const [editSocialInstagram, setEditSocialInstagram] = useState('');
+  const [editSocialFacebook, setEditSocialFacebook] = useState('');
+  const [editSocialLinkedin, setEditSocialLinkedin] = useState('');
+  const [editAdminNotes, setEditAdminNotes] = useState('');
+  const [saving, setSaving] = useState(false);
 
   // Debounce search input
   useEffect(() => {
@@ -98,7 +113,49 @@ export default function ApplicationsPage() {
 
   const handleViewApp = (app: Vendor) => {
     setSelectedApp(app);
+    // Populate editable fields with current values
+    setEditSocialInstagram(app.social_instagram || '');
+    setEditSocialFacebook(app.social_facebook || '');
+    setEditSocialLinkedin(app.social_linkedin || '');
+    setEditAdminNotes(app.admin_notes || '');
     setDetailModalOpen(true);
+  };
+
+  const handleSaveChanges = async () => {
+    if (!selectedApp) return;
+
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/admin/applications/${selectedApp.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          social_instagram: editSocialInstagram || null,
+          social_facebook: editSocialFacebook || null,
+          social_linkedin: editSocialLinkedin || null,
+          admin_notes: editAdminNotes || null,
+        }),
+      });
+
+      if (response.ok) {
+        message.success('Changes saved');
+        // Update the local state
+        setSelectedApp({
+          ...selectedApp,
+          social_instagram: editSocialInstagram || null,
+          social_facebook: editSocialFacebook || null,
+          social_linkedin: editSocialLinkedin || null,
+          admin_notes: editAdminNotes || null,
+        });
+        fetchApplications();
+      } else {
+        throw new Error('Failed to save changes');
+      }
+    } catch {
+      message.error('Failed to save changes');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleExportCsv = async () => {
@@ -425,6 +482,117 @@ export default function ApplicationsPage() {
                 <Text>{selectedApp.call_preferences}</Text>
               </>
             )}
+
+            {/* Licensed Areas */}
+            {selectedApp.licensed_areas && selectedApp.licensed_areas.length > 0 && (
+              <>
+                <Divider>Licensed Areas</Divider>
+                <ServiceAreaDisplay zipCodes={selectedApp.licensed_areas} />
+              </>
+            )}
+
+            {/* Business Details */}
+            <Divider>Business Details</Divider>
+            <Descriptions column={2} size="small" bordered>
+              <Descriptions.Item label="Years in Business">
+                {selectedApp.years_in_business !== null ? `${selectedApp.years_in_business}+ years` : '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Employees">
+                {selectedApp.employee_count
+                  ? EMPLOYEE_COUNT_OPTIONS.find(o => o.value === selectedApp.employee_count)?.label || selectedApp.employee_count
+                  : '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Emergency Services">
+                {selectedApp.emergency_services ? <Tag color="red">Yes - 24/7</Tag> : <Tag>No</Tag>}
+              </Descriptions.Item>
+              <Descriptions.Item label="Job Size Range">
+                {selectedApp.job_size_range && selectedApp.job_size_range.length > 0 ? (
+                  <Space wrap size={4}>
+                    {selectedApp.job_size_range.map(size => {
+                      const label = JOB_SIZE_RANGE_OPTIONS.find(o => o.value === size)?.label || size;
+                      return <Tag key={size}>{label}</Tag>;
+                    })}
+                  </Space>
+                ) : '-'}
+              </Descriptions.Item>
+            </Descriptions>
+
+            {/* Service Hours */}
+            <Divider>Service Hours</Divider>
+            <Space wrap>
+              {selectedApp.service_hours_weekdays && <Tag color="blue">Weekdays</Tag>}
+              {selectedApp.service_hours_weekends && <Tag color="blue">Weekends</Tag>}
+              {selectedApp.service_hours_24_7 && <Tag color="red">24/7 Available</Tag>}
+              {!selectedApp.service_hours_weekdays && !selectedApp.service_hours_weekends && !selectedApp.service_hours_24_7 && (
+                <Text type="secondary">Not specified</Text>
+              )}
+            </Space>
+
+            {/* Accepted Payments */}
+            {selectedApp.accepted_payments && selectedApp.accepted_payments.length > 0 && (
+              <>
+                <Divider>Accepted Payments</Divider>
+                <Space wrap>
+                  {selectedApp.accepted_payments.map(payment => {
+                    const label = ACCEPTED_PAYMENTS_OPTIONS.find(o => o.value === payment)?.label || payment;
+                    return <Tag key={payment} color="green">{label}</Tag>;
+                  })}
+                </Space>
+              </>
+            )}
+
+            {/* Referral Source */}
+            {selectedApp.referral_source && (
+              <>
+                <Divider>How They Found Us</Divider>
+                <Text>
+                  {REFERRAL_SOURCE_OPTIONS.find(o => o.value === selectedApp.referral_source)?.label || selectedApp.referral_source}
+                  {selectedApp.referral_source_name && (
+                    <Text type="secondary"> — Referred by: {selectedApp.referral_source_name}</Text>
+                  )}
+                </Text>
+              </>
+            )}
+
+            <Divider>Social Media</Divider>
+            <Space direction="vertical" style={{ width: '100%' }} size="small">
+              <Input
+                prefix={<InstagramOutlined />}
+                placeholder="Instagram handle or URL"
+                value={editSocialInstagram}
+                onChange={(e) => setEditSocialInstagram(e.target.value)}
+              />
+              <Input
+                prefix={<FacebookOutlined />}
+                placeholder="Facebook page URL"
+                value={editSocialFacebook}
+                onChange={(e) => setEditSocialFacebook(e.target.value)}
+              />
+              <Input
+                prefix={<LinkedinOutlined />}
+                placeholder="LinkedIn profile URL"
+                value={editSocialLinkedin}
+                onChange={(e) => setEditSocialLinkedin(e.target.value)}
+              />
+            </Space>
+
+            <Divider>Admin Notes</Divider>
+            <TextArea
+              rows={4}
+              placeholder="Add internal notes about this application..."
+              value={editAdminNotes}
+              onChange={(e) => setEditAdminNotes(e.target.value)}
+            />
+
+            <div style={{ marginTop: 16, textAlign: 'right' }}>
+              <Button
+                icon={<SaveOutlined />}
+                onClick={handleSaveChanges}
+                loading={saving}
+              >
+                Save Changes
+              </Button>
+            </div>
           </>
         )}
       </Modal>

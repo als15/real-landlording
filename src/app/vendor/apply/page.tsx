@@ -1,9 +1,19 @@
 'use client'
 
 import { useState } from 'react'
-import { Layout, Card, Form, Input, Select, Button, Checkbox, Typography, Space, Row, Col, Divider, App, Result } from 'antd'
-import { CheckCircleOutlined, DollarOutlined, ThunderboltOutlined, SafetyCertificateOutlined, TeamOutlined, AppstoreOutlined } from '@ant-design/icons'
-import { getGroupedServiceCategories, CONTACT_PREFERENCE_LABELS, SERVICE_TAXONOMY, ServiceCategory, FINISH_LEVEL_LABELS } from '@/types/database'
+import { Layout, Card, Form, Input, Select, Button, Checkbox, Typography, Space, Row, Col, Divider, App, Result, Steps, Switch } from 'antd'
+import { CheckCircleOutlined, DollarOutlined, ThunderboltOutlined, SafetyCertificateOutlined, TeamOutlined, AppstoreOutlined, ArrowLeftOutlined, ArrowRightOutlined, InstagramOutlined, FacebookOutlined, LinkedinOutlined } from '@ant-design/icons'
+import {
+  getGroupedServiceCategories,
+  CONTACT_PREFERENCE_LABELS,
+  SERVICE_TAXONOMY,
+  ServiceCategory,
+  FINISH_LEVEL_LABELS,
+  EMPLOYEE_COUNT_OPTIONS,
+  JOB_SIZE_RANGE_OPTIONS,
+  ACCEPTED_PAYMENTS_OPTIONS,
+  REFERRAL_SOURCE_OPTIONS
+} from '@/types/database'
 import Link from 'next/link'
 import PublicHeader from '@/components/layout/PublicHeader'
 import PublicFooter from '@/components/layout/PublicFooter'
@@ -43,11 +53,21 @@ const benefits = [
   }
 ]
 
+const STEPS = [
+  { title: 'Contact', description: 'Your info' },
+  { title: 'Services', description: 'What you offer' },
+  { title: 'Experience', description: 'Qualifications' },
+  { title: 'Business', description: 'Details' },
+  { title: 'Submit', description: 'Review & apply' },
+]
+
 export default function VendorApplyPage() {
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [currentStep, setCurrentStep] = useState(0)
   const [selectedServices, setSelectedServices] = useState<ServiceCategory[]>([])
+  const [referralSource, setReferralSource] = useState<string | null>(null)
   const { message } = App.useApp()
 
   const groupedCategories = getGroupedServiceCategories()
@@ -84,7 +104,89 @@ export default function VendorApplyPage() {
     label
   }))
 
+  // Fields required per step
+  const fieldsPerStep: Record<number, string[]> = {
+    0: ['contact_name', 'business_name', 'email', 'phone'],
+    1: ['services', 'service_areas'],
+    2: ['years_in_business', 'qualifications'],
+    3: [], // Business details step - all optional
+    4: ['terms_accepted'],
+  }
+
+  // Validate current step fields before proceeding
+  const validateStep = async (step: number): Promise<boolean> => {
+    const fields = fieldsPerStep[step] || []
+    if (fields.length === 0) return true
+
+    try {
+      await form.validateFields(fields)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  // Find which step has validation errors
+  const findStepWithErrors = async (): Promise<number | null> => {
+    for (let step = 0; step < STEPS.length; step++) {
+      const fields = fieldsPerStep[step] || []
+      if (fields.length === 0) continue
+
+      try {
+        await form.validateFields(fields)
+      } catch {
+        return step
+      }
+    }
+    return null
+  }
+
+  const handleNext = async () => {
+    const isValid = await validateStep(currentStep)
+    if (isValid) {
+      setCurrentStep(prev => Math.min(prev + 1, STEPS.length - 1))
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
+  const handleBack = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 0))
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  // Handle clicking on a step to navigate
+  const handleStepClick = async (step: number) => {
+    // Allow going back to any previous step
+    if (step < currentStep) {
+      setCurrentStep(step)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+
+    // For forward navigation, validate all steps in between
+    for (let s = currentStep; s < step; s++) {
+      const isValid = await validateStep(s)
+      if (!isValid) {
+        setCurrentStep(s)
+        message.warning(`Please complete Step ${s + 1} before proceeding`)
+        return
+      }
+    }
+
+    setCurrentStep(step)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   const onFinish = async (values: Record<string, unknown>) => {
+    // First validate all steps
+    const stepWithErrors = await findStepWithErrors()
+    if (stepWithErrors !== null) {
+      setCurrentStep(stepWithErrors)
+      message.error(`Please complete all required fields in Step ${stepWithErrors + 1}`)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+
     setLoading(true)
     try {
       const response = await fetch('/api/vendor/apply', {
@@ -138,6 +240,368 @@ export default function VendorApplyPage() {
     )
   }
 
+  // Step content renderers
+  const renderStep1ContactInfo = () => (
+    <>
+      <Title level={4}>Contact Information</Title>
+      <Paragraph type="secondary">How can landlords and our team reach you?</Paragraph>
+
+      <Row gutter={16}>
+        <Col xs={24} md={12}>
+          <Form.Item name="contact_name" label="Your Name" rules={[{ required: true, message: 'Required' }]}>
+            <Input placeholder="John Smith" size="large" />
+          </Form.Item>
+        </Col>
+        <Col xs={24} md={12}>
+          <Form.Item name="business_name" label="Business Name" rules={[{ required: true, message: 'Required' }]}>
+            <Input placeholder="Smith Plumbing LLC" size="large" />
+          </Form.Item>
+        </Col>
+      </Row>
+
+      <Row gutter={16}>
+        <Col xs={24} md={12}>
+          <Form.Item
+            name="email"
+            label="Email"
+            rules={[
+              { required: true, message: 'Required' },
+              { type: 'email', message: 'Invalid email' }
+            ]}
+          >
+            <Input placeholder="john@smithplumbing.com" size="large" />
+          </Form.Item>
+        </Col>
+        <Col xs={24} md={12}>
+          <Form.Item name="phone" label="Phone" rules={[{ required: true, message: 'Required' }]}>
+            <Input placeholder="(215) 555-0123" size="large" />
+          </Form.Item>
+        </Col>
+      </Row>
+
+      <Form.Item name="website" label="Website (optional)">
+        <Input placeholder="https://smithplumbing.com" size="large" />
+      </Form.Item>
+
+      <Form.Item name="location" label="Business Address (optional)" extra="Start typing to search for your business address">
+        <AddressAutocomplete
+          placeholder="Start typing your business address..."
+          onAddressSelect={(data: AddressData) => {
+            form.setFieldValue('location', data.formatted_address)
+          }}
+        />
+      </Form.Item>
+    </>
+  )
+
+  const renderStep2Services = () => (
+    <>
+      <Title level={4}>Services & Coverage</Title>
+      <Paragraph type="secondary">What services do you offer and where do you work?</Paragraph>
+
+      <Form.Item name="services" label="Services You Offer" rules={[{ required: true, message: 'Select at least one service' }]}>
+        <Select
+          mode="multiple"
+          placeholder="Select all services you provide"
+          size="large"
+          showSearch
+          onChange={(values: ServiceCategory[]) => setSelectedServices(values)}
+          filterOption={(input, option) => {
+            const children = option?.children
+            if (children && typeof children === 'string') {
+              return (children as string).toLowerCase().includes(input.toLowerCase())
+            }
+            return false
+          }}
+        >
+          {groupedCategories.map(group => (
+            <Select.OptGroup key={group.group} label={group.label}>
+              {group.categories.map(cat => (
+                <Select.Option key={cat.value} value={cat.value}>
+                  {cat.label}
+                </Select.Option>
+              ))}
+            </Select.OptGroup>
+          ))}
+        </Select>
+      </Form.Item>
+
+      {/* Dynamic Equipment Types based on selected services */}
+      {serviceClassifications.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <Text strong style={{ display: 'block', marginBottom: 12 }}>
+            What work do you cover in this service category?
+          </Text>
+          <Text type="secondary" style={{ display: 'block', marginBottom: 16, fontSize: 13 }}>
+            Select all that apply for each service category
+          </Text>
+          {serviceClassifications.map(({ service, label, classifications }) => (
+            <div
+              key={service}
+              style={{
+                marginBottom: 16,
+                padding: 16,
+                background: `${brandColors.accent}08`,
+                borderRadius: 8,
+                border: `1px solid ${brandColors.border}`
+              }}
+            >
+              <Text strong style={{ display: 'block', marginBottom: 12, color: brandColors.secondary }}>
+                {label}
+              </Text>
+              {classifications.map(classification => {
+                const vendorLabel = classification.label === 'Service Needed' ? 'Services Provided' : classification.label
+                return (
+                  <Form.Item key={`${service}_${classification.label}`} name={['service_specialties', service, classification.label]} label={vendorLabel} style={{ marginBottom: 12 }}>
+                    <Select mode="multiple" placeholder={`Select ${vendorLabel.toLowerCase()}`} size="middle" options={classification.options.map(opt => ({ value: opt, label: opt }))} />
+                  </Form.Item>
+                )
+              })}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {hasFinishLevelService && (
+        <Form.Item
+          name="finish_levels"
+          label="Finish Levels You Work With"
+          extra="Select all finish levels you can provide for services like painting, flooring, or general contracting"
+        >
+          <Select
+            mode="multiple"
+            placeholder="Select finish levels"
+            size="large"
+            options={finishLevelOptions}
+          />
+        </Form.Item>
+      )}
+
+      <Form.Item name="service_areas" label="Service Areas" rules={[{ required: true, message: 'Add at least one service area' }]} extra="Search for neighborhoods, cities, or enter zip codes">
+        <ServiceAreaAutocomplete placeholder="Search for neighborhoods, cities, or enter zip codes..." />
+      </Form.Item>
+
+      <Form.Item
+        name="licensed_areas"
+        label="Licensed Locations (optional)"
+        extra="Search for cities, states, or enter zip codes where you hold a license"
+      >
+        <ServiceAreaAutocomplete placeholder="Search for locations where you are licensed..." />
+      </Form.Item>
+    </>
+  )
+
+  const renderStep3Qualifications = () => (
+    <>
+      <Title level={4}>Experience & Qualifications</Title>
+      <Paragraph type="secondary">Tell us about your experience and how you work</Paragraph>
+
+      <Row gutter={16}>
+        <Col xs={24} md={12}>
+          <Form.Item name="years_in_business" label="Years in Business" rules={[{ required: true, message: 'Required' }]}>
+            <Select
+              placeholder="Select years of experience"
+              size="large"
+              options={[
+                { value: 0, label: 'Less than 1 year' },
+                { value: 1, label: '1 year' },
+                { value: 2, label: '2 years' },
+                { value: 3, label: '3 years' },
+                { value: 4, label: '4 years' },
+                { value: 5, label: '5+ years' },
+                { value: 10, label: '10+ years' },
+                { value: 20, label: '20+ years' }
+              ]}
+            />
+          </Form.Item>
+        </Col>
+      </Row>
+
+      <Form.Item name="qualifications" label="Tell us about your experience" rules={[{ required: true, message: 'Please describe your experience' }]}>
+        <TextArea rows={4} placeholder="Years in business, certifications, specialties, notable projects..." size="large" />
+      </Form.Item>
+
+      <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
+        <Form.Item name="insured" valuePropName="checked" noStyle>
+          <Checkbox>I carry liability insurance</Checkbox>
+        </Form.Item>
+        <Form.Item name="rental_experience" valuePropName="checked" noStyle>
+          <Checkbox>I have experience working with rental properties</Checkbox>
+        </Form.Item>
+      </Space>
+
+      <Form.Item name="call_preferences" label="Best way to reach you">
+        <Select
+          mode="multiple"
+          placeholder="Select preferences"
+          size="large"
+          allowClear
+          options={Object.entries(CONTACT_PREFERENCE_LABELS).map(([value, label]) => ({
+            value,
+            label
+          }))}
+        />
+      </Form.Item>
+    </>
+  )
+
+  const renderStep4BusinessDetails = () => (
+    <>
+      <Title level={4}>Business Details</Title>
+      <Paragraph type="secondary">Help us understand your business better</Paragraph>
+
+      <Row gutter={16}>
+        <Col xs={24} md={12}>
+          <Form.Item name="employee_count" label="Number of Employees">
+            <Select
+              placeholder="Select team size"
+              size="large"
+              allowClear
+              options={EMPLOYEE_COUNT_OPTIONS}
+            />
+          </Form.Item>
+        </Col>
+        <Col xs={24} md={12}>
+          <Form.Item name="job_size_range" label="Typical Job Size Range">
+            <Select
+              mode="multiple"
+              placeholder="Select job sizes you handle"
+              size="large"
+              options={JOB_SIZE_RANGE_OPTIONS}
+            />
+          </Form.Item>
+        </Col>
+      </Row>
+
+      <Text strong style={{ display: 'block', marginBottom: 12, marginTop: 8 }}>Service Hours</Text>
+
+      <Row gutter={[24, 16]}>
+        <Col xs={24} sm={8}>
+          <Form.Item name="service_hours_weekdays" valuePropName="checked" noStyle>
+            <Checkbox>Weekdays</Checkbox>
+          </Form.Item>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Form.Item name="service_hours_weekends" valuePropName="checked" noStyle>
+            <Checkbox>Weekends</Checkbox>
+          </Form.Item>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Form.Item name="emergency_services" valuePropName="checked" noStyle>
+            <Checkbox>24/7 Emergency Services</Checkbox>
+          </Form.Item>
+        </Col>
+      </Row>
+
+      <Text strong style={{ display: 'block', marginBottom: 12, marginTop: 24 }}>Payment & Social</Text>
+
+      <Form.Item name="accepted_payments" label="Accepted Forms of Payment">
+        <Select
+          mode="multiple"
+          placeholder="Select payment methods you accept"
+          size="large"
+          options={ACCEPTED_PAYMENTS_OPTIONS}
+        />
+      </Form.Item>
+
+      <Text strong style={{ display: 'block', marginBottom: 12 }}>Social Media (optional)</Text>
+      <Row gutter={16}>
+        <Col xs={24} md={8}>
+          <Form.Item name="social_instagram">
+            <Input prefix={<InstagramOutlined />} placeholder="Instagram handle" size="large" />
+          </Form.Item>
+        </Col>
+        <Col xs={24} md={8}>
+          <Form.Item name="social_facebook">
+            <Input prefix={<FacebookOutlined />} placeholder="Facebook page" size="large" />
+          </Form.Item>
+        </Col>
+        <Col xs={24} md={8}>
+          <Form.Item name="social_linkedin">
+            <Input prefix={<LinkedinOutlined />} placeholder="LinkedIn profile" size="large" />
+          </Form.Item>
+        </Col>
+      </Row>
+
+      <Text strong style={{ display: 'block', marginBottom: 12, marginTop: 24 }}>How Did You Find Us?</Text>
+
+      <Form.Item name="referral_source" label="How did you hear about us?">
+        <Select
+          placeholder="Select an option"
+          size="large"
+          allowClear
+          options={REFERRAL_SOURCE_OPTIONS}
+          onChange={(value) => setReferralSource(value)}
+        />
+      </Form.Item>
+
+      {referralSource === 'friend_colleague' && (
+        <Form.Item name="referral_source_name" label="Who referred you?">
+          <Input placeholder="Name of friend or colleague" size="large" />
+        </Form.Item>
+      )}
+    </>
+  )
+
+  const renderStep5Review = () => (
+    <>
+      <Title level={4}>Review & Submit</Title>
+      <Paragraph type="secondary">Please review your information and accept the terms to submit your application.</Paragraph>
+
+      <div style={{
+        background: `${brandColors.accent}08`,
+        padding: 24,
+        borderRadius: 12,
+        marginBottom: 24,
+        border: `1px solid ${brandColors.border}`
+      }}>
+        <Text type="secondary" style={{ fontSize: 13 }}>
+          By submitting this application, you confirm that all information provided is accurate.
+          Our team will review your application and contact you within 2-3 business days.
+        </Text>
+      </div>
+
+      <Form.Item
+        name="terms_accepted"
+        valuePropName="checked"
+        rules={[
+          {
+            validator: (_, value) => (value ? Promise.resolve() : Promise.reject('You must accept the terms'))
+          }
+        ]}
+      >
+        <Checkbox>
+          I have read and agree to the{' '}
+          <a href="/terms/vendor" target="_blank" rel="noopener noreferrer" style={{ color: brandColors.accent }}>
+            Vendor Terms of Service & Privacy Policy
+          </a>
+          , including responding to referrals within 24 hours and maintaining professional service standards. I understand Real Landlording may charge referral fees for successful jobs.
+        </Checkbox>
+      </Form.Item>
+    </>
+  )
+
+  // Render all steps but only show current one (keeps form values preserved)
+  const renderAllSteps = () => (
+    <>
+      <div style={{ display: currentStep === 0 ? 'block' : 'none' }}>
+        {renderStep1ContactInfo()}
+      </div>
+      <div style={{ display: currentStep === 1 ? 'block' : 'none' }}>
+        {renderStep2Services()}
+      </div>
+      <div style={{ display: currentStep === 2 ? 'block' : 'none' }}>
+        {renderStep3Qualifications()}
+      </div>
+      <div style={{ display: currentStep === 3 ? 'block' : 'none' }}>
+        {renderStep4BusinessDetails()}
+      </div>
+      <div style={{ display: currentStep === 4 ? 'block' : 'none' }}>
+        {renderStep5Review()}
+      </div>
+    </>
+  )
+
   return (
     <Layout style={{ minHeight: '100vh', background: brandColors.background }}>
       <PublicHeader showRequestButton={true} showSignIn={false} />
@@ -158,8 +622,8 @@ export default function VendorApplyPage() {
 
       <Content style={{ padding: '48px 24px' }}>
         <Row gutter={[48, 32]} justify="center" style={{ maxWidth: 1200, margin: '0 auto' }}>
-          {/* Benefits Column */}
-          <Col xs={24} lg={8}>
+          {/* Benefits Column - Hide on mobile when past first step */}
+          <Col xs={currentStep === 0 ? 24 : 0} lg={8}>
             <div style={{ position: 'sticky', top: 100 }}>
               <Title level={4} style={{ marginBottom: 24, color: brandColors.primary }}>
                 Why Join Real Landlording?
@@ -215,225 +679,61 @@ export default function VendorApplyPage() {
                 border: `1px solid ${brandColors.border}`
               }}
             >
-              <Form form={form} layout="vertical" onFinish={onFinish}>
-                <Title level={4}>Contact Information</Title>
+              {/* Progress Steps - Clickable */}
+              <Steps
+                current={currentStep}
+                onChange={handleStepClick}
+                items={STEPS.map((step, index) => ({
+                  title: step.title,
+                  style: { cursor: 'pointer' },
+                  status: index < currentStep ? 'finish' : index === currentStep ? 'process' : 'wait'
+                }))}
+                size="small"
+                style={{ marginBottom: 32 }}
+                responsive={false}
+              />
 
-                <Row gutter={16}>
-                  <Col xs={24} md={12}>
-                    <Form.Item name="contact_name" label="Your Name" rules={[{ required: true, message: 'Required' }]}>
-                      <Input placeholder="John Smith" size="large" />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} md={12}>
-                    <Form.Item name="business_name" label="Business Name" rules={[{ required: true, message: 'Required' }]}>
-                      <Input placeholder="Smith Plumbing LLC" size="large" />
-                    </Form.Item>
-                  </Col>
-                </Row>
+              <Form form={form} layout="vertical" onFinish={onFinish} preserve={true}>
+                {renderAllSteps()}
 
-                <Row gutter={16}>
-                  <Col xs={24} md={12}>
-                    <Form.Item
-                      name="email"
-                      label="Email"
-                      rules={[
-                        { required: true, message: 'Required' },
-                        { type: 'email', message: 'Invalid email' }
-                      ]}
-                    >
-                      <Input placeholder="john@smithplumbing.com" size="large" />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} md={12}>
-                    <Form.Item name="phone" label="Phone" rules={[{ required: true, message: 'Required' }]}>
-                      <Input placeholder="(215) 555-0123" size="large" />
-                    </Form.Item>
-                  </Col>
-                </Row>
-
-                <Form.Item name="website" label="Website (optional)">
-                  <Input placeholder="https://smithplumbing.com" size="large" />
-                </Form.Item>
-
+                {/* Navigation Buttons */}
                 <Divider />
-                <Title level={4}>Services & Coverage</Title>
-
-                <Form.Item name="services" label="Services You Offer" rules={[{ required: true, message: 'Select at least one service' }]}>
-                  <Select
-                    mode="multiple"
-                    placeholder="Select all services you provide"
-                    size="large"
-                    showSearch
-                    onChange={(values: ServiceCategory[]) => setSelectedServices(values)}
-                    filterOption={(input, option) => {
-                      const children = option?.children
-                      if (children && typeof children === 'string') {
-                        return (children as string).toLowerCase().includes(input.toLowerCase())
-                      }
-                      return false
-                    }}
-                  >
-                    {groupedCategories.map(group => (
-                      <Select.OptGroup key={group.group} label={group.label}>
-                        {group.categories.map(cat => (
-                          <Select.Option key={cat.value} value={cat.value}>
-                            {cat.label}
-                          </Select.Option>
-                        ))}
-                      </Select.OptGroup>
-                    ))}
-                  </Select>
-                </Form.Item>
-
-                {/* Dynamic Equipment Types based on selected services */}
-                {serviceClassifications.length > 0 && (
-                  <div style={{ marginBottom: 24 }}>
-                    <Text strong style={{ display: 'block', marginBottom: 12 }}>
-                      What work do you cover in this service category?
-                    </Text>
-                    <Text type="secondary" style={{ display: 'block', marginBottom: 16, fontSize: 13 }}>
-                      Select all that apply for each service category
-                    </Text>
-                    {serviceClassifications.map(({ service, label, classifications }) => (
-                      <div
-                        key={service}
-                        style={{
-                          marginBottom: 16,
-                          padding: 16,
-                          background: `${brandColors.accent}08`,
-                          borderRadius: 8,
-                          border: `1px solid ${brandColors.border}`
-                        }}
-                      >
-                        <Text strong style={{ display: 'block', marginBottom: 12, color: brandColors.secondary }}>
-                          {label}
-                        </Text>
-                        {classifications.map(classification => {
-                          // Adjust labels for vendor context
-                          const vendorLabel = classification.label === 'Service Needed' ? 'Services Provided' : classification.label
-                          return (
-                            <Form.Item key={`${service}_${classification.label}`} name={['service_specialties', service, classification.label]} label={vendorLabel} style={{ marginBottom: 12 }}>
-                              <Select mode="multiple" placeholder={`Select ${vendorLabel.toLowerCase()}`} size="middle" options={classification.options.map(opt => ({ value: opt, label: opt }))} />
-                            </Form.Item>
-                          )
-                        })}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {hasFinishLevelService && (
-                  <Form.Item
-                    name="finish_levels"
-                    label="Finish Levels You Work With"
-                    extra="Select all finish levels you can provide for services like painting, flooring, or general contracting"
-                  >
-                    <Select
-                      mode="multiple"
-                      placeholder="Select finish levels"
-                      size="large"
-                      options={finishLevelOptions}
-                    />
-                  </Form.Item>
-                )}
-
-                <Form.Item name="service_areas" label="Service Areas" rules={[{ required: true, message: 'Add at least one service area' }]} extra="Search for neighborhoods, cities, or enter zip codes">
-                  <ServiceAreaAutocomplete placeholder="Search for neighborhoods, cities, or enter zip codes..." />
-                </Form.Item>
-
-                <Form.Item name="location" label="Business Address" extra="Start typing to search for your business address">
-                  <AddressAutocomplete
-                    placeholder="Start typing your business address..."
-                    onAddressSelect={(data: AddressData) => {
-                      // Also set lat/lng if we want to store them
-                      form.setFieldValue('location', data.formatted_address)
-                    }}
-                  />
-                </Form.Item>
-
-                <Divider />
-                <Title level={4}>Qualifications</Title>
-
                 <Row gutter={16}>
-                  <Col xs={24} md={12}>
-                    <Form.Item name="years_in_business" label="Years in Business" rules={[{ required: true, message: 'Required' }]}>
-                      <Select
-                        placeholder="Select years of experience"
+                  <Col xs={12}>
+                    {currentStep > 0 && (
+                      <Button
                         size="large"
-                        options={[
-                          { value: 0, label: 'Less than 1 year' },
-                          { value: 1, label: '1 year' },
-                          { value: 2, label: '2 years' },
-                          { value: 3, label: '3 years' },
-                          { value: 4, label: '4 years' },
-                          { value: 5, label: '5+ years' },
-                          { value: 10, label: '10+ years' },
-                          { value: 20, label: '20+ years' }
-                        ]}
-                      />
-                    </Form.Item>
+                        block
+                        onClick={handleBack}
+                        icon={<ArrowLeftOutlined />}
+                      >
+                        Back
+                      </Button>
+                    )}
+                  </Col>
+                  <Col xs={currentStep > 0 ? 12 : 24}>
+                    {currentStep < STEPS.length - 1 ? (
+                      <Button
+                        type="primary"
+                        size="large"
+                        block
+                        onClick={handleNext}
+                      >
+                        Next <ArrowRightOutlined />
+                      </Button>
+                    ) : (
+                      <Button
+                        type="primary"
+                        htmlType="submit"
+                        loading={loading}
+                        size="large"
+                        block
+                      >
+                        Submit Application
+                      </Button>
+                    )}
                   </Col>
                 </Row>
-
-                <Form.Item
-                  name="licensed_areas"
-                  label="Licensed Locations"
-                  extra="Search for cities, states, or enter zip codes where you hold a license"
-                >
-                  <ServiceAreaAutocomplete placeholder="Search for locations where you are licensed..." />
-                </Form.Item>
-
-                <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
-                  <Form.Item name="insured" valuePropName="checked" noStyle>
-                    <Checkbox>I carry liability insurance</Checkbox>
-                  </Form.Item>
-                  <Form.Item name="rental_experience" valuePropName="checked" noStyle>
-                    <Checkbox>I have experience working with rental properties</Checkbox>
-                  </Form.Item>
-                </Space>
-
-                <Form.Item name="qualifications" label="Tell us about your experience" rules={[{ required: true, message: 'Please describe your experience' }]}>
-                  <TextArea rows={4} placeholder="Years in business, certifications, specialties, notable projects..." size="large" />
-                </Form.Item>
-
-                <Form.Item name="call_preferences" label="Best way to reach you">
-                  <Select
-                    mode="multiple"
-                    placeholder="Select preferences"
-                    size="large"
-                    allowClear
-                    options={Object.entries(CONTACT_PREFERENCE_LABELS).map(([value, label]) => ({
-                      value,
-                      label
-                    }))}
-                  />
-                </Form.Item>
-
-                <Divider />
-
-                <Form.Item
-                  name="terms_accepted"
-                  valuePropName="checked"
-                  rules={[
-                    {
-                      validator: (_, value) => (value ? Promise.resolve() : Promise.reject('You must accept the terms'))
-                    }
-                  ]}
-                >
-                  <Checkbox>
-                    I have read and agree to the{' '}
-                    <a href="/terms/vendor" target="_blank" rel="noopener noreferrer" style={{ color: brandColors.accent }}>
-                      Vendor Terms of Service & Privacy Policy
-                    </a>
-                    , including responding to referrals within 24 hours and maintaining professional service standards. I understand Real Landlording may charge referral fees for successful jobs.
-                  </Checkbox>
-                </Form.Item>
-
-                <Form.Item>
-                  <Button type="primary" htmlType="submit" loading={loading} size="large" block>
-                    Submit Application
-                  </Button>
-                </Form.Item>
               </Form>
             </Card>
 

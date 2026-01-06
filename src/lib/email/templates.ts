@@ -263,17 +263,11 @@ export function vendorApplicationReceivedEmail(vendor: { contact_name: string; b
       <h3>What happens next?</h3>
       <ul>
         <li><strong>✔ Application Review:</strong> We'll assess your submission and may reach out for additional details.</li>
-        <li><strong>✔ Approval & Onboarding:</strong> Once approved, we'll provide guidance on how to maximize your success.</li>
+        <li><strong>✔ Approval & Onboarding:</strong> Once approved, you'll receive login credentials and guidance on how to maximize your success.</li>
         <li><strong>✔ Start Getting Matched:</strong> After onboarding, landlords will be able to find and connect with your business through our platform.</li>
       </ul>
 
       <p>We appreciate your interest and look forward to working with you!</p>
-
-      <p style="margin-top: 24px;">
-        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://app.reallandlording.com'}/vendor/login" class="button">
-          Vendor Portal
-        </a>
-      </p>
 
       <p style="margin-top: 24px;">
         Best,<br>
