@@ -3,6 +3,7 @@
 export type VendorStatus = 'active' | 'inactive' | 'pending_review' | 'rejected';
 export type RequestStatus = 'new' | 'matching' | 'matched' | 'completed' | 'cancelled';
 export type UrgencyLevel = 'low' | 'medium' | 'high' | 'emergency';
+export type SlaStatus = 'not_sent' | 'sent' | 'delivered' | 'viewed' | 'signed' | 'declined' | 'voided';
 
 // Match status for tracking vendor-request lifecycle
 export type MatchStatus =
@@ -640,6 +641,16 @@ export const FINISH_LEVEL_LABELS: Record<FinishLevel, string> = {
   budget: 'Budget - Extend Lifespan',
 };
 
+export const SLA_STATUS_LABELS: Record<SlaStatus, string> = {
+  not_sent: 'Not Sent',
+  sent: 'Sent',
+  delivered: 'Delivered',
+  viewed: 'Viewed',
+  signed: 'Signed',
+  declined: 'Declined',
+  voided: 'Voided',
+};
+
 // Vendor business details options
 export const EMPLOYEE_COUNT_OPTIONS = [
   { value: 'just_me', label: 'Just me' },
@@ -768,6 +779,12 @@ export interface Vendor {
   accepted_payments: string[] | null;
   referral_source: string | null;
   referral_source_name: string | null;
+  // SLA (Service Level Agreement) tracking
+  sla_envelope_id: string | null;
+  sla_status: SlaStatus;
+  sla_sent_at: string | null;
+  sla_signed_at: string | null;
+  sla_document_url: string | null;
 }
 
 export interface ServiceRequest {

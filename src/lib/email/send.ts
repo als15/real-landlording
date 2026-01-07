@@ -1,4 +1,4 @@
-import { resend, FROM_EMAIL, VENDOR_WELCOME_FROM_EMAIL, isEmailEnabled } from './resend';
+import { resend, FROM_EMAIL, VENDOR_WELCOME_FROM_EMAIL, ADMIN_EMAIL, isEmailEnabled } from './resend';
 import {
   requestReceivedEmail,
   landlordIntroEmail,
@@ -114,4 +114,26 @@ export async function sendVendorApplicationReceivedEmail(vendor: {
 }): Promise<boolean> {
   const { subject, html } = vendorApplicationReceivedEmail(vendor);
   return sendEmail(vendor.email, subject, html, VENDOR_WELCOME_FROM_EMAIL);
+}
+
+// Send notification email to admin
+export async function sendAdminNotificationEmail({
+  subject,
+  message,
+}: {
+  subject: string;
+  message: string;
+}): Promise<boolean> {
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #333;">Admin Notification</h2>
+      <div style="background: #f5f5f5; padding: 20px; border-radius: 8px;">
+        <pre style="white-space: pre-wrap; font-family: inherit; margin: 0;">${message}</pre>
+      </div>
+      <p style="color: #666; font-size: 12px; margin-top: 20px;">
+        This is an automated notification from Real Landlording.
+      </p>
+    </div>
+  `;
+  return sendEmail(ADMIN_EMAIL, subject, html);
 }

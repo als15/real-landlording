@@ -18,6 +18,9 @@ export const FROM_EMAIL = process.env.FROM_EMAIL || 'Real Landlording <onboardin
 // Vendor welcome emails come from Sheryl
 export const VENDOR_WELCOME_FROM_EMAIL = 'Sheryl @ Real Landlording <sheryl@reallandlording.com>';
 
+// Admin notification email address
+export const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@reallandlording.com';
+
 // Email types
 export type EmailType =
   | 'vendor_intro'

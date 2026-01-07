@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendVendorWelcomeEmail } from '@/lib/email/send';
 import { Vendor } from '@/types/database';
+import { sendSlaToVendor, isDocuSignConfigured } from '@/lib/docusign';
 
 export async function POST(
   request: NextRequest,
@@ -11,10 +12,10 @@ export async function POST(
     const { id } = await params;
     const adminClient = createAdminClient();
 
-    // Get vendor email to create auth account
+    // Get vendor details to create auth account and send SLA
     const { data: vendor, error: fetchError } = await adminClient
       .from('vendors')
-      .select('email, contact_name')
+      .select('email, contact_name, business_name')
       .eq('id', id)
       .single();
 
@@ -77,12 +78,53 @@ export async function POST(
     sendVendorWelcomeEmail(vendor as Vendor, tempPassword || undefined)
       .catch(console.error);
 
+    // Auto-send SLA via DocuSign if configured
+    let slaSent = false;
+    let slaEnvelopeId: string | undefined;
+
+    if (isDocuSignConfigured()) {
+      try {
+        const slaResult = await sendSlaToVendor({
+          vendorId: id,
+          contactName: vendor.contact_name,
+          businessName: vendor.business_name || vendor.contact_name,
+          email: vendor.email,
+        });
+
+        if (slaResult.success && slaResult.envelopeId) {
+          slaSent = true;
+          slaEnvelopeId = slaResult.envelopeId;
+
+          // Update vendor with SLA envelope info
+          await adminClient
+            .from('vendors')
+            .update({
+              sla_envelope_id: slaResult.envelopeId,
+              sla_status: 'sent',
+              sla_sent_at: new Date().toISOString(),
+            })
+            .eq('id', id);
+
+          console.log(`[Vendor Approve] SLA sent to ${vendor.email}, envelope: ${slaResult.envelopeId}`);
+        } else {
+          console.error(`[Vendor Approve] Failed to send SLA: ${slaResult.error}`);
+        }
+      } catch (slaError) {
+        console.error('[Vendor Approve] SLA send error:', slaError);
+        // Don't fail the approval if SLA send fails
+      }
+    } else {
+      console.log('[Vendor Approve] DocuSign not configured, skipping SLA');
+    }
+
     return NextResponse.json({
       message: existingAuthUser
         ? 'Vendor approved - linked to existing account'
         : 'Vendor approved successfully',
       tempPassword,
       existingAccount: !!existingAuthUser,
+      slaSent,
+      slaEnvelopeId,
     });
   } catch (error) {
     console.error('API error:', error);

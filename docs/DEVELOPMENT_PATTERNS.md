@@ -6,10 +6,73 @@ This document captures recurring patterns, common issues, and their solutions to
 
 ## Table of Contents
 
-1. [Supabase Authentication & Authorization](#supabase-authentication--authorization)
-2. [Row Level Security (RLS) Patterns](#row-level-security-rls-patterns)
-3. [API Route Patterns](#api-route-patterns)
-4. [Common Issues & Solutions](#common-issues--solutions)
+1. [Git Branching Workflow](#git-branching-workflow)
+2. [Supabase Authentication & Authorization](#supabase-authentication--authorization)
+3. [Row Level Security (RLS) Patterns](#row-level-security-rls-patterns)
+4. [API Route Patterns](#api-route-patterns)
+5. [Common Issues & Solutions](#common-issues--solutions)
+
+---
+
+## Git Branching Workflow
+
+### Branch Strategy
+
+**All development work must be done on feature branches.** Never commit directly to `main`.
+
+```
+main (production-ready)
+  │
+  ├── feature/docusign-sla-integration
+  ├── feature/vendor-dashboard-redesign
+  ├── fix/login-redirect-bug
+  └── ...
+```
+
+### Branch Naming Convention
+
+| Type | Pattern | Example |
+|------|---------|---------|
+| New feature | `feature/<description>` | `feature/docusign-sla-integration` |
+| Bug fix | `fix/<description>` | `fix/vendor-email-validation` |
+| Refactor | `refactor/<description>` | `refactor/api-error-handling` |
+| Documentation | `docs/<description>` | `docs/api-documentation` |
+
+### Workflow
+
+1. **Create feature branch from main:**
+   ```bash
+   git checkout main
+   git pull origin main
+   git checkout -b feature/your-feature-name
+   ```
+
+2. **Develop and commit on feature branch:**
+   ```bash
+   git add .
+   git commit -m "Description of changes"
+   ```
+
+3. **When feature is complete, merge to main:**
+   ```bash
+   git checkout main
+   git pull origin main
+   git merge feature/your-feature-name
+   git push origin main
+   ```
+
+4. **Clean up feature branch (optional):**
+   ```bash
+   git branch -d feature/your-feature-name
+   ```
+
+### Rules
+
+- ✅ Always create a feature branch for new work
+- ✅ Keep feature branches focused on a single feature/fix
+- ✅ Test thoroughly before merging to main
+- ❌ Never commit directly to main
+- ❌ Don't let feature branches get stale (merge or delete)
 
 ---
 

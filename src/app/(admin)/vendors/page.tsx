@@ -3,8 +3,8 @@
 import { Suspense, useEffect, useState, useCallback, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Table, Card, Tag, Space, Button, Select, Input, Typography, Drawer, Descriptions, Divider, App, Badge, Modal, Form, Checkbox, Rate, Slider, InputNumber, Tooltip, Spin } from 'antd'
-import { ReloadOutlined, PlusOutlined, EditOutlined, EyeOutlined, FilterOutlined, InfoCircleOutlined, DownloadOutlined } from '@ant-design/icons'
-import { Vendor, VendorStatus, VENDOR_STATUS_LABELS, SERVICE_TYPE_LABELS, getGroupedServiceCategories } from '@/types/database'
+import { ReloadOutlined, PlusOutlined, EditOutlined, EyeOutlined, FilterOutlined, InfoCircleOutlined, DownloadOutlined, SendOutlined, CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined } from '@ant-design/icons'
+import { Vendor, VendorStatus, SlaStatus, VENDOR_STATUS_LABELS, SLA_STATUS_LABELS, SERVICE_TYPE_LABELS, getGroupedServiceCategories } from '@/types/database'
 import type { ColumnsType } from 'antd/es/table'
 import ServiceAreaAutocomplete from '@/components/ServiceAreaAutocomplete'
 import ServiceAreaDisplay from '@/components/ServiceAreaDisplay'
@@ -24,6 +24,16 @@ const statusColors: Record<VendorStatus, string> = {
   inactive: 'default',
   pending_review: 'orange',
   rejected: 'red'
+}
+
+const slaStatusColors: Record<SlaStatus, string> = {
+  not_sent: 'default',
+  sent: 'processing',
+  delivered: 'processing',
+  viewed: 'warning',
+  signed: 'success',
+  declined: 'error',
+  voided: 'default'
 }
 
 export default function VendorsPage() {
@@ -171,6 +181,8 @@ function VendorsPageContent() {
         { key: 'insured', header: 'Insured', formatter: (v) => formatBooleanForCsv(v as boolean) },
         { key: 'rental_experience', header: 'Rental Experience', formatter: (v) => formatBooleanForCsv(v as boolean) },
         { key: 'status', header: 'Status', formatter: (v) => VENDOR_STATUS_LABELS[v as VendorStatus] || String(v) },
+        { key: 'sla_status', header: 'SLA Status', formatter: (v) => SLA_STATUS_LABELS[v as SlaStatus] || 'Not Sent' },
+        { key: 'sla_signed_at', header: 'SLA Signed At', formatter: (v) => formatDateTimeForCsv(v as string) },
         { key: 'performance_score', header: 'Performance Score' },
         { key: 'total_reviews', header: 'Total Reviews' },
         { key: 'created_at', header: 'Created', formatter: (v) => formatDateTimeForCsv(v as string) },
@@ -301,6 +313,48 @@ function VendorsPageContent() {
     setPage(1) // Reset to first page on filter change
   }
 
+  const handleSendSla = async (vendor: Vendor) => {
+    try {
+      const response = await fetch(`/api/admin/vendors/${vendor.id}/send-sla`, {
+        method: 'POST',
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        message.success('SLA sent successfully')
+
+        // Update vendor in place
+        const updatedVendor = { ...vendor, sla_status: 'sent' as SlaStatus, sla_envelope_id: result.envelopeId }
+        setVendors(prev => prev.map(v => v.id === vendor.id ? updatedVendor : v))
+        if (selectedVendor?.id === vendor.id) {
+          setSelectedVendor(updatedVendor)
+        }
+      } else {
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to send SLA')
+      }
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : 'Failed to send SLA')
+    }
+  }
+
+  const handleResendSla = async (vendor: Vendor) => {
+    try {
+      const response = await fetch(`/api/admin/vendors/${vendor.id}/resend-sla`, {
+        method: 'POST',
+      })
+
+      if (response.ok) {
+        message.success('SLA notification resent successfully')
+      } else {
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to resend SLA')
+      }
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : 'Failed to resend SLA')
+    }
+  }
+
   const columns: ColumnsType<Vendor> = [
     {
       title: 'Business',
@@ -371,6 +425,55 @@ function VendorsPageContent() {
       sortOrder: sortField === 'status' ? (sortOrder === 'asc' ? 'ascend' : 'descend') : null,
       render: status => <Tag color={statusColors[status as VendorStatus]}>{VENDOR_STATUS_LABELS[status as VendorStatus]}</Tag>,
       width: 120
+    },
+    {
+      title: 'SLA',
+      dataIndex: 'sla_status',
+      key: 'sla_status',
+      render: (slaStatus: SlaStatus | null, record) => {
+        const status = slaStatus || 'not_sent'
+        if (status === 'signed') {
+          return <Tag icon={<CheckCircleOutlined />} color="success">Signed</Tag>
+        }
+        if (status === 'declined') {
+          return <Tag icon={<CloseCircleOutlined />} color="error">Declined</Tag>
+        }
+        if (status === 'not_sent' && record.status === 'active') {
+          return (
+            <Button
+              size="small"
+              type="link"
+              icon={<SendOutlined />}
+              onClick={(e) => {
+                e.stopPropagation()
+                handleSendSla(record)
+              }}
+            >
+              Send
+            </Button>
+          )
+        }
+        if (['sent', 'delivered', 'viewed'].includes(status)) {
+          return (
+            <Space size="small">
+              <Tag icon={<ClockCircleOutlined />} color="processing">{SLA_STATUS_LABELS[status]}</Tag>
+              <Button
+                size="small"
+                type="link"
+                icon={<SendOutlined />}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleResendSla(record)
+                }}
+              >
+                Resend
+              </Button>
+            </Space>
+          )
+        }
+        return <Tag color="default">{SLA_STATUS_LABELS[status]}</Tag>
+      },
+      width: 100
     },
     {
       title: 'Actions',
@@ -569,6 +672,71 @@ function VendorsPageContent() {
               <Rate disabled defaultValue={selectedVendor.performance_score} allowHalf />
               <Text>({selectedVendor.total_reviews} reviews)</Text>
             </Space>
+
+            <Divider>SLA Agreement</Divider>
+
+            <Descriptions column={2} size="small">
+              <Descriptions.Item label="Status">
+                {(() => {
+                  const status = selectedVendor.sla_status || 'not_sent'
+                  if (status === 'signed') {
+                    return <Tag icon={<CheckCircleOutlined />} color="success">Signed</Tag>
+                  }
+                  if (status === 'declined') {
+                    return <Tag icon={<CloseCircleOutlined />} color="error">Declined</Tag>
+                  }
+                  if (['sent', 'delivered', 'viewed'].includes(status)) {
+                    return <Tag icon={<ClockCircleOutlined />} color="processing">{SLA_STATUS_LABELS[status as SlaStatus]}</Tag>
+                  }
+                  return <Tag color="default">{SLA_STATUS_LABELS[status as SlaStatus]}</Tag>
+                })()}
+              </Descriptions.Item>
+              <Descriptions.Item label="Sent At">
+                {selectedVendor.sla_sent_at
+                  ? new Date(selectedVendor.sla_sent_at).toLocaleDateString()
+                  : '-'}
+              </Descriptions.Item>
+              {selectedVendor.sla_signed_at && (
+                <Descriptions.Item label="Signed At">
+                  {new Date(selectedVendor.sla_signed_at).toLocaleDateString()}
+                </Descriptions.Item>
+              )}
+            </Descriptions>
+
+            {(!selectedVendor.sla_status || selectedVendor.sla_status === 'not_sent') && selectedVendor.status === 'active' && (
+              <div style={{ marginTop: 16 }}>
+                <Button
+                  type="primary"
+                  icon={<SendOutlined />}
+                  onClick={() => handleSendSla(selectedVendor)}
+                >
+                  Send SLA for Signature
+                </Button>
+              </div>
+            )}
+
+            {selectedVendor.sla_status && ['sent', 'delivered', 'viewed'].includes(selectedVendor.sla_status) && (
+              <div style={{ marginTop: 16 }}>
+                <Button
+                  icon={<SendOutlined />}
+                  onClick={() => handleResendSla(selectedVendor)}
+                >
+                  Resend SLA Notification
+                </Button>
+              </div>
+            )}
+
+            {selectedVendor.sla_document_url && (
+              <div style={{ marginTop: 16 }}>
+                <Button
+                  icon={<DownloadOutlined />}
+                  href={selectedVendor.sla_document_url}
+                  target="_blank"
+                >
+                  Download Signed SLA
+                </Button>
+              </div>
+            )}
 
             {selectedVendor.admin_notes && (
               <>
