@@ -34,6 +34,7 @@ import {
   SIMPLE_URGENCY_OPTIONS,
   ServiceRequestInput,
   getGroupedServiceCategories,
+  ServiceCategoryConfig,
 } from '@/types/database';
 import AddressAutocomplete, { AddressData } from '@/components/AddressAutocomplete';
 import UrgencyToggle from '@/components/forms/UrgencyToggle';
@@ -180,6 +181,15 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
   };
 
   const handleCategoryChange = (value: ServiceCategory) => {
+    // Check if this category has an external redirect
+    const categoryConfig = SERVICE_TAXONOMY[value];
+    if (categoryConfig.externalLink && categoryConfig.externalUrl) {
+      // Redirect to external URL
+      window.open(categoryConfig.externalUrl, '_blank');
+      // Reset the select back to empty
+      form.setFieldValue('service_type', undefined);
+      return;
+    }
     setSelectedCategory(value);
   };
 
@@ -270,9 +280,9 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
   };
 
   const steps = [
-    { title: 'Service', description: 'What do you need?' },
-    { title: 'Details', description: 'Tell us more' },
-    { title: 'Your Info', description: 'Contact & Property' },
+    { title: 'Service', subTitle: 'What do you need?' },
+    { title: 'Details', subTitle: 'Tell us more' },
+    { title: 'Your Info', subTitle: 'Contact & Property' },
   ];
 
   const onFinishFailed = (errorInfo: { errorFields: { name: (string | number)[]; errors: string[] }[] }) => {

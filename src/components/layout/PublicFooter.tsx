@@ -44,7 +44,7 @@ export default function PublicFooter() {
             <Title level={5} style={{ color: brandColors.accent, marginBottom: 16, fontWeight: 600 }}>
               Quick Links
             </Title>
-            <Space direction="vertical" size={10}>
+            <Space orientation="vertical" size={10}>
               <a href="https://www.reallandlording.com/prolink/" style={{ color: 'rgba(255,255,255,0.8)' }}>
                 ProLink Services
               </a>
@@ -68,7 +68,7 @@ export default function PublicFooter() {
             <Title level={5} style={{ color: brandColors.accent, marginBottom: 16, fontWeight: 600 }}>
               For Landlords
             </Title>
-            <Space direction="vertical" size={10}>
+            <Space orientation="vertical" size={10}>
               <Link href="/auth/login" style={{ color: 'rgba(255,255,255,0.8)' }}>
                 Landlord Portal
               </Link>
@@ -98,7 +98,7 @@ export default function PublicFooter() {
           <Text style={{ color: 'rgba(255,255,255,0.6)' }}>
             &copy; {currentYear} Real Landlording. All rights reserved.
           </Text>
-          <Space split={<Text style={{ color: 'rgba(255,255,255,0.3)' }}>|</Text>}>
+          <Space separator={<Text style={{ color: 'rgba(255,255,255,0.3)' }}>|</Text>}>
             <a href="https://reallandlording.com/terms-and-disclosure-for-prolink-service/" style={{ color: 'rgba(255,255,255,0.6)' }}>
               Privacy Policy
             </a>
