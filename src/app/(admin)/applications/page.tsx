@@ -14,6 +14,10 @@ import {
   App,
   Badge,
   Input,
+  Select,
+  Checkbox,
+  InputNumber,
+  Form,
 } from 'antd';
 import {
   ReloadOutlined,
@@ -36,6 +40,7 @@ import {
   JOB_SIZE_RANGE_OPTIONS,
   ACCEPTED_PAYMENTS_OPTIONS,
   REFERRAL_SOURCE_OPTIONS,
+  CONTACT_PREFERENCE_LABELS,
 } from '@/types/database';
 import {
   objectsToCsv,
@@ -46,6 +51,7 @@ import {
 } from '@/lib/utils/csv-export';
 import type { ColumnsType } from 'antd/es/table';
 import ServiceAreaDisplay from '@/components/ServiceAreaDisplay';
+import ServiceAreaAutocomplete from '@/components/ServiceAreaAutocomplete';
 
 const { Title, Text } = Typography;
 const { TextArea, Search } = Input;
@@ -63,11 +69,8 @@ export default function ApplicationsPage() {
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const { message } = App.useApp();
 
-  // Editable fields state
-  const [editSocialInstagram, setEditSocialInstagram] = useState('');
-  const [editSocialFacebook, setEditSocialFacebook] = useState('');
-  const [editSocialLinkedin, setEditSocialLinkedin] = useState('');
-  const [editAdminNotes, setEditAdminNotes] = useState('');
+  // Form for editable fields
+  const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
 
   // Debounce search input
@@ -113,11 +116,33 @@ export default function ApplicationsPage() {
 
   const handleViewApp = (app: Vendor) => {
     setSelectedApp(app);
-    // Populate editable fields with current values
-    setEditSocialInstagram(app.social_instagram || '');
-    setEditSocialFacebook(app.social_facebook || '');
-    setEditSocialLinkedin(app.social_linkedin || '');
-    setEditAdminNotes(app.admin_notes || '');
+    // Populate form with current values
+    form.setFieldsValue({
+      website: app.website || '',
+      location: app.location || '',
+      services: app.services || [],
+      service_areas: app.service_areas || [],
+      licensed: app.licensed || false,
+      insured: app.insured || false,
+      rental_experience: app.rental_experience || false,
+      qualifications: app.qualifications || '',
+      licensed_areas: app.licensed_areas || [],
+      years_in_business: app.years_in_business,
+      employee_count: app.employee_count || '',
+      emergency_services: app.emergency_services || false,
+      job_size_range: app.job_size_range || [],
+      service_hours_weekdays: app.service_hours_weekdays || false,
+      service_hours_weekends: app.service_hours_weekends || false,
+      service_hours_24_7: app.service_hours_24_7 || false,
+      accepted_payments: app.accepted_payments || [],
+      call_preferences: app.call_preferences ? app.call_preferences.split(', ') : [],
+      social_instagram: app.social_instagram || '',
+      social_facebook: app.social_facebook || '',
+      social_linkedin: app.social_linkedin || '',
+      referral_source: app.referral_source || '',
+      referral_source_name: app.referral_source_name || '',
+      admin_notes: app.admin_notes || '',
+    });
     setDetailModalOpen(true);
   };
 
@@ -126,27 +151,34 @@ export default function ApplicationsPage() {
 
     setSaving(true);
     try {
+      const values = form.getFieldsValue();
+
+      // Transform call_preferences array to comma-separated string
+      const updateData = {
+        ...values,
+        call_preferences: values.call_preferences?.length > 0
+          ? values.call_preferences.join(', ')
+          : null,
+        // Convert empty strings to null
+        website: values.website || null,
+        location: values.location || null,
+        qualifications: values.qualifications || null,
+        social_instagram: values.social_instagram || null,
+        social_facebook: values.social_facebook || null,
+        social_linkedin: values.social_linkedin || null,
+        referral_source: values.referral_source || null,
+        referral_source_name: values.referral_source_name || null,
+        admin_notes: values.admin_notes || null,
+      };
+
       const response = await fetch(`/api/admin/applications/${selectedApp.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          social_instagram: editSocialInstagram || null,
-          social_facebook: editSocialFacebook || null,
-          social_linkedin: editSocialLinkedin || null,
-          admin_notes: editAdminNotes || null,
-        }),
+        body: JSON.stringify(updateData),
       });
 
       if (response.ok) {
         message.success('Changes saved');
-        // Update the local state
-        setSelectedApp({
-          ...selectedApp,
-          social_instagram: editSocialInstagram || null,
-          social_facebook: editSocialFacebook || null,
-          social_linkedin: editSocialLinkedin || null,
-          admin_notes: editAdminNotes || null,
-        });
         fetchApplications();
       } else {
         throw new Error('Failed to save changes');
@@ -358,8 +390,16 @@ export default function ApplicationsPage() {
         title="Application Review"
         open={detailModalOpen}
         onCancel={() => setDetailModalOpen(false)}
-        width={700}
+        width={800}
         footer={[
+          <Button
+            key="save"
+            icon={<SaveOutlined />}
+            onClick={handleSaveChanges}
+            loading={saving}
+          >
+            Save Changes
+          </Button>,
           <Button
             key="reject"
             danger
@@ -380,7 +420,9 @@ export default function ApplicationsPage() {
         ]}
       >
         {selectedApp && (
-          <>
+          <Form form={form} layout="vertical">
+            {/* Personal Info - Read Only */}
+            <Divider orientationMargin={0}>Personal Info (Read Only)</Divider>
             <Descriptions column={2} bordered size="small">
               <Descriptions.Item label="Business Name" span={2}>
                 {selectedApp.business_name}
@@ -394,206 +436,162 @@ export default function ApplicationsPage() {
               <Descriptions.Item label="Email" span={2}>
                 {selectedApp.email}
               </Descriptions.Item>
-              <Descriptions.Item label="Website" span={2}>
-                {selectedApp.website || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Location" span={2}>
-                {selectedApp.location || '-'}
-              </Descriptions.Item>
             </Descriptions>
 
-            <Divider>Services & Specialties</Divider>
-            {selectedApp.services.map((service) => {
-              const serviceKey = service as ServiceCategory;
-              const serviceLabel = SERVICE_TYPE_LABELS[serviceKey] || service;
-              const config = SERVICE_TAXONOMY[serviceKey];
-              const specialties = selectedApp.service_specialties?.[serviceKey] || [];
+            {/* Editable Business Info */}
+            <Divider orientationMargin={0}>Business Info</Divider>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <Form.Item label="Website" name="website">
+                <Input placeholder="Website URL" />
+              </Form.Item>
+              <Form.Item label="Location" name="location">
+                <Input placeholder="Business location" />
+              </Form.Item>
+            </div>
 
-              return (
-                <div key={service} style={{ marginBottom: 16 }}>
-                  <Tag color="blue" style={{ marginBottom: 8 }}>
-                    {serviceLabel}
-                  </Tag>
-                  {config?.classifications && config.classifications.length > 0 && (
-                    <div style={{ marginLeft: 8, marginTop: 4 }}>
-                      {config.classifications.map((classification) => {
-                        // Find which options from this classification the vendor selected
-                        const selectedOptions = specialties.filter(s =>
-                          classification.options.includes(s)
-                        );
+            {/* Services */}
+            <Form.Item label="Services" name="services">
+              <Select
+                mode="multiple"
+                placeholder="Select services"
+                options={Object.entries(SERVICE_TYPE_LABELS).map(([value, label]) => ({
+                  value,
+                  label,
+                }))}
+              />
+            </Form.Item>
 
-                        if (selectedOptions.length === 0) return null;
+            {/* Service Areas */}
+            <Form.Item label="Service Areas" name="service_areas">
+              <ServiceAreaAutocomplete
+                value={form.getFieldValue('service_areas') || []}
+                onChange={(values) => form.setFieldValue('service_areas', values)}
+              />
+            </Form.Item>
 
-                        // Use vendor-friendly label
-                        const displayLabel = classification.label === 'Service Needed'
-                          ? 'Services Provided'
-                          : classification.label;
+            {/* Qualifications */}
+            <Divider orientationMargin={0}>Qualifications</Divider>
+            <Space size="large">
+              <Form.Item name="licensed" valuePropName="checked" style={{ marginBottom: 0 }}>
+                <Checkbox>Licensed</Checkbox>
+              </Form.Item>
+              <Form.Item name="insured" valuePropName="checked" style={{ marginBottom: 0 }}>
+                <Checkbox>Insured</Checkbox>
+              </Form.Item>
+              <Form.Item name="rental_experience" valuePropName="checked" style={{ marginBottom: 0 }}>
+                <Checkbox>Rental Experience</Checkbox>
+              </Form.Item>
+            </Space>
 
-                        return (
-                          <div key={classification.label} style={{ marginBottom: 4 }}>
-                            <Text type="secondary" style={{ fontSize: 12 }}>
-                              {displayLabel}:{' '}
-                            </Text>
-                            <Space size={4} wrap>
-                              {selectedOptions.map(opt => (
-                                <Tag key={opt} style={{ fontSize: 11 }}>{opt}</Tag>
-                              ))}
-                            </Space>
-                          </div>
-                        );
-                      })}
-                      {specialties.length === 0 && (
-                        <Text type="secondary" style={{ fontSize: 12, fontStyle: 'italic' }}>
-                          No specialties specified
-                        </Text>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            <Form.Item label="Licensed Areas" name="licensed_areas" style={{ marginTop: 16 }}>
+              <ServiceAreaAutocomplete
+                value={form.getFieldValue('licensed_areas') || []}
+                onChange={(values) => form.setFieldValue('licensed_areas', values)}
+              />
+            </Form.Item>
 
-            <Divider>Service Areas</Divider>
-            <ServiceAreaDisplay zipCodes={selectedApp.service_areas} />
-
-            <Divider>Qualifications</Divider>
-            <Descriptions column={3} size="small">
-              <Descriptions.Item label="Licensed">
-                {selectedApp.licensed ? <Tag color="green">Yes</Tag> : <Tag>No</Tag>}
-              </Descriptions.Item>
-              <Descriptions.Item label="Insured">
-                {selectedApp.insured ? <Tag color="green">Yes</Tag> : <Tag>No</Tag>}
-              </Descriptions.Item>
-              <Descriptions.Item label="Rental Experience">
-                {selectedApp.rental_experience ? <Tag color="green">Yes</Tag> : <Tag>No</Tag>}
-              </Descriptions.Item>
-            </Descriptions>
-
-            {selectedApp.qualifications && (
-              <>
-                <Divider>Experience Details</Divider>
-                <Text>{selectedApp.qualifications}</Text>
-              </>
-            )}
-
-            {selectedApp.call_preferences && (
-              <>
-                <Divider>Contact Preferences</Divider>
-                <Text>{selectedApp.call_preferences}</Text>
-              </>
-            )}
-
-            {/* Licensed Areas */}
-            {selectedApp.licensed_areas && selectedApp.licensed_areas.length > 0 && (
-              <>
-                <Divider>Licensed Areas</Divider>
-                <ServiceAreaDisplay zipCodes={selectedApp.licensed_areas} />
-              </>
-            )}
+            <Form.Item label="Experience & Qualifications" name="qualifications">
+              <TextArea rows={3} placeholder="Describe experience and qualifications..." />
+            </Form.Item>
 
             {/* Business Details */}
-            <Divider>Business Details</Divider>
-            <Descriptions column={2} size="small" bordered>
-              <Descriptions.Item label="Years in Business">
-                {selectedApp.years_in_business !== null ? `${selectedApp.years_in_business}+ years` : '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Employees">
-                {selectedApp.employee_count
-                  ? EMPLOYEE_COUNT_OPTIONS.find(o => o.value === selectedApp.employee_count)?.label || selectedApp.employee_count
-                  : '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Emergency Services">
-                {selectedApp.emergency_services ? <Tag color="red">Yes - 24/7</Tag> : <Tag>No</Tag>}
-              </Descriptions.Item>
-              <Descriptions.Item label="Job Size Range">
-                {selectedApp.job_size_range && selectedApp.job_size_range.length > 0 ? (
-                  <Space wrap size={4}>
-                    {selectedApp.job_size_range.map(size => {
-                      const label = JOB_SIZE_RANGE_OPTIONS.find(o => o.value === size)?.label || size;
-                      return <Tag key={size}>{label}</Tag>;
-                    })}
-                  </Space>
-                ) : '-'}
-              </Descriptions.Item>
-            </Descriptions>
+            <Divider orientationMargin={0}>Business Details</Divider>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <Form.Item label="Years in Business" name="years_in_business">
+                <InputNumber min={0} max={100} style={{ width: '100%' }} />
+              </Form.Item>
+              <Form.Item label="Employees" name="employee_count">
+                <Select
+                  placeholder="Select range"
+                  allowClear
+                  options={EMPLOYEE_COUNT_OPTIONS}
+                />
+              </Form.Item>
+            </div>
+
+            <Form.Item name="emergency_services" valuePropName="checked">
+              <Checkbox>Offers Emergency Services (24/7)</Checkbox>
+            </Form.Item>
+
+            <Form.Item label="Job Size Range" name="job_size_range">
+              <Select
+                mode="multiple"
+                placeholder="Select job sizes"
+                options={JOB_SIZE_RANGE_OPTIONS}
+              />
+            </Form.Item>
 
             {/* Service Hours */}
-            <Divider>Service Hours</Divider>
-            <Space wrap>
-              {selectedApp.service_hours_weekdays && <Tag color="blue">Weekdays</Tag>}
-              {selectedApp.service_hours_weekends && <Tag color="blue">Weekends</Tag>}
-              {selectedApp.service_hours_24_7 && <Tag color="red">24/7 Available</Tag>}
-              {!selectedApp.service_hours_weekdays && !selectedApp.service_hours_weekends && !selectedApp.service_hours_24_7 && (
-                <Text type="secondary">Not specified</Text>
-              )}
+            <Divider orientationMargin={0}>Service Hours</Divider>
+            <Space size="large">
+              <Form.Item name="service_hours_weekdays" valuePropName="checked" style={{ marginBottom: 0 }}>
+                <Checkbox>Weekdays</Checkbox>
+              </Form.Item>
+              <Form.Item name="service_hours_weekends" valuePropName="checked" style={{ marginBottom: 0 }}>
+                <Checkbox>Weekends</Checkbox>
+              </Form.Item>
+              <Form.Item name="service_hours_24_7" valuePropName="checked" style={{ marginBottom: 0 }}>
+                <Checkbox>24/7 Available</Checkbox>
+              </Form.Item>
             </Space>
 
             {/* Accepted Payments */}
-            {selectedApp.accepted_payments && selectedApp.accepted_payments.length > 0 && (
-              <>
-                <Divider>Accepted Payments</Divider>
-                <Space wrap>
-                  {selectedApp.accepted_payments.map(payment => {
-                    const label = ACCEPTED_PAYMENTS_OPTIONS.find(o => o.value === payment)?.label || payment;
-                    return <Tag key={payment} color="green">{label}</Tag>;
-                  })}
-                </Space>
-              </>
-            )}
-
-            {/* Referral Source */}
-            {selectedApp.referral_source && (
-              <>
-                <Divider>How They Found Us</Divider>
-                <Text>
-                  {REFERRAL_SOURCE_OPTIONS.find(o => o.value === selectedApp.referral_source)?.label || selectedApp.referral_source}
-                  {selectedApp.referral_source_name && (
-                    <Text type="secondary"> — Referred by: {selectedApp.referral_source_name}</Text>
-                  )}
-                </Text>
-              </>
-            )}
-
-            <Divider>Social Media</Divider>
-            <Space direction="vertical" style={{ width: '100%' }} size="small">
-              <Input
-                prefix={<InstagramOutlined />}
-                placeholder="Instagram handle or URL"
-                value={editSocialInstagram}
-                onChange={(e) => setEditSocialInstagram(e.target.value)}
+            <Form.Item label="Accepted Payments" name="accepted_payments" style={{ marginTop: 16 }}>
+              <Select
+                mode="multiple"
+                placeholder="Select payment methods"
+                options={ACCEPTED_PAYMENTS_OPTIONS}
               />
-              <Input
-                prefix={<FacebookOutlined />}
-                placeholder="Facebook page URL"
-                value={editSocialFacebook}
-                onChange={(e) => setEditSocialFacebook(e.target.value)}
-              />
-              <Input
-                prefix={<LinkedinOutlined />}
-                placeholder="LinkedIn profile URL"
-                value={editSocialLinkedin}
-                onChange={(e) => setEditSocialLinkedin(e.target.value)}
-              />
-            </Space>
+            </Form.Item>
 
-            <Divider>Admin Notes</Divider>
-            <TextArea
-              rows={4}
-              placeholder="Add internal notes about this application..."
-              value={editAdminNotes}
-              onChange={(e) => setEditAdminNotes(e.target.value)}
-            />
+            {/* Contact Preferences */}
+            <Divider orientationMargin={0}>Contact Preferences</Divider>
+            <Form.Item label="Best Way to Reach" name="call_preferences">
+              <Select
+                mode="multiple"
+                placeholder="Select contact methods"
+                options={Object.entries(CONTACT_PREFERENCE_LABELS).map(([value, label]) => ({
+                  value,
+                  label,
+                }))}
+              />
+            </Form.Item>
 
-            <div style={{ marginTop: 16, textAlign: 'right' }}>
-              <Button
-                icon={<SaveOutlined />}
-                onClick={handleSaveChanges}
-                loading={saving}
-              >
-                Save Changes
-              </Button>
+            {/* Social Media */}
+            <Divider orientationMargin={0}>Social Media</Divider>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+              <Form.Item name="social_instagram">
+                <Input prefix={<InstagramOutlined />} placeholder="Instagram" />
+              </Form.Item>
+              <Form.Item name="social_facebook">
+                <Input prefix={<FacebookOutlined />} placeholder="Facebook" />
+              </Form.Item>
+              <Form.Item name="social_linkedin">
+                <Input prefix={<LinkedinOutlined />} placeholder="LinkedIn" />
+              </Form.Item>
             </div>
-          </>
+
+            {/* Referral */}
+            <Divider orientationMargin={0}>Referral Info</Divider>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <Form.Item label="How They Found Us" name="referral_source">
+                <Select
+                  placeholder="Select source"
+                  allowClear
+                  options={REFERRAL_SOURCE_OPTIONS}
+                />
+              </Form.Item>
+              <Form.Item label="Referrer Name" name="referral_source_name">
+                <Input placeholder="Name of person who referred" />
+              </Form.Item>
+            </div>
+
+            {/* Admin Notes */}
+            <Divider orientationMargin={0}>Admin Notes</Divider>
+            <Form.Item name="admin_notes">
+              <TextArea rows={4} placeholder="Add internal notes about this application..." />
+            </Form.Item>
+          </Form>
         )}
       </Modal>
 

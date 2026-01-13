@@ -12,11 +12,39 @@ export async function PATCH(
 
     const supabase = createAdminClient();
 
-    // Only allow updating specific fields
+    // Only allow updating specific fields (NOT personal info: contact_name, email, phone, business_name)
     const allowedFields = [
+      // Business info
+      'website',
+      'location',
+      'services',
+      'service_specialties',
+      'service_areas',
+      // Qualifications
+      'licensed',
+      'insured',
+      'rental_experience',
+      'qualifications',
+      'licensed_areas',
+      // Business details
+      'years_in_business',
+      'employee_count',
+      'emergency_services',
+      'job_size_range',
+      'service_hours_weekdays',
+      'service_hours_weekends',
+      'service_hours_24_7',
+      'accepted_payments',
+      // Contact preferences
+      'call_preferences',
+      // Social media
       'social_instagram',
       'social_facebook',
       'social_linkedin',
+      // Referral
+      'referral_source',
+      'referral_source_name',
+      // Admin
       'admin_notes',
     ];
 

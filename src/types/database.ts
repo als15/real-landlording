@@ -117,6 +117,7 @@ export interface ServiceCategoryConfig {
   group: ServiceCategoryGroup;
   classifications: ServiceClassification[];
   externalLink?: boolean; // For categories that link externally (e.g., Property Tax Appeals)
+  externalUrl?: string; // URL to redirect to for external link categories
   emergencyEnabled?: boolean; // Whether this service category supports emergency requests
   finishLevelEnabled?: boolean; // Whether this service category shows finish level options
 }
@@ -418,6 +419,7 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
     group: 'compliance_testing',
     classifications: [],
     externalLink: true,
+    externalUrl: 'https://www.incentertaxsolutions.com/partners/sheryl-sitman-at-real-landlording/',
   },
 
   // === PROFESSIONAL & FINANCIAL ===

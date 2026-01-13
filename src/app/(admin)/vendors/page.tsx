@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState, useCallback, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Table, Card, Tag, Space, Button, Select, Input, Typography, Drawer, Descriptions, Divider, App, Badge, Modal, Form, Checkbox, Rate, Slider, InputNumber, Tooltip, Spin } from 'antd'
+import { Table, Card, Tag, Space, Button, Select, Input, Typography, Drawer, Descriptions, Divider, App, Badge, Modal, Form, Checkbox, Rate, Slider, InputNumber, Tooltip, Spin, Pagination } from 'antd'
 import { ReloadOutlined, PlusOutlined, EditOutlined, EyeOutlined, FilterOutlined, InfoCircleOutlined, DownloadOutlined, SendOutlined, CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined } from '@ant-design/icons'
 import { Vendor, VendorStatus, SlaStatus, VENDOR_STATUS_LABELS, SLA_STATUS_LABELS, SERVICE_TYPE_LABELS, getGroupedServiceCategories } from '@/types/database'
 import type { ColumnsType } from 'antd/es/table'
@@ -540,19 +540,10 @@ function VendorsPageContent() {
           dataSource={vendors}
           rowKey="id"
           loading={loading}
-          pagination={{
-            current: page,
-            pageSize,
-            total,
-            onChange: (p, ps) => {
-              setPage(p)
-              setPageSize(ps)
-            },
-            showSizeChanger: true,
-            showTotal: t => `${t} vendors`
-          }}
+          pagination={false}
           onChange={(_, __, sorter) => {
-            if (!Array.isArray(sorter) && sorter.columnKey) {
+            // Handle sorting only - resets to page 1
+            if (!Array.isArray(sorter) && sorter.columnKey && sorter.order) {
               const newSortField = sorter.columnKey as string
               const newSortOrder = sorter.order === 'descend' ? 'desc' : 'asc'
               setSortField(newSortField)
@@ -562,6 +553,22 @@ function VendorsPageContent() {
           }}
           scroll={{ x: 1000 }}
         />
+        <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end' }}>
+          <Pagination
+            current={page}
+            pageSize={pageSize}
+            total={total}
+            showSizeChanger
+            showTotal={(t) => `${t} vendors`}
+            onChange={(newPage, newPageSize) => {
+              console.log('[Pagination] onChange:', { newPage, newPageSize })
+              setPage(newPage)
+              if (newPageSize !== pageSize) {
+                setPageSize(newPageSize)
+              }
+            }}
+          />
+        </div>
       </Card>
 
       {/* Vendor Details Drawer */}

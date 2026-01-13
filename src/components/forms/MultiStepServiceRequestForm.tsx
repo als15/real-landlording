@@ -521,7 +521,24 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
               </Form.Item>
             </Col>
             <Col xs={24} md={12}>
-              <Form.Item name="landlord_phone" label="Phone">
+              <Form.Item
+                name="landlord_phone"
+                label="Phone"
+                rules={[
+                  {
+                    validator: (_, value) => {
+                      if (!value) return Promise.resolve();
+                      // Strip non-digits and check for valid US phone (10 digits, optionally with leading 1)
+                      const digits = value.replace(/\D/g, '');
+                      const normalized = digits.startsWith('1') && digits.length === 11 ? digits.slice(1) : digits;
+                      if (normalized.length !== 10) {
+                        return Promise.reject('Please enter a valid 10-digit phone number');
+                      }
+                      return Promise.resolve();
+                    }
+                  }
+                ]}
+              >
                 <Input placeholder="(215) 555-0123" size="large" />
               </Form.Item>
             </Col>

@@ -63,6 +63,28 @@ const steps = [
 
 ---
 
+## Divider Component
+
+### `orientation="left"` -> Type Error
+
+In Ant Design v5, the Divider's `orientation` prop type changed and `"left"` is no longer valid.
+
+**Deprecated:**
+```tsx
+<Divider orientation="left">Section Title</Divider>
+```
+
+**Fix - Use orientationMargin instead:**
+```tsx
+<Divider orientationMargin={0}>Section Title</Divider>
+```
+
+**Files affected:**
+- `src/app/(admin)/applications/page.tsx`
+- `src/app/(admin)/requests/page.tsx`
+
+---
+
 ## How to Check for Deprecations
 
 Run the development server and check the browser console for warnings like:
