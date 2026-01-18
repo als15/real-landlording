@@ -18,7 +18,7 @@ const defaultFAQItems: FAQItem[] = [
   {
     question: 'How are vendors selected?',
     answer:
-      'All vendors in our network are vetted for experience with rental properties, proper licensing, and insurance. We check references and prioritize contractors who understand the unique needs of landlords and property managers.',
+      'Vendors are selected based on rental-property experience, service quality, communication, professionalism, and reviews. Licensing and insurance information is self-reported during onboarding where applicable, as some services do not require a license. We prioritize vendors who understand landlord operations, compliance, and cost-effective maintenance.',
   },
   {
     question: 'How quickly will I hear back?',

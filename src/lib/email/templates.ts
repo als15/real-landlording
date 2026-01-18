@@ -289,7 +289,7 @@ export function vendorWelcomeEmail(
       <h2>You're Approved!</h2>
       <p>Hi ${vendor.contact_name},</p>
       <p>Great news! Your application to join the Real Landlording vendor network has been approved.</p>
-      <p>You'll now receive job referrals from our community of 2,900+ Philadelphia landlords.</p>
+      <p>You'll now receive job referrals from our community of Philadelphia landlords.</p>
 
       ${
         tempPassword

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { resend, FROM_EMAIL, isEmailEnabled } from '@/lib/email/resend';
 import { randomBytes } from 'crypto';
 
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Determine which table to check
     const table = userType === 'vendor' ? 'vendors' : 'landlords';

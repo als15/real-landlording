@@ -42,9 +42,9 @@ const trustSignals = [
 ]
 
 const stats = [
-  { value: '800+', label: 'Referrals Made' },
-  { value: '2,900+', label: 'Landlords Served' },
-  { value: '100+', label: 'Vetted Vendors' }
+  { value: 'Real Connections', label: 'For rental operations' },
+  { value: 'Philly Built', label: 'For local realities' },
+  { value: 'Vetted Vendors', label: 'For smart solutions' }
 ]
 
 export default function ServiceRequestPage() {
@@ -127,14 +127,14 @@ export default function ServiceRequestPage() {
                   <Text
                     style={{
                       color: brandColors.accent,
-                      fontSize: 32,
+                      fontSize: 26,
                       fontWeight: 700,
                       display: 'block'
                     }}
                   >
                     {stat.value}
                   </Text>
-                  <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>{stat.label}</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 16 }}>{stat.label}</Text>
                 </div>
               </Col>
             ))}
