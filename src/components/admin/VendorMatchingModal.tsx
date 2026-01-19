@@ -42,6 +42,18 @@ function getTierDisplay(score: number, hasReviews: boolean): { tier: ScoreTier; 
   return { tier, color: config.color, label: config.label, isRecommended, isWarning };
 }
 
+// Helper to format service area for display
+function formatServiceArea(area: string): string {
+  if (area.startsWith('state:')) {
+    return `${area.replace('state:', '')} (state)`;
+  }
+  if (area.startsWith('prefix:')) {
+    const prefix = area.replace('prefix:', '');
+    return `${prefix}${'x'.repeat(5 - prefix.length)}`;
+  }
+  return area;
+}
+
 interface VendorMatchingModalProps {
   open: boolean;
   request: ServiceRequest | null;
@@ -113,10 +125,13 @@ export default function VendorMatchingModal({
       if (!showAllVendors && !hasSearch) {
         params.set('service_type', request.service_type);
         // Use zip_code if available, otherwise use property_location
+        // Enable location filtering to find vendors that serve this area
         if (request.zip_code) {
           params.set('zip_code', request.zip_code);
+          params.set('require_location', 'true');
         } else if (request.property_location) {
           params.set('location', request.property_location);
+          params.set('require_location', 'true');
         }
       }
 
@@ -224,7 +239,10 @@ export default function VendorMatchingModal({
       title: 'Service Areas',
       dataIndex: 'service_areas',
       key: 'service_areas',
-      render: (areas: string[]) => areas.slice(0, 3).join(', ') + (areas.length > 3 ? '...' : ''),
+      render: (areas: string[]) => {
+        const formatted = areas.slice(0, 3).map(formatServiceArea);
+        return formatted.join(', ') + (areas.length > 3 ? '...' : '');
+      },
     },
     {
       title: 'Rating',

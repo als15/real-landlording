@@ -5,9 +5,33 @@ import { Tag, Tooltip } from 'antd';
 import { EnvironmentOutlined, LoadingOutlined } from '@ant-design/icons';
 
 interface ServiceAreaDisplayProps {
-  zipCodes: string[];
+  serviceAreas: string[];  // Can be zip codes, state:XX, or prefix:XXX
   showIcon?: boolean;
 }
+
+// Helper to determine if a value is a state code
+const isStateCode = (value: string): boolean => /^state:[A-Z]{2}$/.test(value);
+
+// Helper to determine if a value is a prefix
+const isPrefixCode = (value: string): boolean => /^prefix:\d{3,4}$/.test(value);
+
+// Helper to determine if a value is a regular zip code
+const isZipCode = (value: string): boolean => /^\d{5}$/.test(value);
+
+// US State names for display
+const STATE_NAMES: Record<string, string> = {
+  AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California',
+  CO: 'Colorado', CT: 'Connecticut', DE: 'Delaware', FL: 'Florida', GA: 'Georgia',
+  HI: 'Hawaii', ID: 'Idaho', IL: 'Illinois', IN: 'Indiana', IA: 'Iowa',
+  KS: 'Kansas', KY: 'Kentucky', LA: 'Louisiana', ME: 'Maine', MD: 'Maryland',
+  MA: 'Massachusetts', MI: 'Michigan', MN: 'Minnesota', MS: 'Mississippi', MO: 'Missouri',
+  MT: 'Montana', NE: 'Nebraska', NV: 'Nevada', NH: 'New Hampshire', NJ: 'New Jersey',
+  NM: 'New Mexico', NY: 'New York', NC: 'North Carolina', ND: 'North Dakota', OH: 'Ohio',
+  OK: 'Oklahoma', OR: 'Oregon', PA: 'Pennsylvania', RI: 'Rhode Island', SC: 'South Carolina',
+  SD: 'South Dakota', TN: 'Tennessee', TX: 'Texas', UT: 'Utah', VT: 'Vermont',
+  VA: 'Virginia', WA: 'Washington', WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming',
+  DC: 'Washington D.C.', PR: 'Puerto Rico',
+};
 
 // Cache for zip code lookups to avoid repeated API calls
 const zipCodeCache: Record<string, string> = {};
@@ -79,7 +103,34 @@ const lookupZipCode = async (zip: string): Promise<string> => {
   return zip;
 };
 
-export default function ServiceAreaDisplay({ zipCodes, showIcon = true }: ServiceAreaDisplayProps) {
+// Get tag color based on service area type
+const getTagColor = (value: string): string => {
+  if (isStateCode(value)) return 'purple';
+  if (isPrefixCode(value)) {
+    const prefix = value.replace('prefix:', '');
+    // Philly area prefixes
+    if (prefix.startsWith('191') || prefix.startsWith('190')) return 'blue';
+    return 'green';
+  }
+  // Regular zip - blue for Philly area, orange for others
+  if (value.startsWith('191') || value.startsWith('190')) return 'blue';
+  return 'default';
+};
+
+// Get fallback display name for state/prefix codes
+const getFallbackDisplayName = (value: string): string => {
+  if (isStateCode(value)) {
+    const stateCode = value.replace('state:', '');
+    return `${STATE_NAMES[stateCode] || stateCode} (entire state)`;
+  }
+  if (isPrefixCode(value)) {
+    const prefix = value.replace('prefix:', '');
+    return `${prefix}${'x'.repeat(5 - prefix.length)} area`;
+  }
+  return value;
+};
+
+export default function ServiceAreaDisplay({ serviceAreas, showIcon = true }: ServiceAreaDisplayProps) {
   const [displayNames, setDisplayNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
@@ -90,14 +141,24 @@ export default function ServiceAreaDisplay({ zipCodes, showIcon = true }: Servic
 
       // First, populate from localStorage
       const stored = getStoredDisplayMap();
-      for (const zip of zipCodes) {
-        if (stored[zip]) {
-          names[zip] = stored[zip];
+
+      for (const area of serviceAreas) {
+        // Check localStorage first
+        if (stored[area]) {
+          names[area] = stored[area];
+        }
+        // State codes have built-in display names
+        else if (isStateCode(area)) {
+          names[area] = getFallbackDisplayName(area);
+        }
+        // Prefix codes have built-in display names
+        else if (isPrefixCode(area)) {
+          names[area] = getFallbackDisplayName(area);
         }
       }
 
-      // For any missing, try to look them up (but don't block)
-      const missingZips = zipCodes.filter(zip => !names[zip]);
+      // For zip codes without cached names, try to look them up
+      const missingZips = serviceAreas.filter(area => !names[area] && isZipCode(area));
 
       if (missingZips.length > 0 && typeof window !== 'undefined' && window.google?.maps?.Geocoder) {
         // Lookup in parallel but limit to avoid rate limiting
@@ -116,7 +177,7 @@ export default function ServiceAreaDisplay({ zipCodes, showIcon = true }: Servic
           names[zip] = zip;
         }
       } else {
-        // No Google Maps available, just use zip codes
+        // No Google Maps available, just use zip codes as-is
         for (const zip of missingZips) {
           names[zip] = zip;
         }
@@ -126,27 +187,32 @@ export default function ServiceAreaDisplay({ zipCodes, showIcon = true }: Servic
       setLoading(false);
     };
 
-    if (zipCodes.length > 0) {
+    if (serviceAreas.length > 0) {
       loadDisplayNames();
     } else {
       setLoading(false);
     }
-  }, [zipCodes]);
+  }, [serviceAreas]);
 
-  if (zipCodes.length === 0) {
+  if (serviceAreas.length === 0) {
     return <span style={{ color: '#999' }}>No service areas specified</span>;
   }
 
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-      {zipCodes.map((zip) => {
-        const displayName = displayNames[zip];
-        const isLoading = loading && !displayName;
-        const showFullName = displayName && displayName !== zip;
+      {serviceAreas.map((area) => {
+        const displayName = displayNames[area];
+        const isLoadingArea = loading && !displayName && isZipCode(area);
+        const showFullName = displayName && displayName !== area;
+        const tooltipText = isZipCode(area) && showFullName ? `ZIP: ${area}` :
+                          isPrefixCode(area) ? `Covers all ${area.replace('prefix:', '')}xx zip codes` :
+                          isStateCode(area) ? `Covers entire ${area.replace('state:', '')}` :
+                          undefined;
 
         return (
-          <Tooltip key={zip} title={showFullName ? `ZIP: ${zip}` : undefined}>
+          <Tooltip key={area} title={tooltipText}>
             <Tag
+              color={getTagColor(area)}
               style={{
                 padding: '4px 8px',
                 display: 'flex',
@@ -155,9 +221,9 @@ export default function ServiceAreaDisplay({ zipCodes, showIcon = true }: Servic
               }}
             >
               {showIcon && (
-                isLoading ? <LoadingOutlined /> : <EnvironmentOutlined />
+                isLoadingArea ? <LoadingOutlined /> : <EnvironmentOutlined />
               )}
-              {isLoading ? zip : (showFullName ? displayName : zip)}
+              {isLoadingArea ? area : (showFullName ? displayName : getFallbackDisplayName(area))}
             </Tag>
           </Tooltip>
         );

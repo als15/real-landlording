@@ -10,6 +10,76 @@ function extractZipCode(location: string): string | null {
   return match ? match[1] : null;
 }
 
+// Zip code prefix to state mapping (first 3 digits)
+// This covers the major US zip code ranges
+const ZIP_PREFIX_TO_STATE: Record<string, string> = {
+  // Pennsylvania (PA) - Philadelphia area focus
+  '150': 'PA', '151': 'PA', '152': 'PA', '153': 'PA', '154': 'PA', '155': 'PA', '156': 'PA', '157': 'PA', '158': 'PA', '159': 'PA',
+  '160': 'PA', '161': 'PA', '162': 'PA', '163': 'PA', '164': 'PA', '165': 'PA', '166': 'PA', '167': 'PA', '168': 'PA', '169': 'PA',
+  '170': 'PA', '171': 'PA', '172': 'PA', '173': 'PA', '174': 'PA', '175': 'PA', '176': 'PA', '177': 'PA', '178': 'PA', '179': 'PA',
+  '180': 'PA', '181': 'PA', '182': 'PA', '183': 'PA', '184': 'PA', '185': 'PA', '186': 'PA', '187': 'PA', '188': 'PA', '189': 'PA',
+  '190': 'PA', '191': 'PA', '192': 'PA', '193': 'PA', '194': 'PA', '195': 'PA', '196': 'PA',
+  // New Jersey (NJ)
+  '070': 'NJ', '071': 'NJ', '072': 'NJ', '073': 'NJ', '074': 'NJ', '075': 'NJ', '076': 'NJ', '077': 'NJ', '078': 'NJ', '079': 'NJ',
+  '080': 'NJ', '081': 'NJ', '082': 'NJ', '083': 'NJ', '084': 'NJ', '085': 'NJ', '086': 'NJ', '087': 'NJ', '088': 'NJ', '089': 'NJ',
+  // New York (NY)
+  '100': 'NY', '101': 'NY', '102': 'NY', '103': 'NY', '104': 'NY', '105': 'NY', '106': 'NY', '107': 'NY', '108': 'NY', '109': 'NY',
+  '110': 'NY', '111': 'NY', '112': 'NY', '113': 'NY', '114': 'NY', '115': 'NY', '116': 'NY', '117': 'NY', '118': 'NY', '119': 'NY',
+  '120': 'NY', '121': 'NY', '122': 'NY', '123': 'NY', '124': 'NY', '125': 'NY', '126': 'NY', '127': 'NY', '128': 'NY', '129': 'NY',
+  '130': 'NY', '131': 'NY', '132': 'NY', '133': 'NY', '134': 'NY', '135': 'NY', '136': 'NY', '137': 'NY', '138': 'NY', '139': 'NY',
+  '140': 'NY', '141': 'NY', '142': 'NY', '143': 'NY', '144': 'NY', '145': 'NY', '146': 'NY', '147': 'NY', '148': 'NY', '149': 'NY',
+  // Delaware (DE)
+  '197': 'DE', '198': 'DE', '199': 'DE',
+  // Maryland (MD)
+  '206': 'MD', '207': 'MD', '208': 'MD', '209': 'MD', '210': 'MD', '211': 'MD', '212': 'MD', '214': 'MD', '215': 'MD', '216': 'MD', '217': 'MD', '218': 'MD', '219': 'MD',
+  // Washington DC
+  '200': 'DC', '202': 'DC', '203': 'DC', '204': 'DC', '205': 'DC',
+  // Virginia (VA)
+  '220': 'VA', '221': 'VA', '222': 'VA', '223': 'VA', '224': 'VA', '225': 'VA', '226': 'VA', '227': 'VA', '228': 'VA', '229': 'VA',
+  '230': 'VA', '231': 'VA', '232': 'VA', '233': 'VA', '234': 'VA', '235': 'VA', '236': 'VA', '237': 'VA', '238': 'VA', '239': 'VA',
+  '240': 'VA', '241': 'VA', '242': 'VA', '243': 'VA', '244': 'VA', '245': 'VA', '246': 'VA',
+  // West Virginia (WV)
+  '247': 'WV', '248': 'WV', '249': 'WV', '250': 'WV', '251': 'WV', '252': 'WV', '253': 'WV', '254': 'WV', '255': 'WV', '256': 'WV',
+  '257': 'WV', '258': 'WV', '259': 'WV', '260': 'WV', '261': 'WV', '262': 'WV', '263': 'WV', '264': 'WV', '265': 'WV', '266': 'WV', '267': 'WV', '268': 'WV',
+  // Connecticut (CT)
+  '060': 'CT', '061': 'CT', '062': 'CT', '063': 'CT', '064': 'CT', '065': 'CT', '066': 'CT', '067': 'CT', '068': 'CT', '069': 'CT',
+  // Massachusetts (MA)
+  '010': 'MA', '011': 'MA', '012': 'MA', '013': 'MA', '014': 'MA', '015': 'MA', '016': 'MA', '017': 'MA', '018': 'MA', '019': 'MA',
+  '020': 'MA', '021': 'MA', '022': 'MA', '023': 'MA', '024': 'MA', '025': 'MA', '026': 'MA', '027': 'MA',
+};
+
+// Get state from zip code using prefix mapping
+function getStateFromZip(zip: string): string | null {
+  if (!zip || zip.length < 3) return null;
+  const prefix = zip.substring(0, 3);
+  return ZIP_PREFIX_TO_STATE[prefix] || null;
+}
+
+// Build service area matching patterns for a given zip code
+// Returns all patterns a vendor's service_areas could contain to match this zip
+function getServiceAreaMatchPatterns(zip: string): string[] {
+  const patterns: string[] = [];
+
+  if (!zip || !/^\d{5}$/.test(zip)) return patterns;
+
+  // Exact zip code match
+  patterns.push(zip);
+
+  // 3-digit prefix match (e.g., prefix:191 for 19103)
+  patterns.push(`prefix:${zip.substring(0, 3)}`);
+
+  // 4-digit prefix match (e.g., prefix:1910 for 19103)
+  patterns.push(`prefix:${zip.substring(0, 4)}`);
+
+  // State match
+  const state = getStateFromZip(zip);
+  if (state) {
+    patterns.push(`state:${state}`);
+  }
+
+  return patterns;
+}
+
 export async function GET(request: NextRequest) {
   try {
     // Verify admin access
@@ -55,8 +125,18 @@ export async function GET(request: NextRequest) {
     const requireLocation = searchParams.get('require_location') === 'true';
     const targetZip = zip_code || (location ? extractZipCode(location) : null);
     if (targetZip && requireLocation) {
-      // Check if vendor serves this zip code area
-      query = query.contains('service_areas', [targetZip]);
+      // Get all possible matching patterns for this zip code
+      // This includes: exact zip, prefix:XXX, prefix:XXXX, state:XX
+      const patterns = getServiceAreaMatchPatterns(targetZip);
+
+      if (patterns.length > 0) {
+        // Build OR conditions for each pattern
+        // Each condition checks if service_areas contains that pattern
+        const orConditions = patterns
+          .map(pattern => `service_areas.cs.{"${pattern}"}`)
+          .join(',');
+        query = query.or(orConditions);
+      }
     }
 
     // Server-side search across multiple fields

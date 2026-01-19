@@ -286,37 +286,44 @@ export default function ServiceAreaAutocomplete({
     });
   };
 
-  const addServiceArea = (zip: string, display: string): boolean => {
-    const cleanZip = zip.trim();
+  // Helper to validate service area format: zip (5 digits), state:XX, or prefix:XXX(X)
+  const isValidServiceArea = (value: string): boolean => {
+    return /^\d{5}$/.test(value) || // 5-digit zip
+           /^state:[A-Z]{2}$/.test(value) || // state:XX
+           /^prefix:\d{3,4}$/.test(value); // prefix:XXX or prefix:XXXX
+  };
+
+  const addServiceArea = (value: string, display: string): boolean => {
+    const cleanValue = value.trim();
     const currentValue = internalValueRef.current;
 
-    // Validate zip format
-    if (!cleanZip || !/^\d{5}$/.test(cleanZip)) {
-      console.log('Invalid zip format:', cleanZip);
+    // Validate format
+    if (!cleanValue || !isValidServiceArea(cleanValue)) {
+      console.log('Invalid service area format:', cleanValue);
       return false;
     }
 
     // Check for duplicates
-    if (currentValue.includes(cleanZip)) {
-      console.log('Duplicate zip, skipping:', cleanZip);
-      setError(`${display || cleanZip} is already in your list`);
+    if (currentValue.includes(cleanValue)) {
+      console.log('Duplicate entry, skipping:', cleanValue);
+      setError(`${display || cleanValue} is already in your list`);
       setTimeout(() => setError(null), 2000);
       return false;
     }
 
-    const newDisplayMap = { ...displayMapRef.current, [cleanZip]: display };
+    const newDisplayMap = { ...displayMapRef.current, [cleanValue]: display };
     setDisplayMap(newDisplayMap);
     displayMapRef.current = newDisplayMap;
 
-    const newValue = [...currentValue, cleanZip];
+    const newValue = [...currentValue, cleanValue];
     internalValueRef.current = newValue;  // Update internal state immediately
     onChangeRef.current?.(newValue);       // Notify parent
-    console.log('Added service area:', cleanZip, 'Total:', newValue.length);
+    console.log('Added service area:', cleanValue, 'Total:', newValue.length);
     return true;
   };
 
-  const removeServiceArea = (zip: string) => {
-    const newValue = internalValueRef.current.filter(z => z !== zip);
+  const removeServiceArea = (area: string) => {
+    const newValue = internalValueRef.current.filter(a => a !== area);
     internalValueRef.current = newValue;
     onChangeRef.current?.(newValue);
   };
@@ -328,7 +335,7 @@ export default function ServiceAreaAutocomplete({
       const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
         types: ['(regions)'],
         componentRestrictions: { country: 'us' },
-        fields: ['address_components', 'formatted_address', 'geometry', 'name', 'place_id'],
+        fields: ['address_components', 'formatted_address', 'geometry', 'name', 'place_id', 'types'],
       });
 
       autocomplete.addListener('place_changed', async () => {
@@ -339,24 +346,97 @@ export default function ServiceAreaAutocomplete({
         setError(null);
 
         try {
-          // First, try to extract zip from the place result directly
           if (place.address_components) {
+            // Check what type of place was selected
+            const placeTypes = place.types || [];
+            const stateComp = place.address_components.find(
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (c: any) => c.types.includes('administrative_area_level_1')
+            );
+            const localityComp = place.address_components.find(
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (c: any) => c.types.includes('locality') || c.types.includes('sublocality')
+            );
+            const neighborhoodComp = place.address_components.find(
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (c: any) => c.types.includes('neighborhood')
+            );
             const zipComp = place.address_components.find(
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               (c: any) => c.types.includes('postal_code')
             );
 
-            if (zipComp) {
-              const localityComp = place.address_components.find(
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (c: any) => c.types.includes('locality') || c.types.includes('sublocality') || c.types.includes('neighborhood')
-              );
-              const stateComp = place.address_components.find(
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (c: any) => c.types.includes('administrative_area_level_1')
-              );
+            // Case 1: State-level selection (e.g., "New York, NY" or "Pennsylvania")
+            const isStateLevel = placeTypes.includes('administrative_area_level_1') ||
+              (stateComp && !localityComp && !neighborhoodComp && !zipComp);
 
-              let displayName = localityComp?.long_name || place.name || selectedText.split(',')[0];
+            if (isStateLevel && stateComp) {
+              const stateCode = stateComp.short_name;
+              const displayName = `${stateComp.long_name} (entire state)`;
+              addServiceArea(`state:${stateCode}`, displayName);
+              setInputValue('');
+              if (inputRef.current) inputRef.current.value = '';
+              setIsResolving(false);
+              return;
+            }
+
+            // Case 2: City-level selection (e.g., "Philadelphia, PA")
+            const isCityLevel = placeTypes.includes('locality') ||
+              placeTypes.includes('sublocality') ||
+              (localityComp && !neighborhoodComp && !zipComp);
+
+            if (isCityLevel && place.geometry?.location) {
+              // Get a sample zip code to extract the ZIP3 prefix
+              const lat = typeof place.geometry.location.lat === 'function'
+                ? place.geometry.location.lat()
+                : place.geometry.location.lat;
+              const lng = typeof place.geometry.location.lng === 'function'
+                ? place.geometry.location.lng()
+                : place.geometry.location.lng;
+
+              const sampleZip = await getZipFromLatLng(lat, lng);
+              if (sampleZip && sampleZip.length >= 3) {
+                const prefix = sampleZip.substring(0, 3);
+                const cityName = localityComp?.long_name || place.name || selectedText.split(',')[0];
+                const displayName = stateComp
+                  ? `${cityName}, ${stateComp.short_name} (${prefix}xx area)`
+                  : `${cityName} (${prefix}xx area)`;
+                addServiceArea(`prefix:${prefix}`, displayName);
+                setInputValue('');
+                if (inputRef.current) inputRef.current.value = '';
+                setIsResolving(false);
+                return;
+              }
+            }
+
+            // Case 3: Neighborhood or specific area - get zip and use prefix:XXXX for narrower coverage
+            if (neighborhoodComp && place.geometry?.location) {
+              const lat = typeof place.geometry.location.lat === 'function'
+                ? place.geometry.location.lat()
+                : place.geometry.location.lat;
+              const lng = typeof place.geometry.location.lng === 'function'
+                ? place.geometry.location.lng()
+                : place.geometry.location.lng;
+
+              const sampleZip = await getZipFromLatLng(lat, lng);
+              if (sampleZip && sampleZip.length >= 4) {
+                // Use 4-digit prefix for neighborhoods (narrower area)
+                const prefix = sampleZip.substring(0, 4);
+                const areaName = neighborhoodComp?.long_name || place.name || selectedText.split(',')[0];
+                const displayName = stateComp
+                  ? `${areaName}, ${stateComp.short_name} (${prefix}x area)`
+                  : `${areaName} (${prefix}x area)`;
+                addServiceArea(`prefix:${prefix}`, displayName);
+                setInputValue('');
+                if (inputRef.current) inputRef.current.value = '';
+                setIsResolving(false);
+                return;
+              }
+            }
+
+            // Case 4: Zip code was directly in the result
+            if (zipComp) {
+              let displayName = localityComp?.long_name || neighborhoodComp?.long_name || place.name || selectedText.split(',')[0];
               if (stateComp) {
                 displayName += `, ${stateComp.short_name}`;
               }
@@ -370,7 +450,7 @@ export default function ServiceAreaAutocomplete({
             }
           }
 
-          // No zip in place result - try reverse geocoding if we have geometry
+          // Fallback: No zip in place result - try reverse geocoding if we have geometry
           if (place.geometry?.location) {
             const lat = typeof place.geometry.location.lat === 'function'
               ? place.geometry.location.lat()
@@ -418,7 +498,7 @@ export default function ServiceAreaAutocomplete({
           }
 
           // Nothing worked
-          setError('Could not find zip code for this location. Try entering the zip code directly.');
+          setError('Could not find location. Try entering a zip code directly.');
           setTimeout(() => setError(null), 4000);
         } catch (err) {
           console.error('Error processing place:', err);
@@ -462,23 +542,49 @@ export default function ServiceAreaAutocomplete({
     large: { padding: '8px 11px', fontSize: 16, minHeight: 48 },
   };
 
-  const isPhillyArea = (zip: string) => PHILLY_AREA_ZIPS.has(zip);
+  // Determine tag color based on service area type and location
+  const getTagColor = (value: string): string => {
+    if (value.startsWith('state:')) {
+      return 'purple'; // States are purple
+    }
+    if (value.startsWith('prefix:')) {
+      const prefix = value.replace('prefix:', '');
+      // Check if it's a Philly area prefix (191, 190, etc.)
+      if (prefix.startsWith('191') || prefix.startsWith('190')) {
+        return 'blue';
+      }
+      return 'green'; // Other city/area prefixes are green
+    }
+    // Regular zip codes
+    return PHILLY_AREA_ZIPS.has(value) ? 'blue' : 'orange';
+  };
 
-  const getDisplayName = (zip: string) => displayMap[zip] || zip;
+  const getDisplayName = (value: string) => {
+    if (displayMap[value]) return displayMap[value];
+    // Fallback display for values without cached display names
+    if (value.startsWith('state:')) {
+      return `${value.replace('state:', '')} (entire state)`;
+    }
+    if (value.startsWith('prefix:')) {
+      const prefix = value.replace('prefix:', '');
+      return `${prefix}${'x'.repeat(5 - prefix.length)} area`;
+    }
+    return value;
+  };
 
   return (
     <div>
       {/* Selected service areas */}
       {value.length > 0 && (
         <div style={{ marginBottom: 8, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          {value.map(zip => {
-            const display = getDisplayName(zip);
+          {value.map(area => {
+            const display = getDisplayName(area);
             return (
               <Tag
-                key={zip}
+                key={area}
                 closable
-                onClose={() => removeServiceArea(zip)}
-                color={isPhillyArea(zip) ? 'blue' : 'orange'}
+                onClose={() => removeServiceArea(area)}
+                color={getTagColor(area)}
                 style={{
                   padding: '4px 8px',
                   fontSize: 14,
@@ -535,7 +641,7 @@ export default function ServiceAreaAutocomplete({
       )}
 
       <div style={{ color: '#8c8c8c', fontSize: 12, marginTop: 4 }}>
-        Search for any city or neighborhood, or type a 5-digit zip code and press Enter.
+        Search for states, cities, or neighborhoods. You can also type a 5-digit zip code and press Enter.
       </div>
     </div>
   );

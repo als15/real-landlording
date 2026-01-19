@@ -635,7 +635,7 @@ function VendorsPageContent() {
 
             <Divider>Service Areas</Divider>
 
-            <ServiceAreaDisplay zipCodes={selectedVendor.service_areas} />
+            <ServiceAreaDisplay serviceAreas={selectedVendor.service_areas} />
 
             <Divider>Qualifications</Divider>
 
