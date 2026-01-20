@@ -179,6 +179,25 @@ export default function VendorTermsPage() {
           <Paragraph>
             By submitting an onboarding request or accepting referrals, Vendor agrees to these Terms & Privacy Policy.
           </Paragraph>
+
+          <Divider />
+
+          <Title level={3}>14. No Endorsement / No User Reliance on Documentation</Title>
+          <Paragraph>
+            Vendor acknowledges and agrees that any licenses, insurance certificates, certifications, or other documentation provided to Real Landlording LLC are collected solely for internal platform and operational purposes.
+          </Paragraph>
+          <Paragraph>
+            Vendor further agrees that:
+          </Paragraph>
+          <ul>
+            <li>Real Landlording does not verify, audit, or guarantee the accuracy, sufficiency, or ongoing validity of any documentation provided</li>
+            <li>Real Landlording does not represent to Users that Vendor is licensed, insured, or qualified based on any documentation submitted</li>
+            <li>Vendor remains solely responsible for maintaining all required licenses, insurance, and certifications at all times</li>
+            <li>Vendor shall not represent, imply, or state to any User that Real Landlording has approved, certified, endorsed, or verified Vendor&apos;s qualifications or coverage</li>
+          </ul>
+          <Paragraph>
+            Vendor agrees to indemnify and hold harmless Real Landlording from any claim arising from Vendor&apos;s failure to maintain required documentation or from any representation made by Vendor regarding licensing, insurance, or approval status.
+          </Paragraph>
         </div>
       </Content>
 

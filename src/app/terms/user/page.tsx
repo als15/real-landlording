@@ -174,6 +174,28 @@ export default function UserTermsPage() {
           <Paragraph>
             By submitting a request, checking the acceptance box, or using the platform, User acknowledges that they have read, understood, and agree to these Terms of Service & Privacy Policy.
           </Paragraph>
+
+          <Divider />
+
+          <Title level={3}>12. Vendor Documentation Disclaimer</Title>
+          <Paragraph>
+            Real Landlording LLC may collect, store, or review certain vendor documentation, including but not limited to insurance certificates, licenses, or certifications, solely for internal platform and operational purposes.
+          </Paragraph>
+          <Paragraph>
+            Users expressly acknowledge and agree that:
+          </Paragraph>
+          <ul>
+            <li>Any vendor documentation collected or reviewed by Real Landlording is <Text strong>not</Text> provided for User reliance</li>
+            <li>Real Landlording does <Text strong>not</Text> verify, audit, guarantee, monitor, or continuously update the accuracy, validity, scope, or sufficiency of any vendor&apos;s insurance, licensing, or certifications</li>
+            <li>The existence, display, or mention of vendor documentation does <Text strong>not</Text> constitute an endorsement, approval, warranty, or representation by Real Landlording</li>
+            <li>Vendors may experience changes, lapses, exclusions, or cancellations in coverage at any time without notice to Real Landlording</li>
+          </ul>
+          <Paragraph>
+            Users are <Text strong>solely responsible</Text> for conducting their own independent due diligence, including requesting and verifying current insurance coverage, licenses, certifications, and qualifications directly with the Vendor before engaging any services.
+          </Paragraph>
+          <Paragraph>
+            Real Landlording assumes no liability for any loss, damage, claim, or dispute arising from a User&apos;s reliance on vendor documentation, whether reviewed, collected, or referenced by Real Landlording.
+          </Paragraph>
         </div>
       </Content>
 

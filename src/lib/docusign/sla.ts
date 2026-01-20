@@ -8,6 +8,7 @@ export interface VendorSlaData {
   contactName: string;
   businessName: string;
   email: string;
+  commissionRate?: string; // e.g., "10" for 10%
 }
 
 export interface SendSlaResult {
@@ -35,9 +36,30 @@ export async function sendSlaToVendor(vendor: VendorSlaData): Promise<SendSlaRes
       email: vendor.email,
       contactName: vendor.contactName,
       businessName: vendor.businessName,
+      commissionRate: vendor.commissionRate,
       templateId: DOCUSIGN_SLA_TEMPLATE_ID,
       roleName: DOCUSIGN_SLA_ROLE_NAME,
     });
+
+    // Build text tabs array
+    const textTabs = [
+      {
+        tabLabel: 'vendor_name',
+        value: vendor.contactName,
+      },
+      {
+        tabLabel: 'business_name',
+        value: vendor.businessName,
+      },
+    ];
+
+    // Add commission rate if provided
+    if (vendor.commissionRate) {
+      textTabs.push({
+        tabLabel: 'commission_rate',
+        value: vendor.commissionRate,
+      });
+    }
 
     // Create envelope from template
     const envelopeDefinition = {
@@ -49,16 +71,7 @@ export async function sendSlaToVendor(vendor: VendorSlaData): Promise<SendSlaRes
           name: vendor.contactName,
           email: vendor.email,
           tabs: {
-            textTabs: [
-              {
-                tabLabel: 'vendor_name',
-                value: vendor.contactName,
-              },
-              {
-                tabLabel: 'business_name',
-                value: vendor.businessName,
-              },
-            ],
+            textTabs,
           },
         },
       ],

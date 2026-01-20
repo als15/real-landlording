@@ -12,6 +12,15 @@ export async function POST(
     const { id } = await params;
     const adminClient = createAdminClient();
 
+    // Parse request body for commission rate
+    let commissionRate: string | undefined;
+    try {
+      const body = await request.json();
+      commissionRate = body.commissionRate;
+    } catch {
+      // No body provided, commission rate will be undefined
+    }
+
     // Get vendor details to create auth account and send SLA
     const { data: vendor, error: fetchError } = await adminClient
       .from('vendors')
@@ -89,6 +98,7 @@ export async function POST(
           contactName: vendor.contact_name,
           businessName: vendor.business_name || vendor.contact_name,
           email: vendor.email,
+          commissionRate,
         });
 
         if (slaResult.success && slaResult.envelopeId) {
