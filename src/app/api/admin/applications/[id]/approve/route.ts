@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendVendorWelcomeEmail } from '@/lib/email/send';
 import { Vendor } from '@/types/database';
-import { sendSlaToVendor, isDocuSignConfigured } from '@/lib/docusign';
+import { sendSlaToVendor, isPandaDocConfigured } from '@/lib/pandadoc';
 
 export async function POST(
   request: NextRequest,
@@ -87,11 +87,11 @@ export async function POST(
     sendVendorWelcomeEmail(vendor as Vendor, tempPassword || undefined)
       .catch(console.error);
 
-    // Auto-send SLA via DocuSign if configured
+    // Auto-send SLA via PandaDoc if configured
     let slaSent = false;
-    let slaEnvelopeId: string | undefined;
+    let slaDocumentId: string | undefined;
 
-    if (isDocuSignConfigured()) {
+    if (isPandaDocConfigured()) {
       try {
         const slaResult = await sendSlaToVendor({
           vendorId: id,
@@ -101,21 +101,21 @@ export async function POST(
           commissionRate,
         });
 
-        if (slaResult.success && slaResult.envelopeId) {
+        if (slaResult.success && slaResult.documentId) {
           slaSent = true;
-          slaEnvelopeId = slaResult.envelopeId;
+          slaDocumentId = slaResult.documentId;
 
-          // Update vendor with SLA envelope info
+          // Update vendor with SLA document info
           await adminClient
             .from('vendors')
             .update({
-              sla_envelope_id: slaResult.envelopeId,
+              sla_envelope_id: slaResult.documentId,
               sla_status: 'sent',
               sla_sent_at: new Date().toISOString(),
             })
             .eq('id', id);
 
-          console.log(`[Vendor Approve] SLA sent to ${vendor.email}, envelope: ${slaResult.envelopeId}`);
+          console.log(`[Vendor Approve] SLA sent to ${vendor.email}, document: ${slaResult.documentId}`);
         } else {
           console.error(`[Vendor Approve] Failed to send SLA: ${slaResult.error}`);
         }
@@ -124,7 +124,7 @@ export async function POST(
         // Don't fail the approval if SLA send fails
       }
     } else {
-      console.log('[Vendor Approve] DocuSign not configured, skipping SLA');
+      console.log('[Vendor Approve] PandaDoc not configured, skipping SLA');
     }
 
     return NextResponse.json({
@@ -134,7 +134,7 @@ export async function POST(
       tempPassword,
       existingAccount: !!existingAuthUser,
       slaSent,
-      slaEnvelopeId,
+      slaDocumentId,
     });
   } catch (error) {
     console.error('API error:', error);

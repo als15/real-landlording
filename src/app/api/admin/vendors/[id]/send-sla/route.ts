@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { sendSlaToVendor, isDocuSignConfigured } from '@/lib/docusign';
+import { sendSlaToVendor, isPandaDocConfigured } from '@/lib/pandadoc';
 
 export async function POST(
   request: NextRequest,
@@ -9,10 +9,10 @@ export async function POST(
   try {
     const { id } = await params;
 
-    // Check if DocuSign is configured
-    if (!isDocuSignConfigured()) {
+    // Check if PandaDoc is configured
+    if (!isPandaDocConfigured()) {
       return NextResponse.json(
-        { message: 'DocuSign is not configured' },
+        { message: 'PandaDoc is not configured' },
         { status: 503 }
       );
     }
@@ -64,7 +64,7 @@ export async function POST(
       );
     }
 
-    // Send SLA via DocuSign
+    // Send SLA via PandaDoc
     const result = await sendSlaToVendor({
       vendorId: vendor.id,
       contactName: vendor.contact_name,
@@ -73,18 +73,18 @@ export async function POST(
     });
 
     if (!result.success) {
-      console.error('[Send SLA] DocuSign error:', result.error);
+      console.error('[Send SLA] PandaDoc error:', result.error);
       return NextResponse.json(
         { message: 'Failed to send SLA', error: result.error },
         { status: 500 }
       );
     }
 
-    // Update vendor record with envelope ID and status
+    // Update vendor record with document ID and status
     const { error: updateError } = await adminClient
       .from('vendors')
       .update({
-        sla_envelope_id: result.envelopeId,
+        sla_envelope_id: result.documentId,
         sla_status: 'sent',
         sla_sent_at: new Date().toISOString(),
       })
@@ -97,7 +97,7 @@ export async function POST(
       return NextResponse.json(
         {
           message: 'SLA sent but failed to update database',
-          envelopeId: result.envelopeId,
+          documentId: result.documentId,
           error: updateError.message
         },
         { status: 500 }
@@ -106,7 +106,7 @@ export async function POST(
 
     return NextResponse.json({
       message: 'SLA sent successfully',
-      envelopeId: result.envelopeId,
+      documentId: result.documentId,
     });
   } catch (error) {
     console.error('[Send SLA] API error:', error);

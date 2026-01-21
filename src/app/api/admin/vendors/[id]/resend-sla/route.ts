@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { resendSlaNotification, isDocuSignConfigured } from '@/lib/docusign';
+import { resendSlaNotification, isPandaDocConfigured } from '@/lib/pandadoc';
 
 export async function POST(
   request: NextRequest,
@@ -9,10 +9,10 @@ export async function POST(
   try {
     const { id } = await params;
 
-    // Check if DocuSign is configured
-    if (!isDocuSignConfigured()) {
+    // Check if PandaDoc is configured
+    if (!isPandaDocConfigured()) {
       return NextResponse.json(
-        { message: 'DocuSign is not configured' },
+        { message: 'PandaDoc is not configured' },
         { status: 503 }
       );
     }

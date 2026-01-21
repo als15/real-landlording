@@ -64,9 +64,6 @@ export default function ApplicationsPage() {
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [processing, setProcessing] = useState(false);
-  const [approveModalOpen, setApproveModalOpen] = useState(false);
-  const [vendorToApprove, setVendorToApprove] = useState<string | null>(null);
-  const [commissionRate, setCommissionRate] = useState<string>('10');
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -227,30 +224,16 @@ export default function ApplicationsPage() {
     }
   };
 
-  // Show commission rate modal before approving
-  const handleApproveClick = (vendorId: string) => {
-    setVendorToApprove(vendorId);
-    setCommissionRate('10'); // Default commission rate
-    setApproveModalOpen(true);
-  };
-
-  // Actually approve the vendor with commission rate
-  const handleApproveConfirm = async () => {
-    if (!vendorToApprove) return;
-
+  const handleApprove = async (vendorId: string) => {
     setProcessing(true);
     try {
-      const response = await fetch(`/api/admin/applications/${vendorToApprove}/approve`, {
+      const response = await fetch(`/api/admin/applications/${vendorId}/approve`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ commissionRate }),
       });
 
       if (response.ok) {
         message.success('Vendor approved successfully!');
-        setApproveModalOpen(false);
         setDetailModalOpen(false);
-        setVendorToApprove(null);
         fetchApplications();
       } else {
         throw new Error('Failed to approve vendor');
@@ -352,7 +335,7 @@ export default function ApplicationsPage() {
             size="small"
             type="primary"
             icon={<CheckOutlined />}
-            onClick={() => handleApproveClick(record.id)}
+            onClick={() => handleApprove(record.id)}
           >
             Approve
           </Button>
@@ -429,7 +412,8 @@ export default function ApplicationsPage() {
             key="approve"
             type="primary"
             icon={<CheckOutlined />}
-            onClick={() => selectedApp && handleApproveClick(selectedApp.id)}
+            loading={processing}
+            onClick={() => selectedApp && handleApprove(selectedApp.id)}
           >
             Approve
           </Button>,
@@ -631,35 +615,6 @@ export default function ApplicationsPage() {
         />
       </Modal>
 
-      {/* Commission Rate Modal */}
-      <Modal
-        title="Set Commission Rate"
-        open={approveModalOpen}
-        onCancel={() => {
-          setApproveModalOpen(false);
-          setVendorToApprove(null);
-        }}
-        onOk={handleApproveConfirm}
-        confirmLoading={processing}
-        okText="Approve & Send SLA"
-      >
-        <Text>Enter the commission rate for this vendor. This will be included in the SLA document sent via DocuSign.</Text>
-        <div style={{ marginTop: 16 }}>
-          <Text strong>Commission Rate (%)</Text>
-          <InputNumber
-            min={0}
-            max={100}
-            value={Number(commissionRate)}
-            onChange={(value) => setCommissionRate(String(value || 10))}
-            style={{ width: '100%', marginTop: 8 }}
-            addonAfter="%"
-            size="large"
-          />
-          <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
-            Suggested rates: 10% (1-3 years exp), 7% (4-7 years), 5% (8+ years)
-          </Text>
-        </div>
-      </Modal>
     </div>
   );
 }

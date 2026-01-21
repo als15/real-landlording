@@ -301,7 +301,14 @@ export function vendorWelcomeEmail(
           <p><em>Please change your password after logging in.</em></p>
         </div>
       `
-          : ''
+          : `
+        <div class="info-box">
+          <h3 style="margin-top: 0;">Login to Your Dashboard</h3>
+          <p>You already have an account with Real Landlording. Use your existing password to log in.</p>
+          <p><strong>Email:</strong> ${vendor.email}</p>
+          <p>Forgot your password? <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/forgot-password">Reset it here</a></p>
+        </div>
+      `
       }
 
       <h3>What's Next?</h3>

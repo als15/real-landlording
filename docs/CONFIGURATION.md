@@ -47,35 +47,37 @@ This document tracks all external URLs, configuration values, and integrations u
 | `FROM_EMAIL` | Email sender address | Set in `src/lib/email/resend.ts` |
 | `ADMIN_EMAIL` | Admin notification email address | `admin@reallandlording.com` |
 
-### DocuSign Integration (SLA Signing)
+### PandaDoc Integration (SLA Signing)
 
 | Variable | Purpose | How to Get |
 |----------|---------|------------|
-| `DOCUSIGN_INTEGRATION_KEY` | DocuSign application client ID | Create app at [developers.docusign.com](https://developers.docusign.com) |
-| `DOCUSIGN_USER_ID` | DocuSign user ID (GUID) | Found in DocuSign admin under Users |
-| `DOCUSIGN_ACCOUNT_ID` | DocuSign account ID | Found in DocuSign admin settings |
-| `DOCUSIGN_RSA_PRIVATE_KEY` | Base64-encoded RSA private key | Generate keypair in DocuSign app settings |
-| `DOCUSIGN_SLA_TEMPLATE_ID` | Template ID for SLA document | Create template in DocuSign, copy ID |
-| `DOCUSIGN_BASE_PATH` | DocuSign API base URL | `https://demo.docusign.net/restapi` (sandbox) or `https://na4.docusign.net/restapi` (production) |
-| `DOCUSIGN_OAUTH_BASE_PATH` | DocuSign OAuth URL | `account-d.docusign.com` (sandbox) or `account.docusign.com` (production) |
-| `DOCUSIGN_WEBHOOK_SECRET` | Webhook HMAC secret (optional) | Generate in DocuSign Connect settings |
+| `PANDADOC_API_KEY` | PandaDoc API key | [app.pandadoc.com/a/#/settings/integrations/api](https://app.pandadoc.com/a/#/settings/integrations/api) |
+| `PANDADOC_SLA_TEMPLATE_ID` | Template UUID for SLA document | Create template in PandaDoc, copy UUID from URL |
+| `PANDADOC_WEBHOOK_SECRET` | Webhook shared secret (optional) | Set in PandaDoc webhook configuration |
 
-**DocuSign Setup Steps:**
+**PandaDoc Setup Steps:**
 
-1. Create developer account at [developers.docusign.com](https://developers.docusign.com)
-2. Create a new application (Integration)
-3. Enable JWT Grant authentication
-4. Generate RSA keypair in app settings
-5. Grant consent by visiting the consent URL (see DocuSign docs)
-6. Create SLA template with these placeholder fields:
-   - `vendor_name` (text)
-   - `business_name` (text)
-   - `signature` (signature field)
-   - `date_signed` (date field)
-7. Create a Connect webhook configuration pointing to `/api/webhooks/docusign`
-8. Add all environment variables to your `.env` file
+1. Create account at [pandadoc.com](https://www.pandadoc.com)
+2. Go to Settings → Integrations → API and create an API key
+3. Create SLA template with these token placeholders (use {{token_name}} format):
+   - `vendor_name` - Vendor's contact name
+   - `business_name` - Vendor's business name
+   - `commission_rate` - Commission percentage (optional, for future use)
+4. Add signature field assigned to "Vendor" role
+5. Add date field for signature date
+6. Copy template UUID from the URL (the ID after `/templates/`)
+7. Configure webhook at Settings → Integrations → Webhooks:
+   - URL: `https://your-domain.com/api/webhooks/pandadoc`
+   - Events: `document_state_changed`, `document_completed_pdf_ready`
+   - Add shared secret for verification (optional but recommended)
+8. Add environment variables to your `.env` file
 
-**Webhook URL:** `https://your-domain.com/api/webhooks/docusign`
+**Webhook URL:** `https://your-domain.com/api/webhooks/pandadoc`
+
+**PandaDoc vs DocuSign:**
+- Simpler API key authentication (no JWT/RSA complexity)
+- Lower pricing (~$19-35/mo vs ~$40-50/mo)
+- Two-step document flow: create → send (vs single envelope create)
 
 ---
 
@@ -119,6 +121,7 @@ Located in `src/lib/email/resend.ts`
 
 | Date | Change | Files Affected |
 |------|--------|----------------|
+| 2026-01-21 | Migrated from DocuSign to PandaDoc for SLA signing (simpler API, lower cost) | lib/pandadoc/*, api/webhooks/pandadoc, approve route, send-sla route, resend-sla route |
 | 2026-01-07 | Added DocuSign integration for vendor SLA signing | lib/docusign/*, api routes, vendors page |
 | 2026-01-06 | Vendor apply form terms link now points to internal `/terms/vendor` page | vendor/apply/page.tsx |
 | 2026-01-06 | Request form terms link now points to internal `/terms/user` page with updated content | MultiStepServiceRequestForm.tsx, terms/user/page.tsx |
