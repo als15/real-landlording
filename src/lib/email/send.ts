@@ -1,4 +1,4 @@
-import { resend, FROM_EMAIL, VENDOR_WELCOME_FROM_EMAIL, ADMIN_EMAIL, isEmailEnabled } from './resend';
+import { resend, FROM_EMAIL, VENDOR_WELCOME_FROM_EMAIL, ADMIN_EMAIL, NOTIFICATION_BCC_EMAIL, isEmailEnabled } from './resend';
 import {
   requestReceivedEmail,
   landlordIntroEmail,
@@ -33,6 +33,7 @@ async function sendEmail(to: string, subject: string, html: string, from: string
       to,
       subject,
       html,
+      bcc: NOTIFICATION_BCC_EMAIL,
     });
 
     if (error) {

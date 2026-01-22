@@ -21,6 +21,9 @@ export const VENDOR_WELCOME_FROM_EMAIL = 'Sheryl @ Real Landlording <sheryl@real
 // Admin notification email address
 export const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@reallandlording.com';
 
+// BCC email for notifications of all sent emails
+export const NOTIFICATION_BCC_EMAIL = 'app@reallandlording.com';
+
 // Email types
 export type EmailType =
   | 'vendor_intro'
