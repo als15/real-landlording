@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState, useCallback, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Table, Card, Tag, Space, Button, Select, Input, Typography, Drawer, Descriptions, Divider, App, Badge, Modal, Form, Checkbox, Rate, Slider, InputNumber, Tooltip, Spin, Pagination } from 'antd'
-import { ReloadOutlined, PlusOutlined, EditOutlined, EyeOutlined, FilterOutlined, InfoCircleOutlined, DownloadOutlined, SendOutlined, CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined } from '@ant-design/icons'
+import { ReloadOutlined, PlusOutlined, EditOutlined, EyeOutlined, FilterOutlined, InfoCircleOutlined, DownloadOutlined, SendOutlined, CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined, DeleteOutlined } from '@ant-design/icons'
 import { Vendor, VendorStatus, SlaStatus, VENDOR_STATUS_LABELS, SLA_STATUS_LABELS, SERVICE_TYPE_LABELS, getGroupedServiceCategories } from '@/types/database'
 import type { ColumnsType } from 'antd/es/table'
 import ServiceAreaAutocomplete from '@/components/ServiceAreaAutocomplete'
@@ -355,6 +355,39 @@ function VendorsPageContent() {
     }
   }
 
+  const handleDeleteVendor = (vendor: Vendor) => {
+    Modal.confirm({
+      title: 'Delete Vendor',
+      content: `Are you sure you want to delete "${vendor.business_name}"? This action cannot be undone.`,
+      okText: 'Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          const response = await fetch(`/api/vendors/${vendor.id}`, {
+            method: 'DELETE',
+          })
+
+          if (response.ok) {
+            message.success('Vendor deleted successfully')
+            // Remove from local state
+            setVendors(prev => prev.filter(v => v.id !== vendor.id))
+            setTotal(prev => prev - 1)
+            // Close drawer if viewing deleted vendor
+            if (selectedVendor?.id === vendor.id) {
+              setDrawerOpen(false)
+            }
+          } else {
+            const error = await response.json()
+            throw new Error(error.message || 'Failed to delete vendor')
+          }
+        } catch (error) {
+          message.error(error instanceof Error ? error.message : 'Failed to delete vendor')
+        }
+      },
+    })
+  }
+
   const columns: ColumnsType<Vendor> = [
     {
       title: 'Business',
@@ -482,9 +515,10 @@ function VendorsPageContent() {
         <Space>
           <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewVendor(record)} title="View" />
           <Button size="small" icon={<EditOutlined />} onClick={() => handleOpenEditModal(record)} title="Edit" />
+          <Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteVendor(record)} title="Delete" />
         </Space>
       ),
-      width: 100
+      width: 140
     }
   ]
 
