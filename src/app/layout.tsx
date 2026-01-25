@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 import { ConfigProvider, App } from "antd";
+import { PostHogProvider } from "@/components/PostHogProvider";
 import theme from "@/theme/config";
 import "./globals.css";
 
@@ -25,13 +26,15 @@ export default function RootLayout({
   return (
     <html lang="en" className={poppins.variable}>
       <body className={poppins.className}>
-        <AntdRegistry>
-          <ConfigProvider theme={theme}>
-            <App>
-              {children}
-            </App>
-          </ConfigProvider>
-        </AntdRegistry>
+        <PostHogProvider>
+          <AntdRegistry>
+            <ConfigProvider theme={theme}>
+              <App>
+                {children}
+              </App>
+            </ConfigProvider>
+          </AntdRegistry>
+        </PostHogProvider>
       </body>
     </html>
   );
