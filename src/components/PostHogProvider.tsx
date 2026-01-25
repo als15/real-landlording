@@ -8,12 +8,14 @@ import { usePathname, useSearchParams } from 'next/navigation'
 if (typeof window !== 'undefined') {
   const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY
   const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com'
+  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
 
   // Debug log - remove after confirming it works in production
   console.log('[PostHog] Key loaded:', posthogKey ? `${posthogKey.slice(0, 10)}...` : 'NOT FOUND')
   console.log('[PostHog] Host:', posthogHost)
+  console.log('[PostHog] Disabled on localhost:', isLocalhost)
 
-  if (posthogKey) {
+  if (posthogKey && !isLocalhost) {
     posthog.init(posthogKey, {
       api_host: posthogHost,
       person_profiles: 'identified_only',
