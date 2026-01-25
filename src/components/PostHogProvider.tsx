@@ -5,13 +5,22 @@ import { PostHogProvider as PHProvider, usePostHog } from 'posthog-js/react'
 import { useEffect, Suspense } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 
-if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
-  posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
-    api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
-    person_profiles: 'identified_only',
-    capture_pageview: false, // We capture manually below
-    capture_pageleave: true,
-  })
+if (typeof window !== 'undefined') {
+  const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY
+  const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com'
+
+  // Debug log - remove after confirming it works in production
+  console.log('[PostHog] Key loaded:', posthogKey ? `${posthogKey.slice(0, 10)}...` : 'NOT FOUND')
+  console.log('[PostHog] Host:', posthogHost)
+
+  if (posthogKey) {
+    posthog.init(posthogKey, {
+      api_host: posthogHost,
+      person_profiles: 'identified_only',
+      capture_pageview: false, // We capture manually below
+      capture_pageleave: true,
+    })
+  }
 }
 
 function PostHogPageView() {
