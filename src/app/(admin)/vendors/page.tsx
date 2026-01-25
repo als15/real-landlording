@@ -64,7 +64,7 @@ function VendorsPageContent() {
   const [form] = Form.useForm()
   const [editForm] = Form.useForm()
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
-  const { message } = App.useApp()
+  const { message, notification } = App.useApp()
   const searchParams = useSearchParams()
   const router = useRouter()
   const viewVendorId = searchParams.get('view')
@@ -112,7 +112,11 @@ function VendorsPageContent() {
       }
     } catch (error) {
       console.error('Error fetching vendors:', error)
-      message.error('Failed to fetch vendors')
+      notification.error({
+        title: 'Failed to fetch vendors',
+        description: 'Please try refreshing the page.',
+        duration: 8,
+      })
     } finally {
       setLoading(false)
     }
@@ -133,11 +137,19 @@ function VendorsPageContent() {
             setSelectedVendor(vendor)
             setDrawerOpen(true)
           } else {
-            message.error('Vendor not found')
+            notification.error({
+              title: 'Vendor not found',
+              description: 'The vendor you are looking for does not exist.',
+              duration: 8,
+            })
           }
         } catch (error) {
           console.error('Error fetching vendor:', error)
-          message.error('Failed to load vendor')
+          notification.error({
+            title: 'Failed to load vendor',
+            description: 'Please try again.',
+            duration: 8,
+          })
         }
       }
       fetchAndOpenVendor()
@@ -192,7 +204,11 @@ function VendorsPageContent() {
       message.success('Export complete')
     } catch (error) {
       console.error('Export error:', error)
-      message.error('Failed to export data')
+      notification.error({
+        title: 'Export Failed',
+        description: 'Failed to export vendor data. Please try again.',
+        duration: 8,
+      })
     }
   }
 
@@ -218,7 +234,11 @@ function VendorsPageContent() {
         throw new Error('Failed to update status')
       }
     } catch {
-      message.error('Failed to update status')
+      notification.error({
+        title: 'Status Update Failed',
+        description: 'Failed to update vendor status. Please try again.',
+        duration: 8,
+      })
     }
   }
 
@@ -241,7 +261,11 @@ function VendorsPageContent() {
         throw new Error(error.message || 'Failed to add vendor')
       }
     } catch (error) {
-      message.error(error instanceof Error ? error.message : 'Something went wrong')
+      notification.error({
+        title: 'Failed to Add Vendor',
+        description: error instanceof Error ? error.message : 'Something went wrong. Please try again.',
+        duration: 0, // Won't auto-close, user must dismiss
+      })
     } finally {
       setSubmitting(false)
     }
@@ -302,7 +326,11 @@ function VendorsPageContent() {
         throw new Error(error.message || 'Failed to update vendor')
       }
     } catch (error) {
-      message.error(error instanceof Error ? error.message : 'Something went wrong')
+      notification.error({
+        title: 'Failed to Update Vendor',
+        description: error instanceof Error ? error.message : 'Something went wrong. Please try again.',
+        duration: 0, // Won't auto-close, user must dismiss
+      })
     } finally {
       setSubmitting(false)
     }
@@ -334,7 +362,11 @@ function VendorsPageContent() {
         throw new Error(error.message || 'Failed to send SLA')
       }
     } catch (error) {
-      message.error(error instanceof Error ? error.message : 'Failed to send SLA')
+      notification.error({
+        title: 'Failed to Send SLA',
+        description: error instanceof Error ? error.message : 'Failed to send SLA. Please try again.',
+        duration: 8,
+      })
     }
   }
 
@@ -351,7 +383,11 @@ function VendorsPageContent() {
         throw new Error(error.message || 'Failed to resend SLA')
       }
     } catch (error) {
-      message.error(error instanceof Error ? error.message : 'Failed to resend SLA')
+      notification.error({
+        title: 'Failed to Resend SLA',
+        description: error instanceof Error ? error.message : 'Failed to resend SLA notification. Please try again.',
+        duration: 8,
+      })
     }
   }
 
@@ -382,7 +418,11 @@ function VendorsPageContent() {
             throw new Error(error.message || 'Failed to delete vendor')
           }
         } catch (error) {
-          message.error(error instanceof Error ? error.message : 'Failed to delete vendor')
+          notification.error({
+            title: 'Failed to Delete Vendor',
+            description: error instanceof Error ? error.message : 'Failed to delete vendor. Please try again.',
+            duration: 8,
+          })
         }
       },
     })
