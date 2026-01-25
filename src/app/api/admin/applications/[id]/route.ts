@@ -86,3 +86,35 @@ export async function PATCH(
     );
   }
 }
+
+// DELETE - Delete an application
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const supabase = createAdminClient();
+
+    const { error } = await supabase
+      .from('vendors')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting application:', error);
+      return NextResponse.json(
+        { message: 'Failed to delete application', error: error.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ message: 'Application deleted' });
+  } catch (error) {
+    console.error('API error:', error);
+    return NextResponse.json(
+      { message: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

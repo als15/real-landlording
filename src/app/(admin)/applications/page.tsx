@@ -30,6 +30,7 @@ import {
   FacebookOutlined,
   LinkedinOutlined,
   SaveOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons';
 import {
   Vendor,
@@ -63,6 +64,8 @@ export default function ApplicationsPage() {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [appToDelete, setAppToDelete] = useState<Vendor | null>(null);
   const [processing, setProcessing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -272,6 +275,30 @@ export default function ApplicationsPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!appToDelete) return;
+
+    setProcessing(true);
+    try {
+      const response = await fetch(`/api/admin/applications/${appToDelete.id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        message.success('Application deleted');
+        setDeleteModalOpen(false);
+        setAppToDelete(null);
+        fetchApplications();
+      } else {
+        throw new Error('Failed to delete application');
+      }
+    } catch {
+      message.error('Failed to delete application');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const columns: ColumnsType<Vendor> = [
     {
       title: 'Business',
@@ -339,6 +366,15 @@ export default function ApplicationsPage() {
           >
             Approve
           </Button>
+          <Button
+            size="small"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => {
+              setAppToDelete(record);
+              setDeleteModalOpen(true);
+            }}
+          />
         </Space>
       ),
     },
@@ -613,6 +649,25 @@ export default function ApplicationsPage() {
           placeholder="Reason for rejection..."
           style={{ marginTop: 12 }}
         />
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        title="Delete Application"
+        open={deleteModalOpen}
+        onCancel={() => {
+          setDeleteModalOpen(false);
+          setAppToDelete(null);
+        }}
+        onOk={handleDelete}
+        confirmLoading={processing}
+        okText="Delete"
+        okButtonProps={{ danger: true }}
+      >
+        <Text>
+          Are you sure you want to delete the application from{' '}
+          <strong>{appToDelete?.business_name}</strong>? This action cannot be undone.
+        </Text>
       </Modal>
 
     </div>
