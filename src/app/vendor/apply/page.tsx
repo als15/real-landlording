@@ -323,6 +323,9 @@ export default function VendorApplyPage() {
           placeholder="Select all services you provide"
           size="large"
           showSearch
+          virtual={false}
+          listHeight={350}
+          popupClassName="mobile-friendly-dropdown"
           onChange={(values: ServiceCategory[]) => setSelectedServices(values)}
           filterOption={(input, option) => {
             const children = option?.children
@@ -663,6 +666,27 @@ export default function VendorApplyPage() {
           @media (min-width: 768px) {
             .vendor-steps .ant-steps-item-description {
               display: block;
+            }
+          }
+          /* Mobile-friendly dropdown scrolling */
+          .mobile-friendly-dropdown .rc-virtual-list-holder {
+            -webkit-overflow-scrolling: touch !important;
+            overscroll-behavior: contain;
+          }
+          .mobile-friendly-dropdown .ant-select-item {
+            padding: 12px 16px !important;
+            min-height: 44px !important;
+          }
+          .mobile-friendly-dropdown .ant-select-item-group {
+            padding: 12px 16px !important;
+            font-weight: 600;
+          }
+          @media (max-width: 767px) {
+            .mobile-friendly-dropdown {
+              max-height: 60vh !important;
+            }
+            .mobile-friendly-dropdown .rc-virtual-list-holder {
+              max-height: 55vh !important;
             }
           }
         `}</style>
