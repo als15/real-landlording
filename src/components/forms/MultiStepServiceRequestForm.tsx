@@ -457,7 +457,7 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
             />
           </Form.Item>
 
-          <Row gutter={16} style={{ marginTop: 24 }}>
+          <Row gutter={[16, 12]} style={{ marginTop: 24 }}>
             <Col xs={24} md={8}>
               <Button
                 size="large"
@@ -654,7 +654,7 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
             </Checkbox>
           </div>
 
-          <Row gutter={16} style={{ marginTop: 24 }}>
+          <Row gutter={[16, 12]} style={{ marginTop: 24 }}>
             <Col xs={24} md={8}>
               <Button
                 size="large"

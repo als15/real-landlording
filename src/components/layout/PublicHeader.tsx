@@ -4,13 +4,50 @@ import { useEffect, useState } from 'react'
 import { Layout, Typography, Space, Button, Avatar, Dropdown } from 'antd'
 import { UserOutlined, FormOutlined, DashboardOutlined, LogoutOutlined } from '@ant-design/icons'
 import Link from 'next/link'
-import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { brandColors } from '@/theme/config'
 import type { MenuProps } from 'antd'
 
 const { Header } = Layout
 const { Text } = Typography
+
+// CSS for responsive header
+const headerStyles = `
+  .public-header {
+    padding: 0 12px !important;
+  }
+  .public-header .header-btn-text {
+    display: none;
+  }
+  .public-header .header-user-name {
+    display: none;
+  }
+  .public-header .header-btn {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+  .public-header .header-logo-img {
+    height: 32px;
+  }
+  @media (min-width: 576px) {
+    .public-header {
+      padding: 0 24px !important;
+    }
+    .public-header .header-btn-text {
+      display: inline;
+    }
+    .public-header .header-user-name {
+      display: inline;
+    }
+    .public-header .header-btn {
+      padding-left: 20px !important;
+      padding-right: 20px !important;
+    }
+    .public-header .header-logo-img {
+      height: 42px;
+    }
+  }
+`
 
 interface PublicHeaderProps {
   showRequestButton?: boolean
@@ -79,6 +116,7 @@ export default function PublicHeader({ showRequestButton = true, showSignIn = tr
 
   return (
     <Header
+      className="public-header"
       style={{
         background: brandColors.white,
         padding: '0 24px',
@@ -90,65 +128,67 @@ export default function PublicHeader({ showRequestButton = true, showSignIn = tr
         zIndex: 100,
         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
         borderBottom: `1px solid ${brandColors.border}`,
-        height: 70
+        height: 64
       }}
     >
+      <style>{headerStyles}</style>
       <a
         href="https://www.reallandlording.com"
+        className="header-logo"
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 12,
-          textDecoration: 'none'
+          textDecoration: 'none',
+          flexShrink: 0
         }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/rl-logo.svg" alt="Real Landlording" style={{ height: 45, width: 'auto' }} />
+        <img src="/rl-logo.svg" alt="Real Landlording" className="header-logo-img" style={{ height: 38, width: 'auto' }} />
       </a>
 
-      <Space size="middle">
+      <Space size="small">
         {showRequestButton && (
           <Link href="/request">
             <Button
+              className="header-btn"
               type="primary"
               icon={<FormOutlined />}
-              size="large"
+              size="middle"
               style={{
                 background: brandColors.primary,
                 borderColor: brandColors.primary,
                 fontWeight: 500,
                 borderRadius: 8,
-                height: 44,
-                paddingLeft: 20,
-                paddingRight: 20
+                height: 40
               }}
             >
-              Submit Request
+              <span className="header-btn-text">Submit Request</span>
             </Button>
           </Link>
         )}
         {!loading && user ? (
           <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenuClick }} placement="bottomRight">
             <Space style={{ cursor: 'pointer' }}>
-              <Avatar icon={<UserOutlined />} style={{ backgroundColor: brandColors.primary, color: brandColors.white }} />
-              <Text style={{ color: brandColors.textPrimary, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name || user.email.split('@')[0]}</Text>
+              <Avatar icon={<UserOutlined />} style={{ backgroundColor: brandColors.primary, color: brandColors.white }} size="default" />
+              <Text className="header-user-name" style={{ color: brandColors.textPrimary, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name || user.email.split('@')[0]}</Text>
             </Space>
           </Dropdown>
         ) : showSignIn && !loading ? (
           <Link href="/auth/login">
             <Button
+              className="header-btn"
               type="default"
               icon={<UserOutlined />}
-              size="large"
+              size="middle"
               style={{
                 borderColor: brandColors.primary,
                 color: brandColors.primary,
                 fontWeight: 500,
                 borderRadius: 8,
-                height: 44
+                height: 40
               }}
             >
-              Sign In
+              <span className="header-btn-text">Sign In</span>
             </Button>
           </Link>
         ) : null}

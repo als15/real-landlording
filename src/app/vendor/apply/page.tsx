@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Layout, Card, Form, Input, Select, Button, Checkbox, Typography, Space, Row, Col, Divider, App, Result, Steps, Switch } from 'antd'
-import { CheckCircleOutlined, DollarOutlined, ThunderboltOutlined, SafetyCertificateOutlined, TeamOutlined, AppstoreOutlined, ArrowLeftOutlined, ArrowRightOutlined, InstagramOutlined, FacebookOutlined, LinkedinOutlined } from '@ant-design/icons'
+import { CheckCircleOutlined, DollarOutlined, ThunderboltOutlined, SafetyCertificateOutlined, TeamOutlined, AppstoreOutlined, ArrowLeftOutlined, ArrowRightOutlined, InstagramOutlined, FacebookOutlined, LinkedinOutlined, SendOutlined } from '@ant-design/icons'
 import {
   getGroupedServiceCategories,
   CONTACT_PREFERENCE_LABELS,
@@ -626,22 +626,56 @@ export default function VendorApplyPage() {
 
       {/* Hero Section */}
       <div
+        className="vendor-hero"
         style={{
           background: `linear-gradient(135deg, ${brandColors.secondary} 0%, #3d5a6b 100%)`,
-          padding: '48px 24px',
+          padding: '32px 16px',
           textAlign: 'center'
         }}
       >
+        <style jsx global>{`
+          @media (min-width: 768px) {
+            .vendor-hero {
+              padding: 48px 24px !important;
+            }
+            .vendor-hero-title {
+              font-size: 36px !important;
+            }
+            .vendor-hero-subtitle {
+              font-size: 18px !important;
+            }
+            .vendor-content {
+              padding: 48px 24px !important;
+            }
+            .vendor-form-card {
+              padding: 24px !important;
+            }
+            .vendor-steps .ant-steps-item-title {
+              font-size: 14px !important;
+            }
+          }
+          .vendor-steps .ant-steps-item-title {
+            font-size: 12px;
+          }
+          .vendor-steps .ant-steps-item-description {
+            display: none;
+          }
+          @media (min-width: 768px) {
+            .vendor-steps .ant-steps-item-description {
+              display: block;
+            }
+          }
+        `}</style>
         <div style={{ maxWidth: 700, margin: '0 auto' }}>
-          <Title style={{ color: brandColors.white, fontSize: 36, marginBottom: 16 }}>Join Our Vendor Network</Title>
-          <Paragraph style={{ color: 'rgba(255,255,255,0.8)', fontSize: 18 }}>Get connected with Philadelphia landlords who need your services — from repairs and compliance to financial and professional support. No marketing spend – we bring qualified leads directly to you.</Paragraph>
+          <Title className="vendor-hero-title" style={{ color: brandColors.white, fontSize: 26, marginBottom: 12 }}>Join Our Vendor Network</Title>
+          <Paragraph className="vendor-hero-subtitle" style={{ color: 'rgba(255,255,255,0.8)', fontSize: 15 }}>Get connected with Philadelphia landlords who need your services — from repairs and compliance to financial and professional support.</Paragraph>
         </div>
       </div>
 
-      <Content style={{ padding: '48px 24px' }}>
-        <Row gutter={[48, 32]} justify="center" style={{ maxWidth: 1200, margin: '0 auto' }}>
-          {/* Benefits Column - Hide on mobile when past first step */}
-          <Col xs={currentStep === 0 ? 24 : 0} lg={8}>
+      <Content className="vendor-content" style={{ padding: '24px 12px' }}>
+        <Row gutter={[24, 24]} justify="center" style={{ maxWidth: 1200, margin: '0 auto' }}>
+          {/* Benefits Column - Hidden on mobile */}
+          <Col xs={0} lg={8}>
             <div style={{ position: 'sticky', top: 100 }}>
               <Title level={4} style={{ marginBottom: 24, color: brandColors.primary }}>
                 Why Join Real Landlording?
@@ -691,14 +725,18 @@ export default function VendorApplyPage() {
           {/* Form Column */}
           <Col xs={24} lg={16}>
             <Card
+              className="vendor-form-card"
               style={{
                 borderRadius: 16,
                 boxShadow: '0 4px 24px rgba(0, 0, 0, 0.06)',
-                border: `1px solid ${brandColors.border}`
+                border: `1px solid ${brandColors.border}`,
+                padding: 8
               }}
+              styles={{ body: { padding: '16px 12px' } }}
             >
               {/* Progress Steps - Clickable */}
               <Steps
+                className="vendor-steps"
                 current={currentStep}
                 onChange={handleStepClick}
                 items={STEPS.map((step, index) => ({
@@ -707,8 +745,7 @@ export default function VendorApplyPage() {
                   status: index < currentStep ? 'finish' : index === currentStep ? 'process' : 'wait'
                 }))}
                 size="small"
-                style={{ marginBottom: 32 }}
-                responsive={false}
+                style={{ marginBottom: 24 }}
               />
 
               <Form form={form} layout="vertical" onFinish={onFinish} preserve={true}>
@@ -716,9 +753,9 @@ export default function VendorApplyPage() {
 
                 {/* Navigation Buttons */}
                 <Divider />
-                <Row gutter={16}>
-                  <Col xs={12}>
-                    {currentStep > 0 && (
+                <Row gutter={[16, 12]}>
+                  {currentStep > 0 && (
+                    <Col xs={24} md={8}>
                       <Button
                         size="large"
                         block
@@ -727,17 +764,18 @@ export default function VendorApplyPage() {
                       >
                         Back
                       </Button>
-                    )}
-                  </Col>
-                  <Col xs={currentStep > 0 ? 12 : 24}>
+                    </Col>
+                  )}
+                  <Col xs={24} md={currentStep > 0 ? 16 : 24}>
                     {currentStep < STEPS.length - 1 ? (
                       <Button
                         type="primary"
                         size="large"
                         block
                         onClick={handleNext}
+                        icon={<ArrowRightOutlined />}
                       >
-                        Next <ArrowRightOutlined />
+                        Next
                       </Button>
                     ) : (
                       <Button
@@ -746,6 +784,7 @@ export default function VendorApplyPage() {
                         loading={loading}
                         size="large"
                         block
+                        icon={<SendOutlined />}
                       >
                         Submit Application
                       </Button>

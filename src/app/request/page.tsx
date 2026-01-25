@@ -74,12 +74,32 @@ export default function ServiceRequestPage() {
 
       {/* Hero Section */}
       <div
+        className="request-hero"
         style={{
           background: `linear-gradient(135deg, ${brandColors.secondary} 0%, #3d5a6b 100%)`,
-          padding: '64px 24px',
+          padding: '48px 16px',
           textAlign: 'center'
         }}
       >
+        <style jsx global>{`
+          @media (min-width: 768px) {
+            .request-hero {
+              padding: 64px 24px !important;
+            }
+            .request-hero-title {
+              font-size: 42px !important;
+            }
+            .request-hero-subtitle {
+              font-size: 18px !important;
+            }
+            .request-stat-value {
+              font-size: 26px !important;
+            }
+            .request-form-card {
+              padding: 32px !important;
+            }
+          }
+        `}</style>
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
           <div
             style={{
@@ -89,16 +109,17 @@ export default function ServiceRequestPage() {
               background: 'rgba(75, 117, 87, 0.25)',
               padding: '8px 16px',
               borderRadius: 20,
-              marginBottom: 24
+              marginBottom: 16
             }}
           >
             <StarFilled style={{ color: brandColors.accent }} />
-            <Text style={{ color: brandColors.accent, fontWeight: 500 }}>Trusted by 2,900+ Philadelphia Landlords</Text>
+            <Text style={{ color: brandColors.accent, fontWeight: 500, fontSize: 14 }}>Trusted by 2,900+ Philadelphia Landlords</Text>
           </div>
           <Title
+            className="request-hero-title"
             style={{
               color: brandColors.white,
-              fontSize: 42,
+              fontSize: 28,
               marginBottom: 16,
               fontWeight: 600
             }}
@@ -108,9 +129,10 @@ export default function ServiceRequestPage() {
             Philadelphia Service Providers
           </Title>
           <Paragraph
+            className="request-hero-subtitle"
             style={{
               color: 'rgba(255,255,255,0.8)',
-              fontSize: 18,
+              fontSize: 16,
               marginBottom: 32,
               maxWidth: 600,
               margin: '0 auto'
@@ -120,21 +142,22 @@ export default function ServiceRequestPage() {
           </Paragraph>
 
           {/* Stats */}
-          <Row gutter={32} justify="center" style={{ marginTop: 40 }}>
+          <Row gutter={[16, 16]} justify="center" style={{ marginTop: 32 }}>
             {stats.map((stat, index) => (
-              <Col key={index}>
+              <Col key={index} xs={24} sm={8}>
                 <div style={{ textAlign: 'center' }}>
                   <Text
+                    className="request-stat-value"
                     style={{
                       color: brandColors.accent,
-                      fontSize: 26,
+                      fontSize: 20,
                       fontWeight: 700,
                       display: 'block'
                     }}
                   >
                     {stat.value}
                   </Text>
-                  <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 16 }}>{stat.label}</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>{stat.label}</Text>
                 </div>
               </Col>
             ))}
@@ -142,10 +165,17 @@ export default function ServiceRequestPage() {
         </div>
       </div>
 
-      <Content style={{ padding: '64px 24px' }}>
-        <Row gutter={[64, 48]} justify="center" style={{ maxWidth: 1400, margin: '0 auto' }}>
-          {/* Left Column - Trust Signals */}
-          <Col xs={24} lg={8}>
+      <Content style={{ padding: '32px 16px' }} className="request-content">
+        <style jsx global>{`
+          @media (min-width: 768px) {
+            .request-content {
+              padding: 64px 24px !important;
+            }
+          }
+        `}</style>
+        <Row gutter={[32, 32]} justify="center" style={{ maxWidth: 1400, margin: '0 auto' }}>
+          {/* Left Column - Trust Signals (hidden on mobile) */}
+          <Col xs={0} lg={8}>
             <div style={{ position: 'sticky', top: 100 }}>
               <Title level={3} style={{ marginBottom: 8, color: brandColors.primary }}>
                 Why Landlords Trust Us
@@ -218,10 +248,11 @@ export default function ServiceRequestPage() {
           {/* Right Column - Form */}
           <Col xs={24} lg={14} xl={12}>
             <div
+              className="request-form-card"
               style={{
                 background: brandColors.white,
                 borderRadius: 16,
-                padding: 32,
+                padding: 16,
                 boxShadow: '0 4px 24px rgba(0, 0, 0, 0.06)',
                 border: `1px solid ${brandColors.border}`
               }}
