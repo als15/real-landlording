@@ -50,6 +50,10 @@ export default function VendorDashboardLayout({ children }: { children: React.Re
   const handleUserMenuClick: MenuProps['onClick'] = (e) => {
     if (e.key === 'logout') {
       handleLogout();
+    } else if (e.key === 'profile') {
+      router.push('/vendor/dashboard/profile');
+    } else if (e.key === 'settings') {
+      router.push('/vendor/dashboard/profile');
     }
   };
 
