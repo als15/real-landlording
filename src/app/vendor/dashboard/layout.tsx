@@ -6,7 +6,6 @@ import {
   FileTextOutlined,
   UserOutlined,
   LogoutOutlined,
-  SettingOutlined,
   DashboardOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
@@ -32,11 +31,6 @@ export default function VendorDashboardLayout({ children }: { children: React.Re
       label: 'My Profile',
     },
     {
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: 'Settings',
-    },
-    {
       type: 'divider',
     },
     {
@@ -51,8 +45,6 @@ export default function VendorDashboardLayout({ children }: { children: React.Re
     if (e.key === 'logout') {
       handleLogout();
     } else if (e.key === 'profile') {
-      router.push('/vendor/dashboard/profile');
-    } else if (e.key === 'settings') {
       router.push('/vendor/dashboard/profile');
     }
   };
