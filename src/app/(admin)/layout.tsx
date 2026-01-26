@@ -15,6 +15,7 @@ import {
   SettingOutlined,
   SolutionOutlined,
   BellOutlined,
+  MailOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { brandColors } from '@/theme/config';
@@ -47,6 +48,11 @@ const menuItems: MenuProps['items'] = [
     key: '/landlords',
     icon: <UserOutlined />,
     label: 'Landlords',
+  },
+  {
+    key: '/emails',
+    icon: <MailOutlined />,
+    label: 'Emails',
   },
   {
     key: '/analytics',
