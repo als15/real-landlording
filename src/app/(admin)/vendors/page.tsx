@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState, useCallback, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Table, Card, Tag, Space, Button, Select, Input, Typography, Drawer, Descriptions, Divider, App, Badge, Modal, Form, Checkbox, Rate, Slider, InputNumber, Tooltip, Spin, Pagination } from 'antd'
 import { ReloadOutlined, PlusOutlined, EditOutlined, EyeOutlined, FilterOutlined, InfoCircleOutlined, DownloadOutlined, SendOutlined, CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined, DeleteOutlined } from '@ant-design/icons'
-import { Vendor, VendorStatus, SlaStatus, VENDOR_STATUS_LABELS, SLA_STATUS_LABELS, SERVICE_TYPE_LABELS, getGroupedServiceCategories } from '@/types/database'
+import { Vendor, VendorStatus, SlaStatus, VENDOR_STATUS_LABELS, SLA_STATUS_LABELS, SERVICE_TYPE_LABELS, SERVICE_TAXONOMY, ServiceCategory, getGroupedServiceCategories } from '@/types/database'
 import type { ColumnsType } from 'antd/es/table'
 import ServiceAreaAutocomplete from '@/components/ServiceAreaAutocomplete'
 import ServiceAreaDisplay from '@/components/ServiceAreaDisplay'
@@ -63,8 +63,30 @@ function VendorsPageContent() {
   const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm()
   const [editForm] = Form.useForm()
+  const [editSelectedServices, setEditSelectedServices] = useState<ServiceCategory[]>([])
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
   const { message, notification } = App.useApp()
+
+  // Get classifications (equipment types) for selected services
+  const getServiceClassifications = (services: ServiceCategory[]) => {
+    return services
+      .map(service => {
+        const config = SERVICE_TAXONOMY[service];
+        if (!config || config.classifications.length === 0) return null;
+        return {
+          service,
+          label: config.label,
+          classifications: config.classifications
+        };
+      })
+      .filter(Boolean) as Array<{
+      service: ServiceCategory;
+      label: string;
+      classifications: Array<{ label: string; options: string[] }>;
+    }>;
+  };
+
+  const editServiceClassifications = getServiceClassifications(editSelectedServices);
   const searchParams = useSearchParams()
   const router = useRouter()
   const viewVendorId = searchParams.get('view')
@@ -273,6 +295,24 @@ function VendorsPageContent() {
 
   const handleOpenEditModal = (vendor: Vendor) => {
     setEditingVendor(vendor)
+    setEditSelectedServices(vendor.services || [])
+
+    // Build service_specialties form fields from existing data
+    // Data is stored as { hvac: ["Gas Furnace", "No Heat"] }
+    // We need to reconstruct to { hvac: { "Equipment Type": ["Gas Furnace"], "Service Needed": ["No Heat"] } }
+    const serviceSpecialtiesForm: Record<string, Record<string, string[]>> = {};
+    if (vendor.service_specialties) {
+      for (const [service, specialties] of Object.entries(vendor.service_specialties)) {
+        const config = SERVICE_TAXONOMY[service as ServiceCategory];
+        if (config && config.classifications.length > 0) {
+          serviceSpecialtiesForm[service] = {};
+          // For simplicity, put all specialties in the first classification
+          const firstClassification = config.classifications[0];
+          serviceSpecialtiesForm[service][firstClassification.label] = specialties as string[];
+        }
+      }
+    }
+
     editForm.setFieldsValue({
       status: vendor.status,
       contact_name: vendor.contact_name,
@@ -282,6 +322,7 @@ function VendorsPageContent() {
       website: vendor.website,
       location: vendor.location,
       services: vendor.services,
+      service_specialties: serviceSpecialtiesForm,
       service_areas: vendor.service_areas,
       licensed: vendor.licensed,
       insured: vendor.insured,
@@ -299,10 +340,38 @@ function VendorsPageContent() {
 
     setSubmitting(true)
     try {
+      // Transform service_specialties from nested form structure to flat storage format
+      let serviceSpecialties: Record<string, string[]> | null = null;
+      const formSpecialties = values.service_specialties as Record<string, Record<string, string[]>> | undefined;
+      if (formSpecialties && typeof formSpecialties === 'object') {
+        serviceSpecialties = {};
+        for (const [service, classifications] of Object.entries(formSpecialties)) {
+          if (classifications && typeof classifications === 'object') {
+            const allOptions: string[] = [];
+            for (const options of Object.values(classifications)) {
+              if (Array.isArray(options)) {
+                allOptions.push(...options);
+              }
+            }
+            if (allOptions.length > 0) {
+              serviceSpecialties[service] = allOptions;
+            }
+          }
+        }
+        if (Object.keys(serviceSpecialties).length === 0) {
+          serviceSpecialties = null;
+        }
+      }
+
+      const updateData = {
+        ...values,
+        service_specialties: serviceSpecialties,
+      };
+
       const response = await fetch(`/api/vendors/${editingVendor.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values)
+        body: JSON.stringify(updateData)
       })
 
       if (response.ok) {
@@ -1015,6 +1084,7 @@ function VendorsPageContent() {
                 }
                 return false
               }}
+              onChange={(values: ServiceCategory[]) => setEditSelectedServices(values)}
             >
               {groupedCategories.map((group) => (
                 <Select.OptGroup key={group.group} label={group.label}>
@@ -1028,24 +1098,38 @@ function VendorsPageContent() {
             </Select>
           </Form.Item>
 
-          {/* Service Specialties (Read Only) */}
-          {editingVendor?.service_specialties && Object.keys(editingVendor.service_specialties).length > 0 && (
+          {/* Service Specialties (Editable) */}
+          {editServiceClassifications.length > 0 && (
             <div style={{ marginBottom: 16 }}>
-              <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>Service Specialties (from application)</Text>
-              <div style={{ background: '#f5f5f5', padding: 12, borderRadius: 8 }}>
-                {Object.entries(editingVendor.service_specialties).map(([service, specialties]) => (
-                  <div key={service} style={{ marginBottom: 8 }}>
-                    <Text strong style={{ display: 'block', marginBottom: 4 }}>
-                      {SERVICE_TYPE_LABELS[service as keyof typeof SERVICE_TYPE_LABELS] || service}:
-                    </Text>
-                    <Space wrap size="small">
-                      {(specialties as string[]).map((specialty: string) => (
-                        <Tag key={specialty}>{specialty}</Tag>
-                      ))}
-                    </Space>
-                  </div>
-                ))}
-              </div>
+              <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>Service Specialties</Text>
+              {editServiceClassifications.map(({ service, label, classifications }) => (
+                <div
+                  key={service}
+                  style={{
+                    marginBottom: 12,
+                    padding: 12,
+                    background: '#f5f5f5',
+                    borderRadius: 8,
+                  }}
+                >
+                  <Text strong style={{ display: 'block', marginBottom: 8 }}>{label}</Text>
+                  {classifications.map(classification => (
+                    <Form.Item
+                      key={`${service}_${classification.label}`}
+                      name={['service_specialties', service, classification.label]}
+                      label={classification.label}
+                      style={{ marginBottom: 8 }}
+                    >
+                      <Select
+                        mode="multiple"
+                        placeholder={`Select ${classification.label.toLowerCase()}`}
+                        options={classification.options.map(opt => ({ value: opt, label: opt }))}
+                        style={{ width: '100%' }}
+                      />
+                    </Form.Item>
+                  ))}
+                </div>
+              ))}
             </div>
           )}
 
