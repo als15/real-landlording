@@ -707,6 +707,25 @@ function VendorsPageContent() {
               ))}
             </Space>
 
+            {/* Service Specialties */}
+            {selectedVendor.service_specialties && Object.keys(selectedVendor.service_specialties).length > 0 && (
+              <>
+                <Divider>Service Specialties</Divider>
+                {Object.entries(selectedVendor.service_specialties).map(([service, specialties]) => (
+                  <div key={service} style={{ marginBottom: 8 }}>
+                    <Text strong style={{ display: 'block', marginBottom: 4 }}>
+                      {SERVICE_TYPE_LABELS[service as keyof typeof SERVICE_TYPE_LABELS] || service}:
+                    </Text>
+                    <Space wrap size="small">
+                      {(specialties as string[]).map((specialty: string) => (
+                        <Tag key={specialty}>{specialty}</Tag>
+                      ))}
+                    </Space>
+                  </div>
+                ))}
+              </>
+            )}
+
             <Divider>Service Areas</Divider>
 
             <ServiceAreaDisplay serviceAreas={selectedVendor.service_areas} />
@@ -1008,6 +1027,27 @@ function VendorsPageContent() {
               ))}
             </Select>
           </Form.Item>
+
+          {/* Service Specialties (Read Only) */}
+          {editingVendor?.service_specialties && Object.keys(editingVendor.service_specialties).length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>Service Specialties (from application)</Text>
+              <div style={{ background: '#f5f5f5', padding: 12, borderRadius: 8 }}>
+                {Object.entries(editingVendor.service_specialties).map(([service, specialties]) => (
+                  <div key={service} style={{ marginBottom: 8 }}>
+                    <Text strong style={{ display: 'block', marginBottom: 4 }}>
+                      {SERVICE_TYPE_LABELS[service as keyof typeof SERVICE_TYPE_LABELS] || service}:
+                    </Text>
+                    <Space wrap size="small">
+                      {(specialties as string[]).map((specialty: string) => (
+                        <Tag key={specialty}>{specialty}</Tag>
+                      ))}
+                    </Space>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <Form.Item name="service_areas" label="Service Areas" rules={[{ required: true, message: 'Add at least one service area' }]}>
             <ServiceAreaAutocomplete placeholder="Search for neighborhoods, cities, or enter zip codes..." />

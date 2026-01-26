@@ -497,6 +497,27 @@ export default function ApplicationsPage() {
               />
             </Form.Item>
 
+            {/* Service Specialties (Read Only) */}
+            {selectedApp.service_specialties && Object.keys(selectedApp.service_specialties).length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>Service Specialties</Text>
+                <div style={{ background: '#f5f5f5', padding: 12, borderRadius: 8 }}>
+                  {Object.entries(selectedApp.service_specialties).map(([service, specialties]) => (
+                    <div key={service} style={{ marginBottom: 8 }}>
+                      <Text strong style={{ display: 'block', marginBottom: 4 }}>
+                        {SERVICE_TYPE_LABELS[service as keyof typeof SERVICE_TYPE_LABELS] || service}:
+                      </Text>
+                      <Space wrap size="small">
+                        {(specialties as string[]).map((specialty: string) => (
+                          <Tag key={specialty} color="blue">{specialty}</Tag>
+                        ))}
+                      </Space>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Service Areas */}
             <Form.Item label="Service Areas" name="service_areas">
               <ServiceAreaAutocomplete

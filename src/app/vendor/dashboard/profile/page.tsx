@@ -224,6 +224,29 @@ export default function VendorProfilePage() {
               ))}
             </Space>
 
+            {/* Service Specialties */}
+            {vendor.service_specialties && Object.keys(vendor.service_specialties).length > 0 && (
+              <>
+                <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>Service Specialties</Text>
+                <div style={{ marginBottom: 16 }}>
+                  {Object.entries(vendor.service_specialties).map(([service, specialties]) => (
+                    <div key={service} style={{ marginBottom: 8 }}>
+                      <Text strong style={{ fontSize: 13 }}>
+                        {SERVICE_TYPE_LABELS[service as keyof typeof SERVICE_TYPE_LABELS] || service}:
+                      </Text>
+                      <div style={{ marginTop: 4 }}>
+                        <Space wrap size="small">
+                          {(specialties as string[]).map((specialty: string) => (
+                            <Tag key={specialty}>{specialty}</Tag>
+                          ))}
+                        </Space>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
             <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>Service Areas</Text>
             <div style={{ marginBottom: 16 }}>
               <ServiceAreaDisplay serviceAreas={vendor.service_areas} />
