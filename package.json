@@ -24,7 +24,8 @@
     "posthog-js": "^1.335.2",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "resend": "^6.5.2"
+    "resend": "^6.5.2",
+    "twilio": "^5.12.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { sendVendorRejectedEmail } from '@/lib/email/send';
+import { sendVendorRejectedSms } from '@/lib/sms/send';
+import { Vendor } from '@/types/database';
 
 export async function POST(
   request: NextRequest,
@@ -9,6 +12,20 @@ export async function POST(
     const { id } = await params;
     const { reason } = await request.json();
     const adminClient = createAdminClient();
+
+    // Get vendor details before rejecting
+    const { data: vendor, error: fetchError } = await adminClient
+      .from('vendors')
+      .select('email, contact_name, phone')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !vendor) {
+      return NextResponse.json(
+        { message: 'Vendor not found' },
+        { status: 404 }
+      );
+    }
 
     const { error } = await adminClient
       .from('vendors')
@@ -26,7 +43,12 @@ export async function POST(
       );
     }
 
-    // TODO: Send rejection email
+    // Send rejection email and SMS
+    sendVendorRejectedEmail(vendor as Vendor)
+      .catch(console.error);
+
+    sendVendorRejectedSms(vendor as Vendor)
+      .catch(console.error);
 
     return NextResponse.json({ message: 'Application rejected' });
   } catch (error) {

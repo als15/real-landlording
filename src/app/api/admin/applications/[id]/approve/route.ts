@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendVendorWelcomeEmail } from '@/lib/email/send';
+import { sendVendorWelcomeSms } from '@/lib/sms/send';
 import { Vendor } from '@/types/database';
 import { sendSlaToVendor, isPandaDocConfigured } from '@/lib/pandadoc';
 
@@ -24,7 +25,7 @@ export async function POST(
     // Get vendor details to create auth account and send SLA
     const { data: vendor, error: fetchError } = await adminClient
       .from('vendors')
-      .select('email, contact_name, business_name')
+      .select('email, contact_name, business_name, phone')
       .eq('id', id)
       .single();
 
@@ -82,9 +83,13 @@ export async function POST(
       );
     }
 
-    // Send welcome email with login instructions
+    // Send welcome email and SMS with login instructions
     // If existing user, they'll use their current password; if new, include temp password
     sendVendorWelcomeEmail(vendor as Vendor, tempPassword || undefined)
+      .catch(console.error);
+
+    // Send welcome SMS
+    sendVendorWelcomeSms(vendor as Vendor)
       .catch(console.error);
 
     // Auto-send SLA via PandaDoc if configured

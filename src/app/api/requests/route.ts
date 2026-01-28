@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { verifyAdmin } from '@/lib/api/admin';
 import { ServiceRequestInput } from '@/types/database';
 import { sendRequestReceivedEmail } from '@/lib/email/send';
+import { sendRequestReceivedSms } from '@/lib/sms/send';
 
 export async function POST(request: NextRequest) {
   try {
@@ -115,13 +116,21 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Send confirmation email
+    // Send confirmation email and SMS
     try {
       const emailSent = await sendRequestReceivedEmail(data);
       console.log(`[Request API] Email send result: ${emailSent}`);
     } catch (emailError) {
       console.error('[Request API] Email send failed:', emailError);
       // Don't fail the request if email fails
+    }
+
+    try {
+      const smsSent = await sendRequestReceivedSms(data);
+      console.log(`[Request API] SMS send result: ${smsSent}`);
+    } catch (smsError) {
+      console.error('[Request API] SMS send failed:', smsError);
+      // Don't fail the request if SMS fails
     }
 
     return NextResponse.json({

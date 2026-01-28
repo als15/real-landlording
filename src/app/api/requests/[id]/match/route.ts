@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { verifyAdmin } from '@/lib/api/admin';
 import { sendIntroEmails } from '@/lib/email/send';
+import { sendIntroSms } from '@/lib/sms/send';
 import { ServiceRequest, Vendor } from '@/types/database';
 
 // Note: createClient is used for the GET endpoint below
@@ -116,13 +117,23 @@ export async function POST(
       console.error('Update error:', updateError);
     }
 
-    // Send intro emails only to newly matched vendors (async, don't block response)
+    // Send intro emails and SMS only to newly matched vendors (async, don't block response)
     if (newlyMatchedVendors.length > 0) {
+      console.log(`[Match] Sending intros to ${newlyMatchedVendors.length} vendors:`, newlyMatchedVendors.map(v => ({ id: v.id, email: v.email, business: v.business_name })));
+
       sendIntroEmails(serviceRequest as ServiceRequest, newlyMatchedVendors as Vendor[])
         .then(({ landlordSent, vendorsSent }) => {
-          console.log(`Intro emails sent: landlord=${landlordSent}, vendors=${vendorsSent}`);
+          console.log(`[Match] Intro emails sent: landlord=${landlordSent}, vendors=${vendorsSent}`);
         })
-        .catch(console.error);
+        .catch((err) => console.error('[Match] Email error:', err));
+
+      sendIntroSms(serviceRequest as ServiceRequest, newlyMatchedVendors as Vendor[])
+        .then(({ landlordSent, vendorsSent }) => {
+          console.log(`[Match] Intro SMS sent: landlord=${landlordSent}, vendors=${vendorsSent}`);
+        })
+        .catch((err) => console.error('[Match] SMS error:', err));
+    } else {
+      console.log(`[Match] No new vendors to send intros to`);
     }
 
     return NextResponse.json({
