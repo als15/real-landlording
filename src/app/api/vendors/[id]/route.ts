@@ -63,7 +63,7 @@ export async function PATCH(
     // Check if vetting-related fields are being updated
     const vettingFieldsChanged = 'licensed' in body || 'insured' in body || 'years_in_business' in body;
 
-    let updateData = { ...body };
+    const updateData = { ...body };
 
     // If vetting fields changed, recalculate the vetting score
     if (vettingFieldsChanged) {

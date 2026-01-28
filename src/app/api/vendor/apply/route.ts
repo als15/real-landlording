@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     // Process service_specialties - flatten the nested structure
     // Form sends: { hvac: { "Equipment Type": ["Gas Furnace"], "Service Needed": ["No Heat"] } }
     // We store: { hvac: ["Gas Furnace", "No Heat"] } (flat array per service)
-    let serviceSpecialties: Record<string, string[]> = {};
+    const serviceSpecialties: Record<string, string[]> = {};
     if (body.service_specialties && typeof body.service_specialties === 'object') {
       for (const [service, classifications] of Object.entries(body.service_specialties)) {
         if (classifications && typeof classifications === 'object') {
