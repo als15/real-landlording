@@ -117,21 +117,27 @@ export async function POST(
       console.error('Update error:', updateError);
     }
 
-    // Send intro emails and SMS only to newly matched vendors (async, don't block response)
+    // Send intro emails and SMS only to newly matched vendors
+    // We await these to ensure they complete before the serverless function terminates
+    let emailResult = { landlordSent: false, vendorsSent: 0 };
+    let smsResult = { landlordSent: false, vendorsSent: 0 };
+
     if (newlyMatchedVendors.length > 0) {
       console.log(`[Match] Sending intros to ${newlyMatchedVendors.length} vendors:`, newlyMatchedVendors.map(v => ({ id: v.id, email: v.email, business: v.business_name })));
 
-      sendIntroEmails(serviceRequest as ServiceRequest, newlyMatchedVendors as Vendor[])
-        .then(({ landlordSent, vendorsSent }) => {
-          console.log(`[Match] Intro emails sent: landlord=${landlordSent}, vendors=${vendorsSent}`);
-        })
-        .catch((err) => console.error('[Match] Email error:', err));
+      try {
+        emailResult = await sendIntroEmails(serviceRequest as ServiceRequest, newlyMatchedVendors as Vendor[]);
+        console.log(`[Match] Intro emails sent: landlord=${emailResult.landlordSent}, vendors=${emailResult.vendorsSent}`);
+      } catch (err) {
+        console.error('[Match] Email error:', err);
+      }
 
-      sendIntroSms(serviceRequest as ServiceRequest, newlyMatchedVendors as Vendor[])
-        .then(({ landlordSent, vendorsSent }) => {
-          console.log(`[Match] Intro SMS sent: landlord=${landlordSent}, vendors=${vendorsSent}`);
-        })
-        .catch((err) => console.error('[Match] SMS error:', err));
+      try {
+        smsResult = await sendIntroSms(serviceRequest as ServiceRequest, newlyMatchedVendors as Vendor[]);
+        console.log(`[Match] Intro SMS sent: landlord=${smsResult.landlordSent}, vendors=${smsResult.vendorsSent}`);
+      } catch (err) {
+        console.error('[Match] SMS error:', err);
+      }
     } else {
       console.log(`[Match] No new vendors to send intros to`);
     }
@@ -140,6 +146,8 @@ export async function POST(
       message: 'Vendors matched successfully',
       matched_count: newVendorIds.length,
       skipped_count: vendor_ids.length - newVendorIds.length,
+      emails_sent: emailResult.vendorsSent + (emailResult.landlordSent ? 1 : 0),
+      sms_sent: smsResult.vendorsSent + (smsResult.landlordSent ? 1 : 0),
     });
   } catch (error) {
     console.error('API error:', error);
