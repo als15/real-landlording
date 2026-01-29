@@ -13,17 +13,20 @@ const poppins = Poppins({
   display: "swap",
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://app.reallandlording.com";
+
 export const metadata: Metadata = {
   title: {
     default: "Real Landlording",
     template: "%s | Real Landlording",
   },
   description: "Vetted for Philly. Tell us what you need and we'll connect you with a reliable, landlord-savvy pro.",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://app.reallandlording.com"),
+  metadataBase: new URL(siteUrl),
   openGraph: {
     title: "Get Matched with a Trusted Vendor",
     description: "Vetted for Philly. Tell us what you need and we'll connect you with a reliable, landlord-savvy pro.",
     siteName: "Real Landlording",
+    url: siteUrl,
     images: [
       {
         url: "/og-image.png", // Add a 1200x630px image to /public/og-image.png
@@ -40,6 +43,9 @@ export const metadata: Metadata = {
     title: "Get Matched with a Trusted Vendor",
     description: "Vetted for Philly. Tell us what you need and we'll connect you with a reliable, landlord-savvy pro.",
     images: ["/og-image.png"],
+  },
+  other: {
+    "fb:app_id": process.env.NEXT_PUBLIC_FB_APP_ID || "",
   },
 };
 
