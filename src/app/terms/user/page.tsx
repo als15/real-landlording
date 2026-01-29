@@ -154,6 +154,20 @@ export default function UserTermsPage() {
             Users may unsubscribe from marketing or newsletter emails at any time using the &quot;unsubscribe&quot; link. Unsubscribing from marketing emails does <Text strong>not</Text> affect access to core platform functionality or service-related communications.
           </Paragraph>
 
+          <Title level={4}>SMS/Text Message Communications</Title>
+          <Paragraph>
+            By providing a phone number and submitting a request, Users expressly consent to receive SMS/text messages from Real Landlording LLC related to:
+          </Paragraph>
+          <ul>
+            <li>request confirmations and status updates</li>
+            <li>vendor match notifications</li>
+            <li>follow-up messages regarding service quality</li>
+            <li>important platform notifications</li>
+          </ul>
+          <Paragraph>
+            Message frequency varies based on activity. Message and data rates may apply. Users may opt out of SMS communications at any time by replying STOP to any message. Opting out of SMS does <Text strong>not</Text> affect email communications or platform access.
+          </Paragraph>
+
           <Divider />
 
           <Title level={3}>9. Dispute Resolution</Title>

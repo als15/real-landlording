@@ -141,6 +141,20 @@ export default function VendorTermsPage() {
             RL may share Vendor information with Users to facilitate referrals.
           </Paragraph>
 
+          <Title level={4}>SMS/Text Message Communications</Title>
+          <Paragraph>
+            By providing a phone number and submitting an application, Vendor expressly consents to receive SMS/text messages from Real Landlording LLC related to:
+          </Paragraph>
+          <ul>
+            <li>new referral notifications</li>
+            <li>application status updates</li>
+            <li>platform announcements</li>
+            <li>important account notifications</li>
+          </ul>
+          <Paragraph>
+            Message frequency varies based on referral activity. Message and data rates may apply. Vendor may opt out of SMS communications at any time by replying STOP to any message. Opting out of SMS does <Text strong>not</Text> affect email communications or platform access, but may impact timely receipt of referral notifications.
+          </Paragraph>
+
           <Divider />
 
           <Title level={3}>10. Suspension & Termination</Title>
