@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     url: siteUrl,
     images: [
       {
-        url: "/og-request.png",
+        url: "/og-request.jpeg",
         width: 1200,
         height: 630,
         alt: "Real Landlording - Philadelphia's Trusted Landlord Community",
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Get Matched with a Trusted Vendor",
     description: "Vetted for Philly. Tell us what you need and we'll connect you with a reliable, landlord-savvy pro.",
-    images: ["/og-request.png"],
+    images: ["/og-request.jpeg"],
   },
   other: {
     "fb:app_id": process.env.NEXT_PUBLIC_FB_APP_ID || "",
