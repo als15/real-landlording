@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState, useCallback, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Table, Card, Tag, Space, Button, Select, Input, Typography, Drawer, Descriptions, Divider, App, Badge, Modal, Form, Checkbox, Rate, Slider, InputNumber, Tooltip, Spin, Pagination } from 'antd'
 import { ReloadOutlined, PlusOutlined, EditOutlined, EyeOutlined, FilterOutlined, InfoCircleOutlined, DownloadOutlined, SendOutlined, CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined, DeleteOutlined } from '@ant-design/icons'
-import { Vendor, VendorStatus, SlaStatus, VENDOR_STATUS_LABELS, SLA_STATUS_LABELS, SERVICE_TYPE_LABELS, SERVICE_TAXONOMY, ServiceCategory, getGroupedServiceCategories } from '@/types/database'
+import { Vendor, VendorStatus, SlaStatus, VENDOR_STATUS_LABELS, SLA_STATUS_LABELS, SERVICE_TYPE_LABELS, SERVICE_TAXONOMY, ServiceCategory, getGroupedServiceCategories, RequestVendorMatch, ServiceRequest, REQUEST_STATUS_LABELS, RequestStatus, URGENCY_LABELS, UrgencyLevel, MatchStatus } from '@/types/database'
 import type { ColumnsType } from 'antd/es/table'
 import ServiceAreaAutocomplete from '@/components/ServiceAreaAutocomplete'
 import ServiceAreaDisplay from '@/components/ServiceAreaDisplay'
@@ -36,6 +36,35 @@ const slaStatusColors: Record<SlaStatus, string> = {
   voided: 'default'
 }
 
+const matchStatusColors: Record<MatchStatus, string> = {
+  pending: 'default',
+  intro_sent: 'processing',
+  vendor_accepted: 'success',
+  vendor_declined: 'error',
+  no_response: 'warning',
+  in_progress: 'processing',
+  completed: 'success',
+  cancelled: 'default',
+  no_show: 'error'
+}
+
+const matchStatusLabels: Record<MatchStatus, string> = {
+  pending: 'Pending',
+  intro_sent: 'Intro Sent',
+  vendor_accepted: 'Accepted',
+  vendor_declined: 'Declined',
+  no_response: 'No Response',
+  in_progress: 'In Progress',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+  no_show: 'No Show'
+}
+
+// Extended vendor type with matches
+interface VendorWithMatches extends Vendor {
+  matches?: (RequestVendorMatch & { request: ServiceRequest })[];
+}
+
 export default function VendorsPage() {
   return (
     <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', padding: 50 }}><Spin size="large" /></div>}>
@@ -55,7 +84,8 @@ function VendorsPageContent() {
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [sortField, setSortField] = useState<string>('business_name')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
-  const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null)
+  const [selectedVendor, setSelectedVendor] = useState<VendorWithMatches | null>(null)
+  const [loadingVendorDetails, setLoadingVendorDetails] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [addModalOpen, setAddModalOpen] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
@@ -178,9 +208,22 @@ function VendorsPageContent() {
     }
   }, [viewVendorId, message])
 
-  const handleViewVendor = (vendor: Vendor) => {
-    setSelectedVendor(vendor)
+  const handleViewVendor = async (vendor: Vendor) => {
+    setSelectedVendor(vendor) // Show drawer immediately with basic data
     setDrawerOpen(true)
+    setLoadingVendorDetails(true)
+
+    try {
+      const response = await fetch(`/api/vendors/${vendor.id}`)
+      if (response.ok) {
+        const vendorWithMatches = await response.json()
+        setSelectedVendor(vendorWithMatches)
+      }
+    } catch (error) {
+      console.error('Error fetching vendor details:', error)
+    } finally {
+      setLoadingVendorDetails(false)
+    }
   }
 
   const handleCloseDrawer = () => {
@@ -912,6 +955,75 @@ function VendorsPageContent() {
                 <Divider>Admin Notes</Divider>
                 <Text>{selectedVendor.admin_notes}</Text>
               </>
+            )}
+
+            <Divider>Referral History</Divider>
+
+            {loadingVendorDetails ? (
+              <div style={{ textAlign: 'center', padding: 20 }}>
+                <Spin />
+              </div>
+            ) : selectedVendor.matches && selectedVendor.matches.length > 0 ? (
+              <div style={{ maxHeight: 400, overflowY: 'auto' }}>
+                {selectedVendor.matches
+                  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                  .map((match) => (
+                    <Card
+                      key={match.id}
+                      size="small"
+                      style={{ marginBottom: 8 }}
+                      title={
+                        <Space>
+                          <Tag color="blue">
+                            {SERVICE_TYPE_LABELS[match.request?.service_type as keyof typeof SERVICE_TYPE_LABELS] || match.request?.service_type}
+                          </Tag>
+                          <Tag color={matchStatusColors[match.status]}>
+                            {matchStatusLabels[match.status]}
+                          </Tag>
+                        </Space>
+                      }
+                      extra={
+                        match.review_rating && (
+                          <Rate disabled defaultValue={match.review_rating} style={{ fontSize: 12 }} />
+                        )
+                      }
+                    >
+                      <Descriptions size="small" column={1}>
+                        <Descriptions.Item label="Location">
+                          {match.request?.property_address || match.request?.property_location || '-'}
+                          {match.request?.zip_code && ` (${match.request.zip_code})`}
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Landlord">
+                          {match.request?.first_name || match.request?.landlord_name || match.request?.landlord_email || '-'}
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Date">
+                          {new Date(match.created_at).toLocaleDateString()}
+                        </Descriptions.Item>
+                        {match.request?.urgency && (
+                          <Descriptions.Item label="Urgency">
+                            <Tag color={match.request.urgency === 'emergency' ? 'red' : match.request.urgency === 'high' ? 'orange' : 'default'}>
+                              {URGENCY_LABELS[match.request.urgency as UrgencyLevel]}
+                            </Tag>
+                          </Descriptions.Item>
+                        )}
+                        {match.request?.status && (
+                          <Descriptions.Item label="Request Status">
+                            <Tag>{REQUEST_STATUS_LABELS[match.request.status as RequestStatus]}</Tag>
+                          </Descriptions.Item>
+                        )}
+                      </Descriptions>
+                      {match.request?.job_description && (
+                        <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
+                          {match.request.job_description.length > 100
+                            ? `${match.request.job_description.substring(0, 100)}...`
+                            : match.request.job_description}
+                        </Text>
+                      )}
+                    </Card>
+                  ))}
+              </div>
+            ) : (
+              <Text type="secondary">No referrals yet</Text>
             )}
           </>
         )}

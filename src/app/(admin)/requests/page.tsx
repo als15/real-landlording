@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { Suspense, useEffect, useState, useCallback, useRef } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Table,
   Card,
@@ -18,6 +19,7 @@ import {
   Image,
   Row,
   Col,
+  Spin,
 } from 'antd';
 import {
   ReloadOutlined,
@@ -81,6 +83,14 @@ const urgencyColors: Record<string, string> = {
 };
 
 export default function RequestsPage() {
+  return (
+    <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', padding: 50 }}><Spin size="large" /></div>}>
+      <RequestsPageContent />
+    </Suspense>
+  );
+}
+
+function RequestsPageContent() {
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -97,6 +107,9 @@ export default function RequestsPage() {
   const [resendingVendorId, setResendingVendorId] = useState<string | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const { message } = App.useApp();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const viewRequestId = searchParams.get('view');
 
   // Debounce search input
   useEffect(() => {
@@ -148,6 +161,41 @@ export default function RequestsPage() {
   useEffect(() => {
     fetchRequests();
   }, [fetchRequests]);
+
+  // Handle view query parameter to open request drawer directly
+  useEffect(() => {
+    if (viewRequestId) {
+      const fetchAndOpenRequest = async () => {
+        setDrawerOpen(true);
+        setDrawerLoading(true);
+        try {
+          const response = await fetch(`/api/requests/${viewRequestId}`);
+          if (response.ok) {
+            const data = await response.json();
+            setSelectedRequest(data);
+            setSelectedRequestMatches(data.matches || []);
+          } else {
+            message.error('Request not found');
+            router.replace('/requests');
+          }
+        } catch (error) {
+          console.error('Error fetching request:', error);
+          message.error('Failed to load request');
+        } finally {
+          setDrawerLoading(false);
+        }
+      };
+      fetchAndOpenRequest();
+    }
+  }, [viewRequestId, message, router]);
+
+  const handleCloseDrawer = () => {
+    setDrawerOpen(false);
+    // Clear the view param from URL if present
+    if (viewRequestId) {
+      router.replace('/requests');
+    }
+  };
 
   const handleViewRequest = async (request: ServiceRequest) => {
     setSelectedRequest(request);
@@ -414,7 +462,7 @@ export default function RequestsPage() {
         title="Request Details"
         placement="right"
         styles={{ wrapper: { width: 700 } }}
-        onClose={() => setDrawerOpen(false)}
+        onClose={handleCloseDrawer}
         open={drawerOpen}
       >
         {selectedRequest && (

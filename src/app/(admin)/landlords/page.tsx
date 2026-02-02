@@ -14,6 +14,7 @@ import {
   Descriptions,
   Divider,
   Empty,
+  Spin,
 } from 'antd';
 import {
   ReloadOutlined,
@@ -21,8 +22,10 @@ import {
   SearchOutlined,
   EnvironmentOutlined,
   DownloadOutlined,
+  FileTextOutlined,
+  ArrowRightOutlined,
 } from '@ant-design/icons';
-import { Landlord } from '@/types/database';
+import { Landlord, ServiceRequest, RequestVendorMatch, SERVICE_TYPE_LABELS, REQUEST_STATUS_LABELS, RequestStatus, URGENCY_LABELS, UrgencyLevel } from '@/types/database';
 import {
   objectsToCsv,
   downloadCsv,
@@ -32,6 +35,13 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 
 const { Title, Text } = Typography;
+
+// Extended landlord type with requests
+interface LandlordWithRequests extends Landlord {
+  requests?: (ServiceRequest & {
+    matches?: RequestVendorMatch[];
+  })[];
+}
 
 function PropertyMap({ address }: { address: string }) {
   const fullAddress = address + ', Philadelphia, PA';
@@ -66,9 +76,10 @@ export default function LandlordsPage() {
   const [pageSize, setPageSize] = useState(20);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [selectedLandlord, setSelectedLandlord] = useState<Landlord | null>(null);
+  const [selectedLandlord, setSelectedLandlord] = useState<LandlordWithRequests | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<string | null>(null);
+  const [loadingLandlordDetails, setLoadingLandlordDetails] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // Debounce search input
@@ -117,10 +128,23 @@ export default function LandlordsPage() {
     fetchLandlords();
   }, [fetchLandlords]);
 
-  const handleViewLandlord = (landlord: Landlord) => {
-    setSelectedLandlord(landlord);
+  const handleViewLandlord = async (landlord: Landlord) => {
+    setSelectedLandlord(landlord); // Show drawer immediately with basic data
     setSelectedProperty(landlord.properties?.[0] || null);
     setDrawerOpen(true);
+    setLoadingLandlordDetails(true);
+
+    try {
+      const response = await fetch(`/api/admin/landlords/${landlord.id}`);
+      if (response.ok) {
+        const landlordWithRequests = await response.json();
+        setSelectedLandlord(landlordWithRequests);
+      }
+    } catch (error) {
+      console.error('Error fetching landlord details:', error);
+    } finally {
+      setLoadingLandlordDetails(false);
+    }
   };
 
   const handleExportCsv = async () => {
@@ -322,6 +346,85 @@ export default function LandlordsPage() {
                 <Divider><EnvironmentOutlined /> Properties</Divider>
                 <Empty description="No properties on file" image={Empty.PRESENTED_IMAGE_SIMPLE} />
               </>
+            )}
+
+            <Divider><FileTextOutlined /> Service Requests</Divider>
+
+            {loadingLandlordDetails ? (
+              <div style={{ textAlign: 'center', padding: 20 }}>
+                <Spin />
+              </div>
+            ) : selectedLandlord.requests && selectedLandlord.requests.length > 0 ? (
+              <div style={{ maxHeight: 400, overflowY: 'auto' }}>
+                {selectedLandlord.requests
+                  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                  .map((request) => (
+                    <Card
+                      key={request.id}
+                      size="small"
+                      style={{ marginBottom: 8 }}
+                      title={
+                        <Space>
+                          <Tag color="blue">
+                            {SERVICE_TYPE_LABELS[request.service_type as keyof typeof SERVICE_TYPE_LABELS] || request.service_type}
+                          </Tag>
+                          <Tag color={
+                            request.status === 'completed' ? 'success' :
+                            request.status === 'matched' ? 'processing' :
+                            request.status === 'cancelled' ? 'error' : 'default'
+                          }>
+                            {REQUEST_STATUS_LABELS[request.status as RequestStatus]}
+                          </Tag>
+                        </Space>
+                      }
+                      extra={
+                        <Space>
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            {new Date(request.created_at).toLocaleDateString()}
+                          </Text>
+                          <Button
+                            type="link"
+                            size="small"
+                            icon={<ArrowRightOutlined />}
+                            href={`/requests?view=${request.id}`}
+                            target="_blank"
+                          />
+                        </Space>
+                      }
+                    >
+                      <Descriptions size="small" column={1}>
+                        <Descriptions.Item label="Location">
+                          {request.property_address || request.property_location || '-'}
+                          {request.zip_code && ` (${request.zip_code})`}
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Urgency">
+                          <Tag color={request.urgency === 'emergency' ? 'red' : request.urgency === 'high' ? 'orange' : 'default'}>
+                            {URGENCY_LABELS[request.urgency as UrgencyLevel]}
+                          </Tag>
+                        </Descriptions.Item>
+                        {request.matches && request.matches.length > 0 && (
+                          <Descriptions.Item label="Vendors Matched">
+                            <Tag color="green">{request.matches.length} vendor{request.matches.length > 1 ? 's' : ''}</Tag>
+                          </Descriptions.Item>
+                        )}
+                        {request.intro_sent_at && (
+                          <Descriptions.Item label="Intro Sent">
+                            {new Date(request.intro_sent_at).toLocaleDateString()}
+                          </Descriptions.Item>
+                        )}
+                      </Descriptions>
+                      {request.job_description && (
+                        <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
+                          {request.job_description.length > 100
+                            ? `${request.job_description.substring(0, 100)}...`
+                            : request.job_description}
+                        </Text>
+                      )}
+                    </Card>
+                  ))}
+              </div>
+            ) : (
+              <Empty description="No requests submitted" image={Empty.PRESENTED_IMAGE_SIMPLE} />
             )}
           </>
         )}
