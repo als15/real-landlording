@@ -226,7 +226,7 @@ export default function DashboardPage() {
         <Card>
           <Empty
             description={
-              <Space direction="vertical">
+              <Space orientation="vertical">
                 <Text>You haven&apos;t submitted any service requests yet.</Text>
                 <Link href="/request">
                   <Button type="primary" icon={<PlusOutlined />}>
@@ -308,7 +308,7 @@ export default function DashboardPage() {
             {selectedRequest.matches && selectedRequest.matches.length > 0 && (
               <>
                 <Divider>Matched Vendors</Divider>
-                <Space direction="vertical" style={{ width: '100%' }}>
+                <Space orientation="vertical" style={{ width: '100%' }}>
                   {selectedRequest.matches.map((match) => (
                     <Card key={match.id} size="small">
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -319,7 +319,7 @@ export default function DashboardPage() {
                           <br />
                           <Text type="secondary">{match.vendor.phone || match.vendor.email}</Text>
                         </div>
-                        <Space direction="vertical" align="end">
+                        <Space orientation="vertical" align="end">
                           {match.review_rating ? (
                             <Space>
                               <Rate disabled defaultValue={match.review_rating} style={{ fontSize: 14 }} />
@@ -364,7 +364,7 @@ export default function DashboardPage() {
         okText="Submit Review"
         width={500}
       >
-        <Space direction="vertical" style={{ width: '100%' }} size="middle">
+        <Space orientation="vertical" style={{ width: '100%' }} size="middle">
           <div>
             <Text strong>Overall Rating *</Text>
             <div style={{ marginTop: 8 }}>

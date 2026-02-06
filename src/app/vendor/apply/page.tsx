@@ -442,7 +442,7 @@ export default function VendorApplyPage() {
         <TextArea rows={4} placeholder="Years in business, certifications, specialties, notable projects..." size="large" />
       </Form.Item>
 
-      <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
+      <Space orientation="vertical" style={{ width: '100%', marginBottom: 16 }}>
         <Form.Item name="insured" valuePropName="checked" noStyle>
           <Checkbox>I carry liability insurance</Checkbox>
         </Form.Item>
@@ -704,7 +704,7 @@ export default function VendorApplyPage() {
               <Title level={4} style={{ marginBottom: 24, color: brandColors.primary }}>
                 Why Join Real Landlording?
               </Title>
-              <Space direction="vertical" size="large" style={{ width: '100%' }}>
+              <Space orientation="vertical" size="large" style={{ width: '100%' }}>
                 {benefits.map((benefit, index) => (
                   <div
                     key={index}

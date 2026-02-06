@@ -571,7 +571,7 @@ export default function CRMPage() {
       key: 'stage',
       width: 140,
       render: (_, record) => {
-        let stage = record.status;
+        const stage = record.status;
         let color = statusColors[stage] || 'default';
         let label = stage.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 

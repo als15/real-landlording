@@ -111,7 +111,7 @@ function VendorLoginForm() {
           <Text type="secondary">Not a vendor yet?</Text>
         </Divider>
 
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <Space orientation="vertical" style={{ width: '100%' }}>
           <Link href="/vendor/apply">
             <Button block size="large">
               Apply to Join

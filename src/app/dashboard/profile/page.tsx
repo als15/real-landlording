@@ -150,7 +150,7 @@ export default function ProfilePage() {
 
       <Card style={{ marginTop: 24 }}>
         <Title level={5}>Account Stats</Title>
-        <Space direction="vertical">
+        <Space orientation="vertical">
           <Text>
             <strong>Total Requests:</strong> {profile?.request_count || 0}
           </Text>

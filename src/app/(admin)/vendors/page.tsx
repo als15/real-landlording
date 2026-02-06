@@ -1295,7 +1295,7 @@ function VendorsPageContent() {
 
           {editingVendor && (
             <div style={{ background: '#f5f5f5', padding: 16, borderRadius: 8, marginBottom: 16 }}>
-              <Space direction="vertical" style={{ width: '100%' }}>
+              <Space orientation="vertical" style={{ width: '100%' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Text>Base Vetting Score:</Text>
                   <Text strong>{editingVendor.vetting_score ?? 'Not calculated'}</Text>

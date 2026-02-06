@@ -1,15 +1,5 @@
 import twilio from 'twilio';
-
-// Use placeholder credentials if not set - actual sends will be skipped
-const accountSid = process.env.TWILIO_ACCOUNT_SID || 'AC_placeholder';
-const authToken = process.env.TWILIO_AUTH_TOKEN || 'placeholder_token';
-const fromNumber = process.env.TWILIO_PHONE_NUMBER || '+1234567890';
-
-if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
-  console.warn('TWILIO credentials not set - SMS will not be sent');
-}
-
-export const twilioClient = twilio(accountSid, authToken);
+import type { Twilio } from 'twilio';
 
 // Check if we should actually send SMS
 export const isSmsEnabled = !!(
@@ -19,7 +9,38 @@ export const isSmsEnabled = !!(
 );
 
 // From phone number for sending SMS
-export const FROM_PHONE = fromNumber;
+export const FROM_PHONE = process.env.TWILIO_PHONE_NUMBER || '';
+
+// Lazy-initialized Twilio client - only created when needed and credentials exist
+let _twilioClient: Twilio | null = null;
+
+export function getTwilioClient(): Twilio | null {
+  if (!isSmsEnabled) {
+    return null;
+  }
+
+  if (!_twilioClient) {
+    _twilioClient = twilio(
+      process.env.TWILIO_ACCOUNT_SID!,
+      process.env.TWILIO_AUTH_TOKEN!
+    );
+  }
+
+  return _twilioClient;
+}
+
+// For backward compatibility - but prefer getTwilioClient()
+export const twilioClient = {
+  messages: {
+    create: async (options: { body: string; from: string; to: string }) => {
+      const client = getTwilioClient();
+      if (!client) {
+        throw new Error('Twilio client not initialized - credentials missing');
+      }
+      return client.messages.create(options);
+    },
+  },
+};
 
 // SMS types (mirrors email types)
 export type SmsType =

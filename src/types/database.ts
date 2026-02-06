@@ -1090,3 +1090,109 @@ export interface LandlordSignupInput {
   phone?: string;
   password: string;
 }
+
+// ============================================================================
+// Notifications
+// ============================================================================
+
+export type NotificationUserType = 'admin' | 'vendor' | 'landlord';
+
+export type NotificationPriority = 'low' | 'medium' | 'high';
+
+// Admin notification types
+export type AdminNotificationType =
+  | 'new_request'           // A1: New request submitted
+  | 'emergency_request'     // A2: Emergency request
+  | 'stale_request'         // A3: Request unmatched 3+ days
+  | 'new_application'       // A4: New vendor application
+  | 'vendor_accepted'       // A5: Vendor accepted job
+  | 'vendor_declined'       // A6: Vendor declined job
+  | 'vendor_no_response'    // A7: Vendor didn't respond (48h)
+  | 'new_review'            // A8: New review submitted
+  | 'negative_review'       // A9: Bad review (≤2 stars)
+  | 'payment_overdue'       // A10: Payment past due
+  | 'sla_signed'            // A11: Vendor signed SLA
+  | 'job_completed'         // A12: Job marked completed
+  | 'multiple_declines';    // A13: Same request declined 2+ times
+
+// Vendor notification types
+export type VendorNotificationType =
+  | 'new_job_lead'          // V1: Matched to request
+  | 'job_lead_reminder'     // V2: No response after 24h
+  | 'job_awarded'           // V3: Landlord selected you
+  | 'new_review_received'   // V4: Landlord reviewed you
+  | 'payment_received'      // V5: Referral fee paid
+  | 'invoice_generated'     // V6: New invoice
+  | 'profile_incomplete'    // V7: Missing info
+  | 'account_status_change' // V8: Status changed
+  | 'sla_action_required';  // V9: Sign SLA
+
+// Landlord notification types
+export type LandlordNotificationType =
+  | 'request_received'        // L1: Request confirmed
+  | 'vendors_matched'         // L2: Intros sent
+  | 'landlord_vendor_accepted'// L3: Vendor accepted your job
+  | 'all_vendors_declined'    // L4: No vendors accepted
+  | 'no_vendors_available'    // L5: Can't match
+  | 'review_reminder'         // L6: Leave feedback
+  | 'request_status_update';  // L7: Status changed
+
+export type NotificationType =
+  | AdminNotificationType
+  | VendorNotificationType
+  | LandlordNotificationType;
+
+export interface Notification {
+  id: string;
+  user_type: NotificationUserType;
+  user_id: string | null;
+  type: NotificationType;
+  title: string;
+  message: string;
+  request_id: string | null;
+  vendor_id: string | null;
+  match_id: string | null;
+  read: boolean;
+  read_at: string | null;
+  dismissed: boolean;
+  action_url: string | null;
+  priority: NotificationPriority;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  expires_at: string | null;
+}
+
+export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
+  // Admin
+  new_request: 'New Request',
+  emergency_request: 'Emergency Request',
+  stale_request: 'Stale Request',
+  new_application: 'New Application',
+  vendor_accepted: 'Vendor Accepted',
+  vendor_declined: 'Vendor Declined',
+  vendor_no_response: 'No Response',
+  new_review: 'New Review',
+  negative_review: 'Negative Review',
+  payment_overdue: 'Payment Overdue',
+  sla_signed: 'SLA Signed',
+  job_completed: 'Job Completed',
+  multiple_declines: 'Multiple Declines',
+  // Vendor
+  new_job_lead: 'New Job Lead',
+  job_lead_reminder: 'Lead Reminder',
+  job_awarded: 'Job Awarded',
+  new_review_received: 'New Review',
+  payment_received: 'Payment Received',
+  invoice_generated: 'Invoice Generated',
+  profile_incomplete: 'Profile Incomplete',
+  account_status_change: 'Account Status',
+  sla_action_required: 'SLA Required',
+  // Landlord
+  request_received: 'Request Received',
+  vendors_matched: 'Vendors Matched',
+  landlord_vendor_accepted: 'Vendor Accepted',
+  all_vendors_declined: 'No Vendors Available',
+  no_vendors_available: 'No Vendors',
+  review_reminder: 'Review Reminder',
+  request_status_update: 'Status Update',
+};

@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { calculateVettingScore } from '@/lib/scoring/vetting';
 import { sendVendorApplicationReceivedEmail } from '@/lib/email/send';
 import { sendVendorApplicationReceivedSms } from '@/lib/sms/send';
+import { notifyNewApplication } from '@/lib/notifications';
 
 export async function POST(request: NextRequest) {
   try {
@@ -155,6 +156,19 @@ export async function POST(request: NextRequest) {
     } catch (smsError) {
       console.error('[Vendor Apply API] SMS send failed:', smsError);
       // Don't fail the application if SMS fails
+    }
+
+    // Create admin notification (A4)
+    try {
+      await notifyNewApplication(supabase, {
+        id: data.id,
+        business_name: body.business_name,
+        services: body.services,
+        service_areas: body.service_areas,
+      });
+    } catch (notifyError) {
+      console.error('[Vendor Apply API] Notification failed:', notifyError);
+      // Don't fail the application if notification fails
     }
 
     return NextResponse.json({

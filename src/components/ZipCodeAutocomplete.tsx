@@ -118,36 +118,18 @@ export default function ZipCodeAutocomplete({
   const [error, setError] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState('');
 
-  useEffect(() => {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const addZipCode = useCallback((zip: string) => {
+    const cleanZip = zip.trim();
+    if (!cleanZip || value.includes(cleanZip)) return;
 
-    if (!apiKey) {
-      setError('Google Maps API key not configured');
-      setIsLoading(false);
-      return;
-    }
+    // Validate it's a 5-digit zip
+    if (!/^\d{5}$/.test(cleanZip)) return;
 
-    loadGoogleMapsScript(apiKey)
-      .then(() => {
-        if (inputRef.current && !autocompleteRef.current) {
-          initAutocomplete();
-        }
-        setIsLoading(false);
-      })
-      .catch((err) => {
-        console.error('Google Maps load error:', err);
-        setError(err.message);
-        setIsLoading(false);
-      });
-  }, []);
+    const newValue = [...value, cleanZip];
+    onChange?.(newValue);
+  }, [value, onChange]);
 
-  useEffect(() => {
-    if (!isLoading && !error && inputRef.current && !autocompleteRef.current && window.google?.maps?.places) {
-      initAutocomplete();
-    }
-  }, [isLoading, error]);
-
-  const initAutocomplete = () => {
+  const initAutocomplete = useCallback(() => {
     if (!inputRef.current || autocompleteRef.current) return;
 
     try {
@@ -189,18 +171,38 @@ export default function ZipCodeAutocomplete({
       console.error('Autocomplete init error:', err);
       setError('Failed to initialize autocomplete');
     }
-  };
+  }, [addZipCode]);
 
-  const addZipCode = useCallback((zip: string) => {
-    const cleanZip = zip.trim();
-    if (!cleanZip || value.includes(cleanZip)) return;
+  useEffect(() => {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
-    // Validate it's a 5-digit zip
-    if (!/^\d{5}$/.test(cleanZip)) return;
+    if (!apiKey) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Initial setup, not cascading
+      setError('Google Maps API key not configured');
+      setIsLoading(false);
+      return;
+    }
 
-    const newValue = [...value, cleanZip];
-    onChange?.(newValue);
-  }, [value, onChange]);
+    loadGoogleMapsScript(apiKey)
+      .then(() => {
+        if (inputRef.current && !autocompleteRef.current) {
+          initAutocomplete();
+        }
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        console.error('Google Maps load error:', err);
+        setError(err.message);
+        setIsLoading(false);
+      });
+  }, [initAutocomplete]);
+
+  useEffect(() => {
+    if (!isLoading && !error && inputRef.current && !autocompleteRef.current && window.google?.maps?.places) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Initialization sync
+      initAutocomplete();
+    }
+  }, [isLoading, error, initAutocomplete]);
 
   const removeZipCode = (zip: string) => {
     const newValue = value.filter(z => z !== zip);

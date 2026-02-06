@@ -190,6 +190,7 @@ export default function ServiceAreaDisplay({ serviceAreas, showIcon = true }: Se
     if (serviceAreas.length > 0) {
       loadDisplayNames();
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Initial state sync
       setLoading(false);
     }
   }, [serviceAreas]);
