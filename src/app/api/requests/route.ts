@@ -96,7 +96,8 @@ export async function POST(request: NextRequest) {
         service_details: body.service_details || null,
         job_description: body.job_description,
         urgency: body.urgency || 'medium',
-        budget_range: body.budget_range || null,
+        // Note: budget_range column needs migration 016 to be applied
+        // budget_range: body.budget_range || null,
         finish_level: body.finish_level || null,
         // Media
         media_urls: body.media_urls || [],
@@ -153,8 +154,9 @@ export async function POST(request: NextRequest) {
 
     // Create admin notification (A1 or A2)
     try {
+      let notifyResult;
       if (data.urgency === 'emergency') {
-        await notifyEmergencyRequest(supabase, {
+        notifyResult = await notifyEmergencyRequest(supabase, {
           id: data.id,
           service_type: data.service_type,
           zip_code: data.zip_code,
@@ -162,7 +164,7 @@ export async function POST(request: NextRequest) {
           job_description: data.job_description,
         });
       } else {
-        await notifyNewRequest(supabase, {
+        notifyResult = await notifyNewRequest(supabase, {
           id: data.id,
           service_type: data.service_type,
           zip_code: data.zip_code,
@@ -170,6 +172,7 @@ export async function POST(request: NextRequest) {
           urgency: data.urgency,
         });
       }
+      console.log('[Request API] Notification result:', notifyResult);
     } catch (notifyError) {
       console.error('[Request API] Notification failed:', notifyError);
       // Don't fail the request if notification fails

@@ -36,8 +36,14 @@ export async function createNotification(
   supabase: SupabaseClient,
   params: CreateNotificationParams
 ): Promise<{ success: boolean; error?: string }> {
+  console.log('[Notification] Creating notification:', {
+    userType: params.userType,
+    type: params.type,
+    title: params.title,
+  });
+
   try {
-    const { error } = await supabase.from('notifications').insert({
+    const insertData = {
       user_type: params.userType,
       user_id: params.userId || null,
       type: params.type,
@@ -50,16 +56,21 @@ export async function createNotification(
       priority: params.priority || 'medium',
       metadata: params.metadata || {},
       expires_at: params.expiresAt?.toISOString() || null,
-    });
+    };
+
+    console.log('[Notification] Insert data:', JSON.stringify(insertData, null, 2));
+
+    const { data, error } = await supabase.from('notifications').insert(insertData).select();
 
     if (error) {
-      console.error('Failed to create notification:', error);
+      console.error('[Notification] Failed to create notification:', error);
       return { success: false, error: error.message };
     }
 
+    console.log('[Notification] Successfully created:', data);
     return { success: true };
   } catch (err) {
-    console.error('Error creating notification:', err);
+    console.error('[Notification] Error creating notification:', err);
     return { success: false, error: 'Failed to create notification' };
   }
 }
@@ -80,11 +91,11 @@ export async function notifyNewRequest(
     landlord_name?: string;
     urgency?: string;
   }
-): Promise<void> {
+): Promise<{ success: boolean; error?: string }> {
   const serviceLabel = SERVICE_TYPE_LABELS[request.service_type] || request.service_type;
   const location = request.zip_code || 'Unknown';
 
-  await createNotification(supabase, {
+  return createNotification(supabase, {
     userType: 'admin',
     type: 'new_request',
     title: 'New Service Request',
@@ -111,11 +122,11 @@ export async function notifyEmergencyRequest(
     landlord_name?: string;
     job_description?: string;
   }
-): Promise<void> {
+): Promise<{ success: boolean; error?: string }> {
   const serviceLabel = SERVICE_TYPE_LABELS[request.service_type] || request.service_type;
   const location = request.zip_code || 'Unknown';
 
-  await createNotification(supabase, {
+  return createNotification(supabase, {
     userType: 'admin',
     type: 'emergency_request',
     title: '🚨 Emergency Request',
