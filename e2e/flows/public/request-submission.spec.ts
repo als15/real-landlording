@@ -162,7 +162,7 @@ test.describe('Service Request Submission', () => {
       const serviceSelect = page.locator(pages.requestForm.serviceType);
       if (await serviceSelect.isVisible()) {
         await serviceSelect.click();
-        await page.click('.ant-select-item-option').first();
+        await page.locator('.ant-select-item-option').first().click();
       }
 
       await page.fill(pages.requestForm.propertyAddress, data.property_address);

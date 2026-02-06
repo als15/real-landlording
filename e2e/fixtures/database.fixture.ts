@@ -122,10 +122,13 @@ export interface TestVendor {
 
 export interface CreateVendorOptions {
   testId?: string;
+  email?: string; // Allow custom email
   status?: 'active' | 'pending_review' | 'inactive' | 'rejected';
   services?: string[];
   service_areas?: string[];
   createAuthUser?: boolean;
+  business_name?: string;
+  contact_name?: string;
 }
 
 export async function createTestVendor(
@@ -133,9 +136,9 @@ export async function createTestVendor(
   options: CreateVendorOptions = {}
 ): Promise<TestVendor> {
   const testId = options.testId || `${TEST_PREFIX}-${Date.now()}`;
-  const email = `vendor-${testId}@e2e.test`;
-  const businessName = `Test Vendor ${testId}`;
-  const contactName = `Vendor Contact ${testId}`;
+  const email = options.email || `vendor-${testId}@e2e.test`;
+  const businessName = options.business_name || `Test Vendor ${testId}`;
+  const contactName = options.contact_name || `Vendor Contact ${testId}`;
   const status = options.status || 'active';
   const services = options.services || ['plumber_sewer'];
   const serviceAreas = options.service_areas || ['19103', '19104'];
@@ -230,10 +233,14 @@ export interface TestRequest {
 export interface CreateRequestOptions {
   testId?: string;
   landlordId?: string;
+  landlord_email?: string; // Allow custom email
+  landlord_name?: string;  // Allow custom name
   service_type?: string;
   zip_code?: string;
   urgency?: 'low' | 'medium' | 'high' | 'emergency';
   status?: 'new' | 'matching' | 'matched' | 'completed' | 'cancelled';
+  property_address?: string;
+  job_description?: string;
 }
 
 export async function createTestRequest(
@@ -241,12 +248,14 @@ export async function createTestRequest(
   options: CreateRequestOptions = {}
 ): Promise<TestRequest> {
   const testId = options.testId || `${TEST_PREFIX}-${Date.now()}`;
-  const email = `request-${testId}@e2e.test`;
-  const name = `Request Landlord ${testId}`;
+  const email = options.landlord_email || `request-${testId}@e2e.test`;
+  const name = options.landlord_name || `Request Landlord ${testId}`;
   const serviceType = options.service_type || 'plumber_sewer';
   const zipCode = options.zip_code || '19103';
   const urgency = options.urgency || 'medium';
   const status = options.status || 'new';
+  const propertyAddress = options.property_address || `${testId} Test Street, Philadelphia, PA ${zipCode}`;
+  const jobDescription = options.job_description || `E2E test job for ${serviceType}. Test ID: ${testId}`;
 
   const { data: request, error } = await supabase
     .from('service_requests')
@@ -258,8 +267,8 @@ export async function createTestRequest(
       service_type: serviceType,
       property_location: zipCode,
       zip_code: zipCode,
-      property_address: `${testId} Test Street, Philadelphia, PA ${zipCode}`,
-      job_description: `E2E test job for ${serviceType}. Test ID: ${testId}`,
+      property_address: propertyAddress,
+      job_description: jobDescription,
       urgency,
       status,
       is_owner: true,

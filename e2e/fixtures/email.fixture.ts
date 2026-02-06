@@ -336,7 +336,7 @@ export function isEmailVerificationEnabled(): boolean {
 export async function maybeVerifyEmailSent(
   toEmail: string,
   subjectContains: string,
-  options: { timeout?: number } = {}
+  options: { timeout?: number; since?: Date } = {}
 ): Promise<EmailRecord | null> {
   if (!isEmailVerificationEnabled()) {
     console.log(
