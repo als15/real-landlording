@@ -35,7 +35,10 @@ import {
   ThunderboltOutlined,
   CheckOutlined,
   DownOutlined,
+  PlusOutlined,
+  PictureOutlined,
 } from '@ant-design/icons';
+import MediaUpload from '@/components/MediaUpload';
 import {
   ServiceRequest,
   RequestStatus,
@@ -154,6 +157,9 @@ function RequestsPageContent() {
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [matchingModalOpen, setMatchingModalOpen] = useState(false);
   const [resendingVendorId, setResendingVendorId] = useState<string | null>(null);
+  const [editingMedia, setEditingMedia] = useState(false);
+  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
+  const [savingMedia, setSavingMedia] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const { message } = App.useApp();
   const searchParams = useSearchParams();
@@ -357,6 +363,43 @@ function RequestsPageContent() {
   const rowSelection = {
     selectedRowKeys,
     onChange: (keys: React.Key[]) => setSelectedRowKeys(keys),
+  };
+
+  const handleSaveMedia = async () => {
+    if (!selectedRequest) return;
+
+    setSavingMedia(true);
+    try {
+      const response = await fetch(`/api/requests/${selectedRequest.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ media_urls: mediaUrls }),
+      });
+
+      if (response.ok) {
+        const updatedRequest = await response.json();
+        setSelectedRequest({ ...selectedRequest, media_urls: updatedRequest.media_urls });
+        setEditingMedia(false);
+        message.success('Media updated successfully');
+        fetchRequests();
+      } else {
+        throw new Error('Failed to update media');
+      }
+    } catch (error) {
+      message.error('Failed to update media');
+    } finally {
+      setSavingMedia(false);
+    }
+  };
+
+  const handleStartEditingMedia = () => {
+    setMediaUrls(selectedRequest?.media_urls || []);
+    setEditingMedia(true);
+  };
+
+  const handleCancelEditingMedia = () => {
+    setEditingMedia(false);
+    setMediaUrls([]);
   };
 
   const handleResendIntro = async (vendorId: string) => {
@@ -821,23 +864,64 @@ function RequestsPageContent() {
             </div>
 
             {/* Images */}
-            {selectedRequest.media_urls && selectedRequest.media_urls.length > 0 && (
-              <>
-                <Divider style={{ marginTop: 16, marginBottom: 16 }}>Uploaded Images ({selectedRequest.media_urls.length})</Divider>
-                <Image.PreviewGroup>
-                  <Row gutter={[8, 8]}>
-                    {selectedRequest.media_urls.map((url, index) => (
-                      <Col key={index} span={8}>
-                        <Image
-                          src={url}
-                          alt={`Upload ${index + 1}`}
-                          style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 8 }}
-                        />
-                      </Col>
-                    ))}
-                  </Row>
-                </Image.PreviewGroup>
-              </>
+            <Divider style={{ marginTop: 16, marginBottom: 16 }}>
+              <Space>
+                <PictureOutlined />
+                Images
+                {selectedRequest.media_urls && selectedRequest.media_urls.length > 0 && (
+                  <Badge count={selectedRequest.media_urls.length} style={{ backgroundColor: '#52c41a' }} />
+                )}
+              </Space>
+            </Divider>
+
+            {editingMedia ? (
+              <div>
+                <MediaUpload
+                  value={mediaUrls}
+                  onChange={setMediaUrls}
+                  maxFiles={10}
+                />
+                <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
+                  <Button
+                    type="primary"
+                    onClick={handleSaveMedia}
+                    loading={savingMedia}
+                  >
+                    Save Changes
+                  </Button>
+                  <Button onClick={handleCancelEditingMedia}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                {selectedRequest.media_urls && selectedRequest.media_urls.length > 0 ? (
+                  <Image.PreviewGroup>
+                    <Row gutter={[8, 8]}>
+                      {selectedRequest.media_urls.map((url, index) => (
+                        <Col key={index} span={8}>
+                          <Image
+                            src={url}
+                            alt={`Upload ${index + 1}`}
+                            style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 8 }}
+                          />
+                        </Col>
+                      ))}
+                    </Row>
+                  </Image.PreviewGroup>
+                ) : (
+                  <Text type="secondary">No images uploaded</Text>
+                )}
+                <div style={{ marginTop: 12 }}>
+                  <Button
+                    icon={<PlusOutlined />}
+                    onClick={handleStartEditingMedia}
+                  >
+                    {selectedRequest.media_urls && selectedRequest.media_urls.length > 0 ? 'Edit Images' : 'Add Images'}
+                  </Button>
+                </div>
+              </div>
             )}
 
             {/* Admin Notes */}
