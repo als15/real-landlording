@@ -48,3 +48,7 @@ supabase/.temp/
 *.tsbuildinfo
 next-env.d.ts
 *.csv
+
+# Claude Code (user-specific settings)
+.claude/
+.agents/
