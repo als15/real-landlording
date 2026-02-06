@@ -188,14 +188,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           }}
           theme="dark"
         />
-        <style jsx global>{`
-          .ant-menu-dark .ant-menu-sub {
-            background: ${brandColors.backgroundDark} !important;
-          }
-          .ant-menu-dark.ant-menu-inline .ant-menu-sub.ant-menu-inline {
-            background: rgba(255, 255, 255, 0.04) !important;
-          }
-        `}</style>
       </Sider>
 
       <Layout style={{ background: brandColors.background }}>
