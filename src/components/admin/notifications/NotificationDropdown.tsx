@@ -6,13 +6,10 @@ import {
   Popover,
   Badge,
   Button,
-  List,
   Typography,
-  Space,
   Empty,
   Spin,
   Divider,
-  Tag,
 } from 'antd';
 import {
   BellOutlined,
@@ -174,10 +171,10 @@ export default function NotificationDropdown() {
             style={{ padding: 40 }}
           />
         ) : (
-          <List
-            dataSource={notifications}
-            renderItem={(notification) => (
-              <List.Item
+          <div>
+            {notifications.map((notification) => (
+              <div
+                key={notification.id}
                 onClick={() => handleNotificationClick(notification)}
                 style={{
                   padding: '12px 16px',
@@ -240,9 +237,9 @@ export default function NotificationDropdown() {
                     </Text>
                   </div>
                 </div>
-              </List.Item>
-            )}
-          />
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
@@ -280,7 +277,7 @@ export default function NotificationDropdown() {
       onOpenChange={setOpen}
       placement="bottomRight"
       arrow={false}
-      overlayInnerStyle={{ padding: 0 }}
+      styles={{ body: { padding: 0 } }}
     >
       <Badge count={unreadCount} size="small" offset={[-2, 2]}>
         <Button

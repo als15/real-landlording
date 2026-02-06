@@ -421,7 +421,7 @@ export default function VendorDashboardPage() {
             {selectedJob.review_rating && (
               <>
                 <Divider><StarOutlined style={{ marginRight: 8 }} />Landlord Review</Divider>
-                <Space direction="vertical" style={{ width: '100%' }}>
+                <Space orientation="vertical" style={{ width: '100%' }}>
                   <Rate disabled defaultValue={selectedJob.review_rating} />
                   {selectedJob.review_text && (
                     <Paragraph style={{ background: '#f6ffed', padding: 12, borderRadius: 8, border: '1px solid #b7eb8f' }}>

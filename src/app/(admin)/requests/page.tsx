@@ -478,7 +478,7 @@ function RequestsPageContent() {
         const isNew = record.status === 'new';
 
         return (
-          <Space direction="vertical" size={0} style={{ lineHeight: 1.2 }}>
+          <Space orientation="vertical" size={0} style={{ lineHeight: 1.2 }}>
             {isEmergency && (
               <Tag color="red" icon={<ThunderboltOutlined />} style={{ margin: 0 }}>
                 URGENT
