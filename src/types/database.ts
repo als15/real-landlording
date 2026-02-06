@@ -5,6 +5,20 @@ export type RequestStatus = 'new' | 'matching' | 'matched' | 'completed' | 'canc
 export type UrgencyLevel = 'low' | 'medium' | 'high' | 'emergency';
 export type SlaStatus = 'not_sent' | 'sent' | 'delivered' | 'viewed' | 'signed' | 'declined' | 'voided';
 
+// Payment status for referral fee tracking
+export type PaymentStatus = 'pending' | 'invoiced' | 'paid' | 'overdue' | 'waived' | 'refunded';
+
+// Job outcome reasons for CRM tracking
+export type JobOutcomeReason =
+  | 'price_too_high'
+  | 'timing_issue'
+  | 'vendor_unresponsive'
+  | 'landlord_cancelled'
+  | 'found_other_vendor'
+  | 'job_not_needed'
+  | 'completed_successfully'
+  | 'other';
+
 // Match status for tracking vendor-request lifecycle
 export type MatchStatus =
   | 'pending'
@@ -653,6 +667,40 @@ export const SLA_STATUS_LABELS: Record<SlaStatus, string> = {
   voided: 'Voided',
 };
 
+// CRM: Payment status labels
+export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
+  pending: 'Pending',
+  invoiced: 'Invoiced',
+  paid: 'Paid',
+  overdue: 'Overdue',
+  waived: 'Waived',
+  refunded: 'Refunded',
+};
+
+// CRM: Job outcome reason labels
+export const JOB_OUTCOME_REASON_LABELS: Record<JobOutcomeReason, string> = {
+  price_too_high: 'Price Too High',
+  timing_issue: 'Timing Issue',
+  vendor_unresponsive: 'Vendor Unresponsive',
+  landlord_cancelled: 'Landlord Cancelled',
+  found_other_vendor: 'Found Other Vendor',
+  job_not_needed: 'Job Not Needed',
+  completed_successfully: 'Completed Successfully',
+  other: 'Other',
+};
+
+// CRM: Payment method options
+export const PAYMENT_METHOD_OPTIONS = [
+  { value: 'check', label: 'Check' },
+  { value: 'ach', label: 'ACH/Bank Transfer' },
+  { value: 'venmo', label: 'Venmo' },
+  { value: 'zelle', label: 'Zelle' },
+  { value: 'paypal', label: 'PayPal' },
+  { value: 'cash', label: 'Cash' },
+  { value: 'stripe', label: 'Stripe' },
+  { value: 'other', label: 'Other' },
+];
+
 // Vendor business details options
 export const EMPLOYEE_COUNT_OPTIONS = [
   { value: 'just_me', label: 'Just me' },
@@ -787,6 +835,10 @@ export interface Vendor {
   sla_sent_at: string | null;
   sla_signed_at: string | null;
   sla_document_url: string | null;
+  // CRM: Vendor fee configuration
+  default_fee_type: 'fixed' | 'percentage' | null;
+  default_fee_amount: number | null;
+  default_fee_percentage: number | null;
 }
 
 export interface ServiceRequest {
@@ -856,6 +908,15 @@ export interface RequestVendorMatch {
   review_price: number | null;
   review_timeline: number | null;
   review_treatment: number | null;
+  // CRM: Job outcome tracking
+  job_won: boolean | null;
+  job_won_at: string | null;
+  job_completed_at: string | null;
+  job_outcome_reason: JobOutcomeReason | null;
+  outcome_notes: string | null;
+  // CRM: Review request tracking
+  review_requested_at: string | null;
+  review_reminder_sent_at: string | null;
 }
 
 export interface AdminUser {
@@ -867,6 +928,34 @@ export interface AdminUser {
   created_at: string;
 }
 
+// CRM: Referral payment tracking
+export interface ReferralPayment {
+  id: string;
+  match_id: string | null;
+  vendor_id: string | null;
+  request_id: string | null;
+  // Payment details
+  amount: number;
+  fee_type: 'fixed' | 'percentage';
+  fee_percentage: number | null;
+  // Job cost (what landlord paid vendor)
+  job_cost: number | null;
+  // Status
+  status: PaymentStatus;
+  // Dates
+  invoice_date: string | null;
+  due_date: string | null;
+  paid_date: string | null;
+  // Payment method
+  payment_method: string | null;
+  payment_reference: string | null;
+  // Notes
+  notes: string | null;
+  // Timestamps
+  created_at: string;
+  updated_at: string;
+}
+
 // Extended types with relations
 export interface ServiceRequestWithMatches extends ServiceRequest {
   matches?: (RequestVendorMatch & { vendor: Vendor })[];
@@ -874,6 +963,56 @@ export interface ServiceRequestWithMatches extends ServiceRequest {
 
 export interface VendorWithMatches extends Vendor {
   matches?: (RequestVendorMatch & { request: ServiceRequest })[];
+}
+
+// CRM: Extended match type with all relations for job tracking
+export interface CRMJobMatch extends RequestVendorMatch {
+  vendor: Vendor;
+  request: ServiceRequest;
+  payment?: ReferralPayment | null;
+}
+
+// CRM: Payment with relations
+export interface ReferralPaymentWithRelations extends ReferralPayment {
+  vendor?: Vendor | null;
+  request?: ServiceRequest | null;
+  match?: RequestVendorMatch | null;
+}
+
+// CRM: Pipeline stage counts
+export interface CRMPipelineCounts {
+  intro_sent: number;
+  vendor_accepted: number;
+  job_won: number;
+  in_progress: number;
+  completed: number;
+  paid: number;
+  total_pending_payment: number;
+  total_pending_payment_amount: number;
+}
+
+// CRM: Conversion stats by service type
+export interface ServiceTypeConversion {
+  service_type: string;
+  total_requests: number;
+  matched: number;
+  won: number;
+  completed: number;
+  conversion_rate: number;
+  avg_time_to_win_hours: number | null;
+}
+
+// CRM: Vendor conversion stats
+export interface VendorConversion {
+  vendor_id: string;
+  vendor_name: string;
+  business_name: string;
+  total_matches: number;
+  jobs_won: number;
+  jobs_completed: number;
+  conversion_rate: number;
+  total_revenue: number;
+  avg_rating: number | null;
 }
 
 // Form input types

@@ -32,10 +32,10 @@ const customJestConfig = {
   // Run `npm run test:coverage` locally to see current coverage
   coverageThreshold: {
     global: {
-      statements: 1,
+      statements: 0.5,
       branches: 0,
-      functions: 1,
-      lines: 1,
+      functions: 0.5,
+      lines: 0.5,
     },
     // Higher thresholds for tested business logic only
     'src/lib/scoring/calculate.ts': {

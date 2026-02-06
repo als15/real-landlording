@@ -26,12 +26,26 @@ import {
   StarOutlined,
   PhoneOutlined,
   MailOutlined,
+  HomeOutlined,
+  EnvironmentOutlined,
+  PictureOutlined,
 } from '@ant-design/icons';
+import Image from 'next/image';
 import {
   ServiceRequest,
   RequestVendorMatch,
   SERVICE_TYPE_LABELS,
   URGENCY_LABELS,
+  PROPERTY_TYPE_LABELS,
+  OCCUPANCY_STATUS_LABELS,
+  BUDGET_RANGE_LABELS,
+  FINISH_LEVEL_LABELS,
+  CONTACT_PREFERENCE_LABELS,
+  PropertyType,
+  OccupancyStatus,
+  BudgetRange,
+  FinishLevel,
+  ContactPreference,
 } from '@/types/database';
 import type { ColumnsType } from 'antd/es/table';
 
@@ -273,56 +287,146 @@ export default function VendorDashboardPage() {
               ]
             : null
         }
-        width={600}
+        width={700}
       >
         {selectedJob && (
           <>
-            <Descriptions column={1} bordered size="small">
-              <Descriptions.Item label="Service">
+            {/* Service Information */}
+            <Descriptions column={2} bordered size="small" title={<><HomeOutlined style={{ marginRight: 8 }} />Service Details</>}>
+              <Descriptions.Item label="Service Type" span={2}>
                 {SERVICE_TYPE_LABELS[selectedJob.request.service_type as keyof typeof SERVICE_TYPE_LABELS]}
-              </Descriptions.Item>
-              <Descriptions.Item label="Location">
-                {selectedJob.request.property_location}
               </Descriptions.Item>
               <Descriptions.Item label="Urgency">
                 <Tag color={urgencyColors[selectedJob.request.urgency]}>
                   {URGENCY_LABELS[selectedJob.request.urgency]}
                 </Tag>
               </Descriptions.Item>
-              {(selectedJob.request.budget_min || selectedJob.request.budget_max) && (
+              {selectedJob.request.budget_range && (
                 <Descriptions.Item label="Budget">
-                  ${selectedJob.request.budget_min || 0} - ${selectedJob.request.budget_max || '∞'}
+                  {BUDGET_RANGE_LABELS[selectedJob.request.budget_range as BudgetRange] || selectedJob.request.budget_range}
+                </Descriptions.Item>
+              )}
+              {selectedJob.request.finish_level && (
+                <Descriptions.Item label="Finish Level" span={2}>
+                  {FINISH_LEVEL_LABELS[selectedJob.request.finish_level as FinishLevel]}
                 </Descriptions.Item>
               )}
             </Descriptions>
 
-            <Divider>Job Description</Divider>
-            <Paragraph>{selectedJob.request.job_description}</Paragraph>
+            {/* Service Details (sub-categories) */}
+            {selectedJob.request.service_details && Object.keys(selectedJob.request.service_details).length > 0 && (
+              <>
+                <Divider style={{ marginTop: 24 }}>Service Specifications</Divider>
+                <Descriptions column={1} bordered size="small">
+                  {Object.entries(selectedJob.request.service_details).map(([key, value]) => (
+                    <Descriptions.Item key={key} label={key}>
+                      {value}
+                    </Descriptions.Item>
+                  ))}
+                </Descriptions>
+              </>
+            )}
 
-            <Divider>Landlord Contact</Divider>
-            <Space direction="vertical">
-              <Text>
-                <strong>{selectedJob.request.landlord_name || 'Landlord'}</strong>
-              </Text>
-              <Text>
-                <MailOutlined style={{ marginRight: 8 }} />
-                {selectedJob.request.landlord_email}
-              </Text>
-              {selectedJob.request.landlord_phone && (
-                <Text>
-                  <PhoneOutlined style={{ marginRight: 8 }} />
-                  {selectedJob.request.landlord_phone}
-                </Text>
+            {/* Property Information */}
+            <Divider><EnvironmentOutlined style={{ marginRight: 8 }} />Property Information</Divider>
+            <Descriptions column={2} bordered size="small">
+              <Descriptions.Item label="Address" span={2}>
+                {selectedJob.request.property_address || selectedJob.request.property_location}
+              </Descriptions.Item>
+              {selectedJob.request.zip_code && (
+                <Descriptions.Item label="Zip Code">
+                  {selectedJob.request.zip_code}
+                </Descriptions.Item>
               )}
-            </Space>
+              {selectedJob.request.property_type && (
+                <Descriptions.Item label="Property Type">
+                  {PROPERTY_TYPE_LABELS[selectedJob.request.property_type as PropertyType]}
+                </Descriptions.Item>
+              )}
+              {selectedJob.request.occupancy_status && (
+                <Descriptions.Item label="Occupancy">
+                  {OCCUPANCY_STATUS_LABELS[selectedJob.request.occupancy_status as OccupancyStatus]}
+                </Descriptions.Item>
+              )}
+            </Descriptions>
 
+            {/* Job Description */}
+            <Divider>Job Description</Divider>
+            <Paragraph style={{ whiteSpace: 'pre-wrap', background: '#fafafa', padding: 16, borderRadius: 8 }}>
+              {selectedJob.request.job_description}
+            </Paragraph>
+
+            {/* Photos/Media */}
+            {selectedJob.request.media_urls && selectedJob.request.media_urls.length > 0 && (
+              <>
+                <Divider><PictureOutlined style={{ marginRight: 8 }} />Photos ({selectedJob.request.media_urls.length})</Divider>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 12 }}>
+                  {selectedJob.request.media_urls.map((url, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        position: 'relative',
+                        paddingBottom: '100%',
+                        borderRadius: 8,
+                        overflow: 'hidden',
+                        border: '1px solid #d9d9d9',
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => window.open(url, '_blank')}
+                    >
+                      <Image
+                        src={url}
+                        alt={`Job photo ${index + 1}`}
+                        fill
+                        style={{ objectFit: 'cover' }}
+                        sizes="150px"
+                      />
+                    </div>
+                  ))}
+                </div>
+                <Text type="secondary" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>
+                  Click on a photo to view full size
+                </Text>
+              </>
+            )}
+
+            {/* Landlord Contact */}
+            <Divider><MailOutlined style={{ marginRight: 8 }} />Landlord Contact</Divider>
+            <Descriptions column={1} bordered size="small">
+              <Descriptions.Item label="Name">
+                {selectedJob.request.first_name && selectedJob.request.last_name
+                  ? `${selectedJob.request.first_name} ${selectedJob.request.last_name}`
+                  : selectedJob.request.landlord_name || 'Not provided'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Email">
+                <a href={`mailto:${selectedJob.request.landlord_email}`}>
+                  {selectedJob.request.landlord_email}
+                </a>
+              </Descriptions.Item>
+              {selectedJob.request.landlord_phone && (
+                <Descriptions.Item label="Phone">
+                  <a href={`tel:${selectedJob.request.landlord_phone}`}>
+                    {selectedJob.request.landlord_phone}
+                  </a>
+                </Descriptions.Item>
+              )}
+              {selectedJob.request.contact_preference && (
+                <Descriptions.Item label="Preferred Contact">
+                  {CONTACT_PREFERENCE_LABELS[selectedJob.request.contact_preference as ContactPreference]}
+                </Descriptions.Item>
+              )}
+            </Descriptions>
+
+            {/* Review (if exists) */}
             {selectedJob.review_rating && (
               <>
-                <Divider>Landlord Review</Divider>
-                <Space direction="vertical">
+                <Divider><StarOutlined style={{ marginRight: 8 }} />Landlord Review</Divider>
+                <Space direction="vertical" style={{ width: '100%' }}>
                   <Rate disabled defaultValue={selectedJob.review_rating} />
                   {selectedJob.review_text && (
-                    <Paragraph>{selectedJob.review_text}</Paragraph>
+                    <Paragraph style={{ background: '#f6ffed', padding: 12, borderRadius: 8, border: '1px solid #b7eb8f' }}>
+                      {selectedJob.review_text}
+                    </Paragraph>
                   )}
                 </Space>
               </>
