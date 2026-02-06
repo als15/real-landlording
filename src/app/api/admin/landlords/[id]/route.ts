@@ -15,44 +15,55 @@ export async function GET(
 
     const { id } = await params;
 
-    // Fetch landlord with their service requests
-    const { data, error } = await adminClient
+    // Fetch landlord first
+    const { data: landlord, error: landlordError } = await adminClient
       .from('landlords')
-      .select(`
-        *,
-        requests:service_requests(
-          id,
-          service_type,
-          property_location,
-          property_address,
-          zip_code,
-          job_description,
-          urgency,
-          status,
-          created_at,
-          intro_sent_at,
-          matches:request_vendor_matches(
-            id,
-            vendor_id,
-            status,
-            intro_sent,
-            vendor_accepted,
-            job_completed,
-            review_rating
-          )
-        )
-      `)
+      .select('*')
       .eq('id', id)
       .single();
 
-    if (error) {
+    if (landlordError) {
       return NextResponse.json(
-        { message: 'Landlord not found', error: error.message },
+        { message: 'Landlord not found', error: landlordError.message },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(data);
+    // Fetch requests by landlord_id OR landlord_email (to catch orphaned requests)
+    const { data: requests, error: requestsError } = await adminClient
+      .from('service_requests')
+      .select(`
+        id,
+        service_type,
+        property_location,
+        property_address,
+        zip_code,
+        job_description,
+        urgency,
+        status,
+        created_at,
+        intro_sent_at,
+        matches:request_vendor_matches(
+          id,
+          vendor_id,
+          status,
+          intro_sent,
+          vendor_accepted,
+          job_completed,
+          review_rating
+        )
+      `)
+      .or(`landlord_id.eq.${id},landlord_email.eq.${landlord.email}`)
+      .order('created_at', { ascending: false });
+
+    if (requestsError) {
+      console.error('Error fetching requests:', requestsError);
+    }
+
+    return NextResponse.json({
+      ...landlord,
+      requests: requests || [],
+    });
   } catch (error) {
     console.error('API error:', error);
     return NextResponse.json(

@@ -20,6 +20,8 @@ import {
   Row,
   Col,
   Spin,
+  Tooltip,
+  Dropdown,
 } from 'antd';
 import {
   ReloadOutlined,
@@ -28,6 +30,11 @@ import {
   FilterOutlined,
   DownloadOutlined,
   SendOutlined,
+  ClockCircleOutlined,
+  ExclamationCircleOutlined,
+  ThunderboltOutlined,
+  CheckOutlined,
+  DownOutlined,
 } from '@ant-design/icons';
 import {
   ServiceRequest,
@@ -82,6 +89,43 @@ const urgencyColors: Record<string, string> = {
   emergency: 'red',
 };
 
+// Helper to calculate request age and get appropriate styling
+function getRequestAge(createdAt: string): { text: string; color: string; isStale: boolean } {
+  const now = new Date();
+  const created = new Date(createdAt);
+  const diffMs = now.getTime() - created.getTime();
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffHours < 24) {
+    return { text: diffHours === 0 ? 'Just now' : `${diffHours}h ago`, color: '#52c41a', isStale: false };
+  } else if (diffDays === 1) {
+    return { text: '1 day ago', color: '#1890ff', isStale: false };
+  } else if (diffDays <= 2) {
+    return { text: `${diffDays} days ago`, color: '#faad14', isStale: false };
+  } else if (diffDays <= 7) {
+    return { text: `${diffDays} days ago`, color: '#ff7a45', isStale: true };
+  } else {
+    return { text: `${diffDays} days ago`, color: '#ff4d4f', isStale: true };
+  }
+}
+
+// Filter presets for quick access
+interface FilterPreset {
+  key: string;
+  label: string;
+  icon: React.ReactNode;
+  filter: { status?: string; urgency?: string; staleOnly?: boolean };
+}
+
+const FILTER_PRESETS: FilterPreset[] = [
+  { key: 'all', label: 'All Requests', icon: null, filter: {} },
+  { key: 'emergency', label: 'Emergency', icon: <ThunderboltOutlined style={{ color: '#ff4d4f' }} />, filter: { urgency: 'emergency' } },
+  { key: 'new', label: 'New', icon: <ExclamationCircleOutlined style={{ color: '#1890ff' }} />, filter: { status: 'new' } },
+  { key: 'unmatched', label: 'Unmatched', icon: <ClockCircleOutlined style={{ color: '#faad14' }} />, filter: { status: 'new' } },
+  { key: 'stale', label: 'Stale (3+ days)', icon: <ClockCircleOutlined style={{ color: '#ff4d4f' }} />, filter: { staleOnly: true } },
+];
+
 export default function RequestsPage() {
   return (
     <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', padding: 50 }}><Spin size="large" /></div>}>
@@ -97,10 +141,15 @@ function RequestsPageContent() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [urgencyFilter, setUrgencyFilter] = useState<string | null>(null);
+  const [staleOnly, setStaleOnly] = useState(false);
+  const [activePreset, setActivePreset] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null);
   const [selectedRequestMatches, setSelectedRequestMatches] = useState<VendorMatch[]>([]);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [matchingModalOpen, setMatchingModalOpen] = useState(false);
@@ -140,13 +189,29 @@ function RequestsPageContent() {
         params.append('status', statusFilter);
       }
 
+      if (urgencyFilter) {
+        params.append('urgency', urgencyFilter);
+      }
+
       if (debouncedSearch.trim()) {
         params.append('search', debouncedSearch.trim());
       }
 
       const response = await fetch(`/api/requests?${params}`);
       if (response.ok) {
-        const { data, count } = await response.json();
+        let { data, count } = await response.json();
+
+        // Client-side filter for stale requests (3+ days old with status 'new')
+        if (staleOnly && data) {
+          const threeDaysAgo = new Date();
+          threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+          data = data.filter((r: ServiceRequest) => {
+            const created = new Date(r.created_at);
+            return created < threeDaysAgo && r.status === 'new';
+          });
+          count = data.length;
+        }
+
         setRequests(data || []);
         setTotal(count || 0);
       }
@@ -156,7 +221,7 @@ function RequestsPageContent() {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, statusFilter, debouncedSearch]);
+  }, [page, pageSize, statusFilter, urgencyFilter, staleOnly, debouncedSearch, message]);
 
   useEffect(() => {
     fetchRequests();
@@ -244,7 +309,54 @@ function RequestsPageContent() {
 
   const handleStatusFilterChange = (value: string | null) => {
     setStatusFilter(value);
-    setPage(1); // Reset to first page on filter change
+    setActivePreset('all');
+    setPage(1);
+  };
+
+  const handlePresetChange = (preset: FilterPreset) => {
+    setActivePreset(preset.key);
+    setStatusFilter(preset.filter.status || null);
+    setUrgencyFilter(preset.filter.urgency || null);
+    setStaleOnly(preset.filter.staleOnly || false);
+    setPage(1);
+  };
+
+  const handleBulkStatusUpdate = async (newStatus: RequestStatus) => {
+    if (selectedRowKeys.length === 0) return;
+
+    setBulkUpdating(true);
+    try {
+      const results = await Promise.all(
+        selectedRowKeys.map(async (id) => {
+          const response = await fetch(`/api/requests/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus }),
+          });
+          return response.ok;
+        })
+      );
+
+      const successCount = results.filter(Boolean).length;
+      if (successCount === selectedRowKeys.length) {
+        message.success(`Updated ${successCount} request(s) to ${REQUEST_STATUS_LABELS[newStatus]}`);
+      } else {
+        message.warning(`Updated ${successCount} of ${selectedRowKeys.length} requests`);
+      }
+
+      setSelectedRowKeys([]);
+      fetchRequests();
+    } catch (error) {
+      console.error('Bulk update error:', error);
+      message.error('Failed to update some requests');
+    } finally {
+      setBulkUpdating(false);
+    }
+  };
+
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (keys: React.Key[]) => setSelectedRowKeys(keys),
   };
 
   const handleResendIntro = async (vendorId: string) => {
@@ -314,11 +426,41 @@ function RequestsPageContent() {
 
   const columns: ColumnsType<ServiceRequest> = [
     {
+      title: 'Priority',
+      key: 'priority',
+      width: 90,
+      render: (_, record) => {
+        const age = getRequestAge(record.created_at);
+        const isEmergency = record.urgency === 'emergency';
+        const isNew = record.status === 'new';
+
+        return (
+          <Space direction="vertical" size={0} style={{ lineHeight: 1.2 }}>
+            {isEmergency && (
+              <Tag color="red" icon={<ThunderboltOutlined />} style={{ margin: 0 }}>
+                URGENT
+              </Tag>
+            )}
+            {!isEmergency && isNew && age.isStale && (
+              <Tooltip title="Request is stale - needs attention">
+                <Tag color="orange" icon={<ClockCircleOutlined />} style={{ margin: 0 }}>
+                  STALE
+                </Tag>
+              </Tooltip>
+            )}
+            {!isEmergency && !age.isStale && isNew && (
+              <Tag color="blue" style={{ margin: 0 }}>NEW</Tag>
+            )}
+          </Space>
+        );
+      },
+    },
+    {
       title: 'Service',
       dataIndex: 'service_type',
       key: 'service_type',
       render: (type) => SERVICE_TYPE_LABELS[type as keyof typeof SERVICE_TYPE_LABELS] || type,
-      width: 180,
+      width: 150,
     },
     {
       title: 'Landlord',
@@ -337,18 +479,8 @@ function RequestsPageContent() {
       title: 'Location',
       dataIndex: 'property_location',
       key: 'property_location',
-      width: 120,
-    },
-    {
-      title: 'Urgency',
-      dataIndex: 'urgency',
-      key: 'urgency',
-      render: (urgency) => (
-        <Tag color={urgencyColors[urgency]}>
-          {URGENCY_LABELS[urgency as keyof typeof URGENCY_LABELS]?.split(' - ')[0] || urgency}
-        </Tag>
-      ),
       width: 100,
+      render: (location, record) => record.zip_code || location,
     },
     {
       title: 'Status',
@@ -362,11 +494,21 @@ function RequestsPageContent() {
       width: 100,
     },
     {
-      title: 'Created',
+      title: 'Age',
       dataIndex: 'created_at',
       key: 'created_at',
-      render: (date) => new Date(date).toLocaleDateString(),
+      render: (date) => {
+        const age = getRequestAge(date);
+        return (
+          <Tooltip title={new Date(date).toLocaleString()}>
+            <Text style={{ color: age.color, fontSize: 13 }}>
+              {age.text}
+            </Text>
+          </Tooltip>
+        );
+      },
       sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+      defaultSortOrder: 'descend',
       width: 100,
     },
     {
@@ -412,29 +554,75 @@ function RequestsPageContent() {
         </Space>
       </div>
 
-      <Card style={{ marginBottom: 16 }}>
-        <Space wrap>
-          <FilterOutlined />
-          <Select
-            placeholder="Filter by status"
-            allowClear
-            style={{ width: 160 }}
-            value={statusFilter}
-            onChange={handleStatusFilterChange}
-            options={Object.entries(REQUEST_STATUS_LABELS).map(([value, label]) => ({
-              value,
-              label,
-            }))}
-          />
-          <Search
-            placeholder="Search requests..."
-            allowClear
-            style={{ width: 300 }}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </Space>
+      {/* Filter Presets */}
+      <Card size="small" style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+          <Space wrap>
+            {FILTER_PRESETS.map((preset) => (
+              <Button
+                key={preset.key}
+                type={activePreset === preset.key ? 'primary' : 'default'}
+                icon={preset.icon}
+                onClick={() => handlePresetChange(preset)}
+                size="small"
+              >
+                {preset.label}
+              </Button>
+            ))}
+          </Space>
+          <Space wrap>
+            <Select
+              placeholder="Status"
+              allowClear
+              style={{ width: 130 }}
+              value={statusFilter}
+              onChange={handleStatusFilterChange}
+              options={Object.entries(REQUEST_STATUS_LABELS).map(([value, label]) => ({
+                value,
+                label,
+              }))}
+            />
+            <Search
+              placeholder="Search..."
+              allowClear
+              style={{ width: 200 }}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </Space>
+        </div>
       </Card>
+
+      {/* Bulk Actions Bar */}
+      {selectedRowKeys.length > 0 && (
+        <Card size="small" style={{ marginBottom: 16, background: '#e6f7ff', border: '1px solid #91d5ff' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Space>
+              <CheckOutlined style={{ color: '#1890ff' }} />
+              <Text strong>{selectedRowKeys.length} request(s) selected</Text>
+            </Space>
+            <Space>
+              <Dropdown
+                menu={{
+                  items: Object.entries(REQUEST_STATUS_LABELS).map(([value, label]) => ({
+                    key: value,
+                    label: `Mark as ${label}`,
+                    onClick: () => handleBulkStatusUpdate(value as RequestStatus),
+                  })),
+                }}
+                trigger={['click']}
+              >
+                <Button loading={bulkUpdating}>
+                  Change Status <DownOutlined />
+                </Button>
+              </Dropdown>
+              <Button onClick={() => setSelectedRowKeys([])}>
+                Clear Selection
+              </Button>
+            </Space>
+          </div>
+        </Card>
+      )}
 
       <Card>
         <Table
@@ -442,6 +630,7 @@ function RequestsPageContent() {
           dataSource={requests}
           rowKey="id"
           loading={loading}
+          rowSelection={rowSelection}
           pagination={{
             current: page,
             pageSize,
@@ -453,9 +642,31 @@ function RequestsPageContent() {
             showSizeChanger: true,
             showTotal: (t) => `${t} requests`,
           }}
-          scroll={{ x: 1000 }}
+          scroll={{ x: 1100 }}
+          rowClassName={(record) => {
+            if (record.urgency === 'emergency') return 'emergency-row';
+            const age = getRequestAge(record.created_at);
+            if (age.isStale && record.status === 'new') return 'stale-row';
+            return '';
+          }}
         />
       </Card>
+
+      {/* Custom styles for row highlighting */}
+      <style jsx global>{`
+        .emergency-row {
+          background-color: #fff1f0 !important;
+        }
+        .emergency-row:hover > td {
+          background-color: #ffccc7 !important;
+        }
+        .stale-row {
+          background-color: #fffbe6 !important;
+        }
+        .stale-row:hover > td {
+          background-color: #fff1b8 !important;
+        }
+      `}</style>
 
       {/* Request Details Drawer */}
       <Drawer

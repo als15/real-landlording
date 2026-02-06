@@ -28,24 +28,49 @@ export async function POST(request: NextRequest) {
     // Use admin client to bypass RLS for public request submission
     const supabase = createAdminClient();
 
-    // Check if landlord exists with this email and get request count
-    const { data: existingLandlord } = await supabase
-      .from('landlords')
-      .select('id, request_count')
-      .eq('email', body.landlord_email)
-      .single();
-
     // Build property_location from address and zip for backward compatibility
     const propertyLocation = `${body.property_address}, ${body.zip_code}`;
 
     // Compute landlord_name from first/last name for backward compatibility
     const landlordName = `${body.first_name} ${body.last_name}`.trim();
 
-    // Create the service request
+    // Check if landlord exists with this email, or create one
+    let { data: existingLandlord } = await supabase
+      .from('landlords')
+      .select('id, request_count')
+      .eq('email', body.landlord_email)
+      .single();
+
+    // If no landlord exists, create one FIRST so we have the ID for the request
+    if (!existingLandlord) {
+      const { data: newLandlord, error: landlordError } = await supabase
+        .from('landlords')
+        .insert({
+          email: body.landlord_email,
+          name: landlordName,
+          first_name: body.first_name,
+          last_name: body.last_name,
+          phone: body.landlord_phone || null,
+          request_count: 0, // Will be incremented by trigger
+        })
+        .select('id, request_count')
+        .single();
+
+      if (landlordError) {
+        console.error('Failed to create landlord:', landlordError);
+        return NextResponse.json(
+          { message: 'Failed to create landlord profile', error: landlordError.message },
+          { status: 500 }
+        );
+      }
+      existingLandlord = newLandlord;
+    }
+
+    // Create the service request with proper landlord_id
     const { data, error } = await supabase
       .from('service_requests')
       .insert({
-        landlord_id: existingLandlord?.id || null,
+        landlord_id: existingLandlord.id,
         landlord_email: body.landlord_email,
         landlord_name: landlordName,
         landlord_phone: body.landlord_phone || null,
@@ -87,34 +112,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Track request count for graduated signup nudge
-    let requestCount = 1;
-
-    if (existingLandlord) {
-      // Increment request_count for existing landlord
-      requestCount = (existingLandlord.request_count || 0) + 1;
-      await supabase
-        .from('landlords')
-        .update({
-          request_count: requestCount,
-          // Update name/phone if provided (in case they changed)
-          first_name: body.first_name,
-          last_name: body.last_name,
-          name: landlordName,
-          phone: body.landlord_phone || undefined, // Only update if provided
-        })
-        .eq('id', existingLandlord.id);
-    } else {
-      // Create a basic landlord profile for new submitters
-      await supabase.from('landlords').insert({
-        email: body.landlord_email,
-        name: landlordName,
+    // The trigger increments request_count automatically when request is inserted
+    // Update landlord contact info if provided (in case they changed)
+    await supabase
+      .from('landlords')
+      .update({
         first_name: body.first_name,
         last_name: body.last_name,
-        phone: body.landlord_phone || null,
-        request_count: 1,
-      });
-    }
+        name: landlordName,
+        phone: body.landlord_phone || undefined, // Only update if provided
+      })
+      .eq('id', existingLandlord.id);
+
+    // Fetch updated request count for graduated signup nudge
+    const { data: updatedLandlord } = await supabase
+      .from('landlords')
+      .select('request_count')
+      .eq('id', existingLandlord.id)
+      .single();
+
+    const requestCount = updatedLandlord?.request_count || 1;
 
     // Send confirmation email and SMS
     try {
@@ -159,6 +176,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
 
     const status = searchParams.get('status');
+    const urgency = searchParams.get('urgency');
     const search = searchParams.get('search');
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
@@ -170,6 +188,10 @@ export async function GET(request: NextRequest) {
 
     if (status) {
       query = query.eq('status', status);
+    }
+
+    if (urgency) {
+      query = query.eq('urgency', urgency);
     }
 
     // Server-side search across multiple fields

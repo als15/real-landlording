@@ -16,6 +16,8 @@ import {
   SolutionOutlined,
   BellOutlined,
   MailOutlined,
+  FundOutlined,
+  DollarOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { brandColors } from '@/theme/config';
@@ -50,21 +52,48 @@ const menuItems: MenuProps['items'] = [
     label: 'Landlords',
   },
   {
-    key: '/emails',
-    icon: <MailOutlined />,
-    label: 'Emails',
+    type: 'divider',
+    style: { margin: '12px 16px', borderColor: 'rgba(255,255,255,0.1)' },
   },
   {
-    key: '/analytics',
+    key: 'operations',
     icon: <BarChartOutlined />,
-    label: 'Analytics',
+    label: 'Operations',
+    children: [
+      {
+        key: '/crm',
+        icon: <FundOutlined />,
+        label: 'CRM',
+      },
+      {
+        key: '/analytics',
+        icon: <BarChartOutlined />,
+        label: 'Analytics',
+      },
+      {
+        key: '/payments',
+        icon: <DollarOutlined />,
+        label: 'Payments',
+      },
+      {
+        key: '/emails',
+        icon: <MailOutlined />,
+        label: 'Emails',
+      },
+    ],
   },
 ];
+
+// Routes that belong to the Operations submenu
+const operationsRoutes = ['/crm', '/analytics', '/payments', '/emails'];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+
+  // Determine which submenu should be open based on current path
+  const defaultOpenKeys = operationsRoutes.includes(pathname) ? ['operations'] : [];
 
   const handleMenuClick: MenuProps['onClick'] = (e) => {
     router.push(e.key);
@@ -149,6 +178,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <Menu
           mode="inline"
           selectedKeys={[pathname]}
+          defaultOpenKeys={defaultOpenKeys}
           items={menuItems}
           onClick={handleMenuClick}
           style={{

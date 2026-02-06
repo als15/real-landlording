@@ -117,11 +117,18 @@ export async function middleware(request: NextRequest) {
     }
 
     // Check if user is admin
-    const { data: adminUser } = await supabase
+    const { data: adminUser, error: adminError } = await supabase
       .from('admin_users')
       .select('id')
       .eq('auth_user_id', user.id)
       .single();
+
+    console.log('[Middleware] Admin check:', {
+      userId: user.id,
+      userEmail: user.email,
+      adminUser,
+      adminError: adminError?.message,
+    });
 
     if (!adminUser) {
       // User is not an admin, redirect to login with error
