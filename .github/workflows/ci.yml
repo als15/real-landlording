@@ -66,13 +66,13 @@ jobs:
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
-        if: always()
+        # Skip if no token (open source/forks) - won't fail the build
+        continue-on-error: true
         with:
           files: ./coverage/lcov.info
           fail_ci_if_error: false
           verbose: true
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
