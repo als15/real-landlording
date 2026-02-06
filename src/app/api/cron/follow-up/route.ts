@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendFollowUpEmail } from '@/lib/email/send';
+import { sendFollowUpSms } from '@/lib/sms/send';
 import { ServiceRequest } from '@/types/database';
 
 // This endpoint should be called by a cron job (e.g., Vercel Cron, GitHub Actions)
@@ -67,10 +68,15 @@ export async function GET(request: NextRequest) {
 
       if (vendorNames.length === 0) continue;
 
-      // Send follow-up email
-      const sent = await sendFollowUpEmail(request as ServiceRequest, vendorNames);
+      // Send follow-up email and SMS
+      const emailSent = await sendFollowUpEmail(request as ServiceRequest, vendorNames);
 
-      if (sent) {
+      // Send SMS (don't wait for it, fire and forget)
+      sendFollowUpSms(request as ServiceRequest, vendorNames)
+        .then(smsSent => console.log(`Follow-up SMS for request ${request.id}: ${smsSent}`))
+        .catch(console.error);
+
+      if (emailSent) {
         // Mark follow-up as sent
         await adminClient
           .from('service_requests')

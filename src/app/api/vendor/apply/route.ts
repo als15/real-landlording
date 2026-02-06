@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { calculateVettingScore } from '@/lib/scoring/vetting';
 import { sendVendorApplicationReceivedEmail } from '@/lib/email/send';
+import { sendVendorApplicationReceivedSms } from '@/lib/sms/send';
 
 export async function POST(request: NextRequest) {
   try {
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
     // Process service_specialties - flatten the nested structure
     // Form sends: { hvac: { "Equipment Type": ["Gas Furnace"], "Service Needed": ["No Heat"] } }
     // We store: { hvac: ["Gas Furnace", "No Heat"] } (flat array per service)
-    let serviceSpecialties: Record<string, string[]> = {};
+    const serviceSpecialties: Record<string, string[]> = {};
     if (body.service_specialties && typeof body.service_specialties === 'object') {
       for (const [service, classifications] of Object.entries(body.service_specialties)) {
         if (classifications && typeof classifications === 'object') {
@@ -132,7 +133,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Send confirmation email to vendor
+    // Send confirmation email and SMS to vendor
     try {
       const emailSent = await sendVendorApplicationReceivedEmail({
         contact_name: body.contact_name,
@@ -143,6 +144,17 @@ export async function POST(request: NextRequest) {
     } catch (emailError) {
       console.error('[Vendor Apply API] Email send failed:', emailError);
       // Don't fail the application if email fails
+    }
+
+    try {
+      const smsSent = await sendVendorApplicationReceivedSms({
+        contact_name: body.contact_name,
+        phone: body.phone,
+      });
+      console.log(`[Vendor Apply API] SMS send result: ${smsSent}`);
+    } catch (smsError) {
+      console.error('[Vendor Apply API] SMS send failed:', smsError);
+      // Don't fail the application if SMS fails
     }
 
     return NextResponse.json({

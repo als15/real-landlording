@@ -57,6 +57,9 @@ export async function sendRequestReceivedEmail(request: ServiceRequest): Promise
   return sendEmail(request.landlord_email, subject, html);
 }
 
+// Helper to add delay between API calls to avoid rate limiting
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 // Send intro emails when vendors are matched
 export async function sendIntroEmails(
   request: ServiceRequest,
@@ -66,9 +69,10 @@ export async function sendIntroEmails(
   const { subject: landlordSubject, html: landlordHtml } = landlordIntroEmail(request, vendors);
   const landlordSent = await sendEmail(request.landlord_email, landlordSubject, landlordHtml);
 
-  // Send to each vendor
+  // Send to each vendor with delay to avoid rate limiting (Resend: 2 req/sec)
   let vendorsSent = 0;
   for (const vendor of vendors) {
+    await delay(600); // 600ms delay between emails to stay under rate limit
     const { subject: vendorSubject, html: vendorHtml } = vendorIntroEmail(request, vendor);
     const sent = await sendEmail(vendor.email, vendorSubject, vendorHtml);
     if (sent) vendorsSent++;

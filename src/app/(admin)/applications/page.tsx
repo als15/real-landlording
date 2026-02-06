@@ -75,6 +75,28 @@ export default function ApplicationsPage() {
   // Form for editable fields
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
+  const [selectedServices, setSelectedServices] = useState<ServiceCategory[]>([]);
+
+  // Get classifications (equipment types) for selected services
+  const getServiceClassifications = (services: ServiceCategory[]) => {
+    return services
+      .map(service => {
+        const config = SERVICE_TAXONOMY[service];
+        if (!config || config.classifications.length === 0) return null;
+        return {
+          service,
+          label: config.label,
+          classifications: config.classifications
+        };
+      })
+      .filter(Boolean) as Array<{
+      service: ServiceCategory;
+      label: string;
+      classifications: Array<{ label: string; options: string[] }>;
+    }>;
+  };
+
+  const serviceClassifications = getServiceClassifications(selectedServices);
 
   // Debounce search input
   useEffect(() => {
@@ -119,11 +141,31 @@ export default function ApplicationsPage() {
 
   const handleViewApp = (app: Vendor) => {
     setSelectedApp(app);
+    setSelectedServices(app.services || []);
+
+    // Build service_specialties form fields from existing data
+    // Data is stored as { hvac: ["Gas Furnace", "No Heat"] }
+    // We need to reconstruct to { hvac: { "Equipment Type": ["Gas Furnace"], "Service Needed": ["No Heat"] } }
+    const serviceSpecialtiesForm: Record<string, Record<string, string[]>> = {};
+    if (app.service_specialties) {
+      for (const [service, specialties] of Object.entries(app.service_specialties)) {
+        const config = SERVICE_TAXONOMY[service as ServiceCategory];
+        if (config && config.classifications.length > 0) {
+          serviceSpecialtiesForm[service] = {};
+          // For simplicity, put all specialties in the first classification
+          // This is a limitation but matches how the data is stored (flattened)
+          const firstClassification = config.classifications[0];
+          serviceSpecialtiesForm[service][firstClassification.label] = specialties as string[];
+        }
+      }
+    }
+
     // Populate form with current values
     form.setFieldsValue({
       website: app.website || '',
       location: app.location || '',
       services: app.services || [],
+      service_specialties: serviceSpecialtiesForm,
       service_areas: app.service_areas || [],
       licensed: app.licensed || false,
       insured: app.insured || false,
@@ -156,9 +198,34 @@ export default function ApplicationsPage() {
     try {
       const values = form.getFieldsValue();
 
+      // Transform service_specialties from nested form structure to flat storage format
+      // Form: { hvac: { "Equipment Type": ["Gas Furnace"], "Service Needed": ["No Heat"] } }
+      // Storage: { hvac: ["Gas Furnace", "No Heat"] }
+      let serviceSpecialties: Record<string, string[]> | null = null;
+      if (values.service_specialties && typeof values.service_specialties === 'object') {
+        serviceSpecialties = {};
+        for (const [service, classifications] of Object.entries(values.service_specialties)) {
+          if (classifications && typeof classifications === 'object') {
+            const allOptions: string[] = [];
+            for (const options of Object.values(classifications as Record<string, string[]>)) {
+              if (Array.isArray(options)) {
+                allOptions.push(...options);
+              }
+            }
+            if (allOptions.length > 0) {
+              serviceSpecialties[service] = allOptions;
+            }
+          }
+        }
+        if (Object.keys(serviceSpecialties).length === 0) {
+          serviceSpecialties = null;
+        }
+      }
+
       // Transform call_preferences array to comma-separated string
       const updateData = {
         ...values,
+        service_specialties: serviceSpecialties,
         call_preferences: values.call_preferences?.length > 0
           ? values.call_preferences.join(', ')
           : null,
@@ -494,8 +561,44 @@ export default function ApplicationsPage() {
                   value,
                   label,
                 }))}
+                onChange={(values: ServiceCategory[]) => setSelectedServices(values)}
               />
             </Form.Item>
+
+            {/* Service Specialties (Editable) */}
+            {serviceClassifications.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>Service Specialties</Text>
+                {serviceClassifications.map(({ service, label, classifications }) => (
+                  <div
+                    key={service}
+                    style={{
+                      marginBottom: 12,
+                      padding: 12,
+                      background: '#f5f5f5',
+                      borderRadius: 8,
+                    }}
+                  >
+                    <Text strong style={{ display: 'block', marginBottom: 8 }}>{label}</Text>
+                    {classifications.map(classification => (
+                      <Form.Item
+                        key={`${service}_${classification.label}`}
+                        name={['service_specialties', service, classification.label]}
+                        label={classification.label}
+                        style={{ marginBottom: 8 }}
+                      >
+                        <Select
+                          mode="multiple"
+                          placeholder={`Select ${classification.label.toLowerCase()}`}
+                          options={classification.options.map(opt => ({ value: opt, label: opt }))}
+                          style={{ width: '100%' }}
+                        />
+                      </Form.Item>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Service Areas */}
             <Form.Item label="Service Areas" name="service_areas">

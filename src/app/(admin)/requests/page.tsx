@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { Suspense, useEffect, useState, useCallback, useRef } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Table,
   Card,
@@ -18,6 +19,7 @@ import {
   Image,
   Row,
   Col,
+  Spin,
 } from 'antd';
 import {
   ReloadOutlined,
@@ -25,6 +27,7 @@ import {
   TeamOutlined,
   FilterOutlined,
   DownloadOutlined,
+  SendOutlined,
 } from '@ant-design/icons';
 import {
   ServiceRequest,
@@ -80,6 +83,14 @@ const urgencyColors: Record<string, string> = {
 };
 
 export default function RequestsPage() {
+  return (
+    <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', padding: 50 }}><Spin size="large" /></div>}>
+      <RequestsPageContent />
+    </Suspense>
+  );
+}
+
+function RequestsPageContent() {
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -93,8 +104,12 @@ export default function RequestsPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [matchingModalOpen, setMatchingModalOpen] = useState(false);
+  const [resendingVendorId, setResendingVendorId] = useState<string | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const { message } = App.useApp();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const viewRequestId = searchParams.get('view');
 
   // Debounce search input
   useEffect(() => {
@@ -147,6 +162,41 @@ export default function RequestsPage() {
     fetchRequests();
   }, [fetchRequests]);
 
+  // Handle view query parameter to open request drawer directly
+  useEffect(() => {
+    if (viewRequestId) {
+      const fetchAndOpenRequest = async () => {
+        setDrawerOpen(true);
+        setDrawerLoading(true);
+        try {
+          const response = await fetch(`/api/requests/${viewRequestId}`);
+          if (response.ok) {
+            const data = await response.json();
+            setSelectedRequest(data);
+            setSelectedRequestMatches(data.matches || []);
+          } else {
+            message.error('Request not found');
+            router.replace('/requests');
+          }
+        } catch (error) {
+          console.error('Error fetching request:', error);
+          message.error('Failed to load request');
+        } finally {
+          setDrawerLoading(false);
+        }
+      };
+      fetchAndOpenRequest();
+    }
+  }, [viewRequestId, message, router]);
+
+  const handleCloseDrawer = () => {
+    setDrawerOpen(false);
+    // Clear the view param from URL if present
+    if (viewRequestId) {
+      router.replace('/requests');
+    }
+  };
+
   const handleViewRequest = async (request: ServiceRequest) => {
     setSelectedRequest(request);
     setSelectedRequestMatches([]);
@@ -195,6 +245,37 @@ export default function RequestsPage() {
   const handleStatusFilterChange = (value: string | null) => {
     setStatusFilter(value);
     setPage(1); // Reset to first page on filter change
+  };
+
+  const handleResendIntro = async (vendorId: string) => {
+    if (!selectedRequest) return;
+
+    setResendingVendorId(vendorId);
+    try {
+      const response = await fetch(`/api/requests/${selectedRequest.id}/resend-intro`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vendor_id: vendorId }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        message.success('Intro email and SMS resent successfully');
+        // Refresh the matches to show updated timestamp
+        const matchResponse = await fetch(`/api/requests/${selectedRequest.id}`);
+        if (matchResponse.ok) {
+          const data = await matchResponse.json();
+          setSelectedRequestMatches(data.matches || []);
+        }
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to resend intro');
+      }
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : 'Failed to resend intro');
+    } finally {
+      setResendingVendorId(null);
+    }
   };
 
   const handleExportCsv = async () => {
@@ -381,7 +462,7 @@ export default function RequestsPage() {
         title="Request Details"
         placement="right"
         styles={{ wrapper: { width: 700 } }}
-        onClose={() => setDrawerOpen(false)}
+        onClose={handleCloseDrawer}
         open={drawerOpen}
       >
         {selectedRequest && (
@@ -413,7 +494,7 @@ export default function RequestsPage() {
               </Button>
             </div>
 
-            <Divider orientationMargin={0}>Contact Information</Divider>
+            <Divider style={{ marginTop: 16, marginBottom: 16 }}>Contact Information</Divider>
 
             <Descriptions column={2} bordered size="small">
               <Descriptions.Item label="Name" span={2}>
@@ -446,7 +527,7 @@ export default function RequestsPage() {
               )}
             </Descriptions>
 
-            <Divider orientationMargin={0}>Property Details</Divider>
+            <Divider style={{ marginTop: 16, marginBottom: 16 }}>Property Details</Divider>
 
             <Descriptions column={2} bordered size="small">
               {selectedRequest.property_address && (
@@ -480,7 +561,7 @@ export default function RequestsPage() {
               )}
             </Descriptions>
 
-            <Divider orientationMargin={0}>Service Request</Divider>
+            <Divider style={{ marginTop: 16, marginBottom: 16 }}>Service Request</Divider>
 
             <Descriptions column={2} bordered size="small">
               <Descriptions.Item label="Service Type" span={2}>
@@ -511,7 +592,7 @@ export default function RequestsPage() {
             {/* Service-specific details */}
             {selectedRequest.service_details && Object.keys(selectedRequest.service_details).length > 0 && (
               <>
-                <Divider orientationMargin={0}>Service Details</Divider>
+                <Divider style={{ marginTop: 16, marginBottom: 16 }}>Service Details</Divider>
                 <Descriptions column={1} bordered size="small">
                   {Object.entries(selectedRequest.service_details).map(([key, value]) => (
                     <Descriptions.Item key={key} label={key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}>
@@ -522,7 +603,7 @@ export default function RequestsPage() {
               </>
             )}
 
-            <Divider orientationMargin={0}>Job Description</Divider>
+            <Divider style={{ marginTop: 16, marginBottom: 16 }}>Job Description</Divider>
 
             <div style={{ background: '#f5f5f5', padding: 16, borderRadius: 8, whiteSpace: 'pre-wrap' }}>
               {selectedRequest.job_description}
@@ -531,7 +612,7 @@ export default function RequestsPage() {
             {/* Images */}
             {selectedRequest.media_urls && selectedRequest.media_urls.length > 0 && (
               <>
-                <Divider orientationMargin={0}>Uploaded Images ({selectedRequest.media_urls.length})</Divider>
+                <Divider style={{ marginTop: 16, marginBottom: 16 }}>Uploaded Images ({selectedRequest.media_urls.length})</Divider>
                 <Image.PreviewGroup>
                   <Row gutter={[8, 8]}>
                     {selectedRequest.media_urls.map((url, index) => (
@@ -551,7 +632,7 @@ export default function RequestsPage() {
             {/* Admin Notes */}
             {selectedRequest.admin_notes && (
               <>
-                <Divider orientationMargin={0}>Admin Notes</Divider>
+                <Divider style={{ marginTop: 16, marginBottom: 16 }}>Admin Notes</Divider>
                 <div style={{ background: '#fffbe6', padding: 16, borderRadius: 8, border: '1px solid #ffe58f' }}>
                   {selectedRequest.admin_notes}
                 </div>
@@ -561,12 +642,12 @@ export default function RequestsPage() {
             {/* Matched Vendors */}
             {drawerLoading ? (
               <>
-                <Divider orientationMargin={0}>Matched Vendors</Divider>
+                <Divider style={{ marginTop: 16, marginBottom: 16 }}>Matched Vendors</Divider>
                 <div style={{ textAlign: 'center', padding: 20 }}>Loading...</div>
               </>
             ) : selectedRequestMatches.length > 0 ? (
               <>
-                <Divider orientationMargin={0}>Matched Vendors ({selectedRequestMatches.length})</Divider>
+                <Divider style={{ marginTop: 16, marginBottom: 16 }}>Matched Vendors ({selectedRequestMatches.length})</Divider>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {selectedRequestMatches.map((match) => (
                     <Card key={match.id} size="small" style={{ background: '#f6ffed', border: '1px solid #b7eb8f' }}>
@@ -598,9 +679,18 @@ export default function RequestsPage() {
                           )}
                           {match.intro_sent_at && (
                             <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>
-                              {new Date(match.intro_sent_at).toLocaleDateString()}
+                              {new Date(match.intro_sent_at).toLocaleString()}
                             </div>
                           )}
+                          <Button
+                            size="small"
+                            icon={<SendOutlined />}
+                            onClick={() => handleResendIntro(match.vendor_id)}
+                            loading={resendingVendorId === match.vendor_id}
+                            style={{ marginTop: 8 }}
+                          >
+                            Resend
+                          </Button>
                         </div>
                       </div>
                     </Card>
@@ -609,13 +699,13 @@ export default function RequestsPage() {
               </>
             ) : (selectedRequest.status === 'matched' || selectedRequest.status === 'completed') ? (
               <>
-                <Divider orientationMargin={0}>Matched Vendors</Divider>
+                <Divider style={{ marginTop: 16, marginBottom: 16 }}>Matched Vendors</Divider>
                 <Text type="secondary">No match records found</Text>
               </>
             ) : null}
 
             {/* Metadata */}
-            <Divider orientationMargin={0}>Metadata</Divider>
+            <Divider style={{ marginTop: 16, marginBottom: 16 }}>Metadata</Divider>
             <Descriptions column={2} size="small">
               <Descriptions.Item label="Created">
                 {new Date(selectedRequest.created_at).toLocaleString()}

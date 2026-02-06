@@ -47,6 +47,36 @@ This document tracks all external URLs, configuration values, and integrations u
 | `FROM_EMAIL` | Email sender address | Set in `src/lib/email/resend.ts` |
 | `ADMIN_EMAIL` | Admin notification email address | `admin@reallandlording.com` |
 
+### Twilio SMS Integration
+
+| Variable | Purpose | How to Get |
+|----------|---------|------------|
+| `TWILIO_ACCOUNT_SID` | Twilio Account SID | [console.twilio.com](https://console.twilio.com) - Dashboard |
+| `TWILIO_AUTH_TOKEN` | Twilio Auth Token | [console.twilio.com](https://console.twilio.com) - Dashboard |
+| `TWILIO_PHONE_NUMBER` | Twilio Phone Number (E.164 format) | Purchase in Twilio Console → Phone Numbers |
+
+**SMS is automatically sent alongside emails when Twilio credentials are configured.**
+
+**Twilio Setup Steps:**
+
+1. Create account at [twilio.com](https://www.twilio.com)
+2. Copy Account SID and Auth Token from the dashboard
+3. Purchase a phone number with SMS capability
+4. Add environment variables to your `.env` file:
+   ```
+   TWILIO_ACCOUNT_SID=ACxxxxxxxxx
+   TWILIO_AUTH_TOKEN=your_auth_token
+   TWILIO_PHONE_NUMBER=+1234567890
+   ```
+
+**SMS Trigger Points:**
+- Request submitted → Landlord receives confirmation SMS
+- Vendors matched → Landlord and vendors receive intro SMS
+- Follow-up (3-5 days) → Landlord receives follow-up SMS
+- Vendor approved → Vendor receives welcome SMS
+- Vendor rejected → Vendor receives rejection SMS
+- Vendor application submitted → Vendor receives confirmation SMS
+
 ### PandaDoc Integration (SLA Signing)
 
 | Variable | Purpose | How to Get |
@@ -90,6 +120,18 @@ Located in `src/lib/email/resend.ts`
 
 ---
 
+## SMS Configuration
+
+Located in `src/lib/sms/twilio.ts`
+
+- SMS provider: **Twilio**
+- Templates in `src/lib/sms/templates.ts`
+- Send functions in `src/lib/sms/send.ts`
+
+**SMS messages are sent in parallel with emails and gracefully fail without blocking the main operation.**
+
+---
+
 ## Internal Routes (App Pages)
 
 ### Public Routes
@@ -121,6 +163,7 @@ Located in `src/lib/email/resend.ts`
 
 | Date | Change | Files Affected |
 |------|--------|----------------|
+| 2026-01-27 | Added Twilio SMS notifications alongside email at all trigger points | lib/sms/*, api/requests, api/requests/[id]/match, api/cron/follow-up, api/admin/applications/[id]/approve, api/admin/applications/[id]/reject, api/vendor/apply |
 | 2026-01-21 | Migrated from DocuSign to PandaDoc for SLA signing (simpler API, lower cost) | lib/pandadoc/*, api/webhooks/pandadoc, approve route, send-sla route, resend-sla route |
 | 2026-01-07 | Added DocuSign integration for vendor SLA signing | lib/docusign/*, api routes, vendors page |
 | 2026-01-06 | Vendor apply form terms link now points to internal `/terms/vendor` page | vendor/apply/page.tsx |
