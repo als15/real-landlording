@@ -4,27 +4,66 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  build:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-
-      - name: Set up Node.js
+      - name: Node.js Setup
         uses: actions/setup-node@v2
         with:
           node-version: '14'
+      - name: Install Dependencies
+        run: npm install
+      - name: Run Lint
+        run: npm run lint
 
-      # Other steps...
-
-      - name: Run tests
+  test-unit:
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Node.js Setup
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - name: Install Dependencies
+        run: npm install
+      - name: Run Unit Tests
         run: npm test
 
-      # Remove the codecov upload step
-      # - name: Upload coverage reports
-      #   uses: codecov/codecov-action@v4
-      
-      - name: Deploy
-        run: npm run deploy
+  build:
+    runs-on: ubuntu-latest
+    needs: test-unit
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Node.js Setup
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - name: Install Dependencies
+        run: npm install
+      - name: Build
+        run: npm run build
+
+  test-e2e:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Node.js Setup
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - name: Install Dependencies
+        run: npm install
+      - name: Run E2E Tests
+        run: npm run e2e
