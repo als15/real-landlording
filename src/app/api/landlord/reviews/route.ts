@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { updateVendorScore } from '@/lib/scoring';
+import { notifyNewReview, notifyVendorNewReview } from '@/lib/notifications';
 
 export async function POST(request: NextRequest) {
   try {
@@ -116,6 +117,39 @@ export async function POST(request: NextRequest) {
     updateVendorScore(adminClient, match.vendor_id).catch(err => {
       console.error('Error updating vendor score:', err);
     });
+
+    // Get vendor info for notification
+    const { data: vendor } = await adminClient
+      .from('vendors')
+      .select('business_name')
+      .eq('id', match.vendor_id)
+      .single();
+
+    // Create notifications (A8/A9 for admin, V4 for vendor)
+    try {
+      // Admin notification
+      await notifyNewReview(
+        adminClient,
+        {
+          match_id: match_id,
+          request_id: match.request_id,
+          vendor_id: match.vendor_id,
+          rating: rating,
+        },
+        { business_name: vendor?.business_name || 'Unknown Vendor' },
+        { name: landlord?.id ? undefined : user.email }
+      );
+
+      // Vendor notification
+      await notifyVendorNewReview(adminClient, match.vendor_id, {
+        match_id: match_id,
+        request_id: match.request_id,
+        rating: rating,
+      });
+    } catch (notifyError) {
+      console.error('[Reviews API] Notification failed:', notifyError);
+      // Don't fail the review if notification fails
+    }
 
     return NextResponse.json({ message: 'Review submitted successfully' });
   } catch (error) {

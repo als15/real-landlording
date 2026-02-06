@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Layout, Menu, Typography, Button, Space, Dropdown, Avatar, Badge } from 'antd';
+import { Layout, Menu, Typography, Button, Space, Dropdown, Avatar } from 'antd';
 import {
   DashboardOutlined,
   FileTextOutlined,
@@ -14,13 +14,13 @@ import {
   LogoutOutlined,
   SettingOutlined,
   SolutionOutlined,
-  BellOutlined,
   MailOutlined,
   FundOutlined,
   DollarOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { brandColors } from '@/theme/config';
+import { NotificationDropdown } from '@/components/admin/notifications';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -217,9 +217,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             style={{ fontSize: 16 }}
           />
           <Space size="middle">
-            <Badge count={3} size="small">
-              <Button type="text" icon={<BellOutlined style={{ fontSize: 18 }} />} />
-            </Badge>
+            <NotificationDropdown />
             <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenuClick }} placement="bottomRight">
               <Space style={{ cursor: 'pointer' }}>
                 <Avatar
