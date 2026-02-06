@@ -129,6 +129,7 @@ export interface CreateVendorOptions {
   createAuthUser?: boolean;
   business_name?: string;
   contact_name?: string;
+  phone?: string;
 }
 
 export async function createTestVendor(
@@ -235,6 +236,9 @@ export interface CreateRequestOptions {
   landlordId?: string;
   landlord_email?: string; // Allow custom email
   landlord_name?: string;  // Allow custom name
+  first_name?: string;
+  last_name?: string;
+  landlord_phone?: string;
   service_type?: string;
   zip_code?: string;
   urgency?: 'low' | 'medium' | 'high' | 'emergency';
