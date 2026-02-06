@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Spin } from 'antd';
 import { EnvironmentOutlined } from '@ant-design/icons';
 
@@ -92,37 +92,7 @@ export default function AddressAutocomplete({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-
-    if (!apiKey) {
-      setError('Google Maps API key not configured');
-      setIsLoading(false);
-      return;
-    }
-
-    loadGoogleMapsScript(apiKey)
-      .then(() => {
-        if (inputRef.current && !autocompleteRef.current) {
-          initAutocomplete();
-        }
-        setIsLoading(false);
-      })
-      .catch((err) => {
-        console.error('Google Maps load error:', err);
-        setError(err.message);
-        setIsLoading(false);
-      });
-  }, []);
-
-  // Initialize autocomplete when input is available
-  useEffect(() => {
-    if (!isLoading && !error && inputRef.current && !autocompleteRef.current && window.google?.maps?.places) {
-      initAutocomplete();
-    }
-  }, [isLoading, error]);
-
-  const initAutocomplete = () => {
+  const initAutocomplete = useCallback(() => {
     if (!inputRef.current || autocompleteRef.current) return;
 
     try {
@@ -177,7 +147,39 @@ export default function AddressAutocomplete({
       console.error('Autocomplete init error:', err);
       setError('Failed to initialize address autocomplete');
     }
-  };
+  }, [onChange, onAddressSelect]);
+
+  useEffect(() => {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+    if (!apiKey) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Initial setup, not cascading
+      setError('Google Maps API key not configured');
+      setIsLoading(false);
+      return;
+    }
+
+    loadGoogleMapsScript(apiKey)
+      .then(() => {
+        if (inputRef.current && !autocompleteRef.current) {
+          initAutocomplete();
+        }
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        console.error('Google Maps load error:', err);
+        setError(err.message);
+        setIsLoading(false);
+      });
+  }, [initAutocomplete]);
+
+  // Initialize autocomplete when input is available
+  useEffect(() => {
+    if (!isLoading && !error && inputRef.current && !autocompleteRef.current && window.google?.maps?.places) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Initialization sync
+      initAutocomplete();
+    }
+  }, [isLoading, error, initAutocomplete]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (onChange) {

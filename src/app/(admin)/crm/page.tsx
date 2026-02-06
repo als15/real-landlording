@@ -571,9 +571,9 @@ export default function CRMPage() {
       key: 'stage',
       width: 140,
       render: (_, record) => {
-        let stage = record.status;
-        let color = statusColors[stage] || 'default';
-        let label = stage.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+        const stage = record.status;
+        const color = statusColors[stage] || 'default';
+        const label = stage.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 
         if (record.job_won === true && !record.job_completed) {
           label = 'Job Won';
