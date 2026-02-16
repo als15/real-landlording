@@ -538,6 +538,7 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
                     }
                   }
                 ]}
+                extra={<span style={{ fontSize: 12, color: '#888' }}>By providing your phone number, you consent to receive SMS updates about your request (confirmations, vendor matches, follow-ups). Msg &amp; data rates may apply. Reply STOP to opt out.</span>}
               >
                 <Input placeholder="(215) 555-0123" size="large" />
               </Form.Item>
@@ -650,6 +651,7 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
                 By submitting this request, I acknowledge that I have read, understood, and agree to be bound by the{' '}
                 <a href="/terms/user" target="_blank" rel="noopener noreferrer">Terms of Service & Privacy Policy</a>.
                 I understand that my use of the Real Landlording platform is at my own risk, and I agree to conduct my own due diligence regarding any third-party vendors or solutions provided.
+                I also consent to receive SMS messages related to my service requests. Msg &amp; data rates may apply. Reply STOP to opt out.
               </Text>
             </Checkbox>
           </div>

@@ -131,7 +131,7 @@ export default function UserTermsPage() {
 
           <Title level={4}>Data Use</Title>
           <Paragraph>
-            RL collects and uses personal data solely to:
+            RL collects personal data including name, email, phone number, and property information. This data is used solely to:
           </Paragraph>
           <ul>
             <li>facilitate referrals</li>
@@ -139,7 +139,7 @@ export default function UserTermsPage() {
             <li>improve services</li>
           </ul>
           <Paragraph>
-            RL does <Text strong>not</Text> sell personal data. Information may be shared with Vendors <Text strong>only as necessary</Text> to facilitate a referral. Users are responsible for the accuracy of information submitted.
+            RL does <Text strong>not</Text> sell personal data. RL does <Text strong>not</Text> share personal information with third parties for marketing purposes. Information may be shared with Vendors <Text strong>only as necessary</Text> to facilitate a referral. Users are responsible for the accuracy of information submitted.
           </Paragraph>
 
           <Title level={4}>Communications & Newsletter</Title>
@@ -165,7 +165,10 @@ export default function UserTermsPage() {
             <li>important platform notifications</li>
           </ul>
           <Paragraph>
-            Message frequency varies based on activity. Message and data rates may apply. Users may opt out of SMS communications at any time by replying STOP to any message. Opting out of SMS does <Text strong>not</Text> affect email communications or platform access.
+            Message frequency varies based on activity. Message and data rates may apply.
+          </Paragraph>
+          <Paragraph>
+            Text <Text strong>STOP</Text> to any message to opt out of SMS communications. Text <Text strong>HELP</Text> for support, or contact us at support@reallandlording.com. Opting out of SMS does <Text strong>not</Text> affect email communications or platform access.
           </Paragraph>
 
           <Divider />

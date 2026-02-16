@@ -129,7 +129,7 @@ export default function VendorTermsPage() {
 
           <Title level={3}>9. Data & Privacy</Title>
           <Paragraph>
-            Vendor data is used for:
+            RL collects personal data including contact name, email, phone number, business information, and qualifications. Vendor data is used for:
           </Paragraph>
           <ul>
             <li>onboarding</li>
@@ -138,7 +138,7 @@ export default function VendorTermsPage() {
             <li>platform operations</li>
           </ul>
           <Paragraph>
-            RL may share Vendor information with Users to facilitate referrals.
+            RL does <Text strong>not</Text> sell personal data. RL does <Text strong>not</Text> share personal information with third parties for marketing purposes. RL may share Vendor information with Users <Text strong>only as necessary</Text> to facilitate referrals.
           </Paragraph>
 
           <Title level={4}>SMS/Text Message Communications</Title>
@@ -152,7 +152,10 @@ export default function VendorTermsPage() {
             <li>important account notifications</li>
           </ul>
           <Paragraph>
-            Message frequency varies based on referral activity. Message and data rates may apply. Vendor may opt out of SMS communications at any time by replying STOP to any message. Opting out of SMS does <Text strong>not</Text> affect email communications or platform access, but may impact timely receipt of referral notifications.
+            Message frequency varies based on referral activity. Message and data rates may apply.
+          </Paragraph>
+          <Paragraph>
+            Text <Text strong>STOP</Text> to any message to opt out of SMS communications. Text <Text strong>HELP</Text> for support, or contact us at support@reallandlording.com. Opting out of SMS does <Text strong>not</Text> affect email communications or platform access, but may impact timely receipt of referral notifications.
           </Paragraph>
 
           <Divider />
