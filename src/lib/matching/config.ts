@@ -78,8 +78,8 @@ export const LOCATION_MATCH_CONFIG = {
   /** 3-digit prefix match (e.g., 191xx) */
   prefix3Score: 70,
 
-  /** State-level match (e.g., PA, NJ) */
-  stateMatchScore: 40,
+  /** State-level match (e.g., PA, NJ) — vendor covers the entire state */
+  stateMatchScore: 75,
 
   /** No location match at all */
   noMatchScore: 0,
@@ -217,4 +217,4 @@ export const PRICE_FIT_CONFIG = {
  * Version string for the scoring algorithm.
  * Increment when making changes that affect scores.
  */
-export const SCORING_VERSION = '1.0.0';
+export const SCORING_VERSION = '1.1.0';

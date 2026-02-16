@@ -134,7 +134,11 @@ export default function ProfilePage() {
             </Form.Item>
           </Space>
 
-          <Form.Item name="phone" label="Phone Number">
+          <Form.Item
+            name="phone"
+            label="Phone Number"
+            extra={<span style={{ fontSize: 12, color: '#888' }}>By providing your phone number, you consent to receive SMS updates about your requests. Msg &amp; data rates may apply. Reply STOP to opt out.</span>}
+          >
             <Input prefix={<PhoneOutlined />} placeholder="(215) 555-0123" size="large" />
           </Form.Item>
 
