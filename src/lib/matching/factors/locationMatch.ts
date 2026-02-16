@@ -184,8 +184,8 @@ export function calculateLocationMatch(input: LocationMatchInput): MatchFactor {
         score: LOCATION_MATCH_CONFIG.stateMatchScore,
         weight,
         weighted: LOCATION_MATCH_CONFIG.stateMatchScore * weight,
-        reason: 'Serves general region',
-        icon: 'info',
+        reason: `Serves statewide (covers ${zipCode})`,
+        icon: 'check',
       };
 
     default:
