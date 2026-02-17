@@ -7,6 +7,7 @@ import { LockOutlined, MailOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import AuthLayout from '@/components/layout/AuthLayout';
 import { brandColors } from '@/theme/config';
+import { sanitizeRedirectUrl } from '@/lib/security';
 
 const { Text } = Typography;
 
@@ -14,7 +15,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirectTo') || '/dashboard';
+  const redirectTo = sanitizeRedirectUrl(searchParams.get('redirectTo'));
   const error = searchParams.get('error');
   const { message } = App.useApp();
 

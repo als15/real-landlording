@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, Form, Input, Button, Typography, App, Space, Divider, Spin } from 'antd';
 import { LockOutlined, MailOutlined, HomeOutlined } from '@ant-design/icons';
 import Link from 'next/link';
+import { sanitizeRedirectUrl } from '@/lib/security';
 
 const { Title, Text } = Typography;
 
@@ -12,7 +13,7 @@ function VendorLoginForm() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirectTo') || '/vendor/dashboard';
+  const redirectTo = sanitizeRedirectUrl(searchParams.get('redirectTo'), '/vendor/dashboard');
   const error = searchParams.get('error');
   const { message } = App.useApp();
 

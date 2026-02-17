@@ -153,7 +153,7 @@ export async function DELETE(request: NextRequest) {
     if (error) {
       console.error('Delete error:', error);
       return NextResponse.json(
-        { message: 'Failed to delete files', error: error.message },
+        { message: 'Failed to delete files' },
         { status: 500 }
       );
     }

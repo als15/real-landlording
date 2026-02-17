@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { verifyAdmin } from '@/lib/api/admin';
 
 export async function GET(request: NextRequest) {
   try {
+    const adminResult = await verifyAdmin();
+    if (!adminResult.success) {
+      return adminResult.response;
+    }
+    const { adminClient } = adminResult.context;
+
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search');
-
-    const adminClient = createAdminClient();
 
     let query = adminClient
       .from('vendors')

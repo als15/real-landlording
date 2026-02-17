@@ -33,7 +33,7 @@ async function importPrivateKey(pemBase64: string): Promise<crypto.KeyObject> {
     pem = `${header}\n${bodyLines}\n${footer}`;
   }
 
-  console.log('[DocuSign] Key format check - starts with:', pem.substring(0, 50));
+  // Key format validated (log removed to avoid exposing key material)
 
   // Use Node's crypto module which handles both PKCS#1 and PKCS#8 formats
   return crypto.createPrivateKey(pem);

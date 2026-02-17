@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { resend, FROM_EMAIL, isEmailEnabled } from '@/lib/email/resend';
 import { randomBytes } from 'crypto';
+import { rateLimit } from '@/lib/rate-limit';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
@@ -63,6 +64,15 @@ function passwordResetEmail(resetUrl: string, name?: string): { subject: string;
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || 'unknown';
+    const { allowed } = rateLimit(`forgot-password:${ip}`, 3, 60 * 60 * 1000);
+    if (!allowed) {
+      return NextResponse.json(
+        { message: 'Too many requests. Please try again later.' },
+        { status: 429 }
+      );
+    }
+
     const { email, userType = 'landlord' } = await request.json();
 
     if (!email) {
@@ -132,7 +142,7 @@ export async function POST(request: NextRequest) {
       });
       console.log(`Password reset email sent to ${email}`);
     } else {
-      console.log(`[Email Skipped] Password reset URL for ${email}: ${resetUrl}`);
+      console.log(`[Email Skipped] Password reset email would be sent to ${email}`);
     }
 
     return NextResponse.json({

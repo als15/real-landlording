@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { randomBytes } from 'crypto';
+import { verifyAdmin } from '@/lib/api/admin';
 import { sendVendorWelcomeEmail } from '@/lib/email/send';
 import { sendVendorWelcomeSms } from '@/lib/sms/send';
 import { Vendor } from '@/types/database';
@@ -10,8 +11,13 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const adminResult = await verifyAdmin();
+    if (!adminResult.success) {
+      return adminResult.response;
+    }
+    const { adminClient } = adminResult.context;
+
     const { id } = await params;
-    const adminClient = createAdminClient();
 
     // Parse request body for commission rate
     let commissionRate: string | undefined;
@@ -49,7 +55,7 @@ export async function POST(
       console.log(`Vendor ${vendor.email} already has auth account, linking existing user`);
     } else {
       // Create new auth user for vendor
-      tempPassword = Math.random().toString(36).slice(-12) + 'A1!';
+      tempPassword = randomBytes(16).toString('base64url').slice(0, 14) + 'A1!';
 
       const { data: authUser, error: authError } = await adminClient.auth.admin.createUser({
         email: vendor.email,

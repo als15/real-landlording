@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || 'unknown';
+    const { allowed } = rateLimit(`vendor-login:${ip}`, 5, 15 * 60 * 1000);
+    if (!allowed) {
+      return NextResponse.json(
+        { message: 'Too many requests. Please try again later.' },
+        { status: 429 }
+      );
+    }
+
     const { email, password } = await request.json();
 
     if (!email || !password) {
@@ -43,30 +53,11 @@ export async function POST(request: NextRequest) {
       .eq('email', email)
       .single();
 
-    if (!vendor) {
+    if (!vendor || vendor.status !== 'active') {
+      // Sign out the user since they can't access vendor dashboard
+      await supabase.auth.signOut();
       return NextResponse.json(
-        { message: 'No vendor account found with this email. Please apply first.' },
-        { status: 403 }
-      );
-    }
-
-    if (vendor.status === 'pending_review') {
-      return NextResponse.json(
-        { message: 'Your application is still under review. We\'ll notify you once approved.' },
-        { status: 403 }
-      );
-    }
-
-    if (vendor.status === 'rejected') {
-      return NextResponse.json(
-        { message: 'Your application was not approved. Please contact us for more information.' },
-        { status: 403 }
-      );
-    }
-
-    if (vendor.status === 'inactive') {
-      return NextResponse.json(
-        { message: 'Your vendor account is inactive. Please contact us to reactivate.' },
+        { message: 'Unable to access vendor account. Please contact support if you need help.' },
         { status: 403 }
       );
     }

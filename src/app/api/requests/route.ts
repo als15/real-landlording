@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       if (landlordError) {
         console.error('Failed to create landlord:', landlordError);
         return NextResponse.json(
-          { message: 'Failed to create landlord profile', error: landlordError.message },
+          { message: 'Failed to create landlord profile' },
           { status: 500 }
         );
       }
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error('Supabase error:', error);
       return NextResponse.json(
-        { message: 'Failed to create request', error: error.message },
+        { message: 'Failed to create request' },
         { status: 500 }
       );
     }
@@ -238,7 +238,7 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error('Supabase error:', error);
       return NextResponse.json(
-        { message: 'Failed to fetch requests', error: error.message },
+        { message: 'Failed to fetch requests' },
         { status: 500 }
       );
     }
