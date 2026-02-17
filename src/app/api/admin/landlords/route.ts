@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { verifyAdmin } from '@/lib/api/admin';
 
 export async function GET(request: NextRequest) {
   try {
-    const adminClient = createAdminClient();
+    const adminResult = await verifyAdmin();
+    if (!adminResult.success) {
+      return adminResult.response;
+    }
+    const { adminClient } = adminResult.context;
     const { searchParams } = new URL(request.url);
 
     const search = searchParams.get('search');
@@ -31,7 +35,7 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error('Error fetching landlords:', error);
       return NextResponse.json(
-        { message: 'Failed to fetch landlords', error: error.message },
+        { message: 'Failed to fetch landlords' },
         { status: 500 }
       );
     }

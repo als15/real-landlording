@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
+import { verifyAdmin } from '@/lib/api/admin';
 
 // PATCH - Update application fields (social links, admin notes, etc.)
 export async function PATCH(
@@ -7,10 +7,14 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const adminResult = await verifyAdmin();
+    if (!adminResult.success) {
+      return adminResult.response;
+    }
+    const { adminClient: supabase } = adminResult.context;
+
     const { id } = await params;
     const body = await request.json();
-
-    const supabase = createAdminClient();
 
     // Only allow updating specific fields (NOT personal info: contact_name, email, phone, business_name)
     const allowedFields = [
@@ -72,7 +76,7 @@ export async function PATCH(
     if (error) {
       console.error('Error updating application:', error);
       return NextResponse.json(
-        { message: 'Failed to update application', error: error.message },
+        { message: 'Failed to update application' },
         { status: 500 }
       );
     }
@@ -93,8 +97,13 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const adminResult = await verifyAdmin();
+    if (!adminResult.success) {
+      return adminResult.response;
+    }
+    const { adminClient: supabase } = adminResult.context;
+
     const { id } = await params;
-    const supabase = createAdminClient();
 
     const { error } = await supabase
       .from('vendors')
@@ -104,7 +113,7 @@ export async function DELETE(
     if (error) {
       console.error('Error deleting application:', error);
       return NextResponse.json(
-        { message: 'Failed to delete application', error: error.message },
+        { message: 'Failed to delete application' },
         { status: 500 }
       );
     }

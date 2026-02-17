@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { verifyAdmin } from '@/lib/api/admin';
 import { sendVendorRejectedEmail } from '@/lib/email/send';
 import { sendVendorRejectedSms } from '@/lib/sms/send';
 import { Vendor } from '@/types/database';
@@ -9,9 +9,14 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const adminResult = await verifyAdmin();
+    if (!adminResult.success) {
+      return adminResult.response;
+    }
+    const { adminClient } = adminResult.context;
+
     const { id } = await params;
     const { reason } = await request.json();
-    const adminClient = createAdminClient();
 
     // Get vendor details before rejecting
     const { data: vendor, error: fetchError } = await adminClient

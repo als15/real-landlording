@@ -1,4 +1,8 @@
 import { ServiceRequest, Vendor, SERVICE_TYPE_LABELS, URGENCY_LABELS, PROPERTY_TYPE_LABELS, FINISH_LEVEL_LABELS } from '@/types/database';
+import { escapeHtml } from '@/lib/security';
+
+// Shorthand for escapeHtml in templates
+const e = escapeHtml;
 
 // Base email wrapper
 function emailWrapper(content: string): string {
@@ -48,15 +52,15 @@ export function requestReceivedEmail(request: ServiceRequest): { subject: string
     subject: `Request Received: ${serviceLabel}`,
     html: emailWrapper(`
       <h2>We've Received Your Request!</h2>
-      <p>Hi ${request.landlord_name || 'there'},</p>
+      <p>Hi ${e(request.landlord_name) || 'there'},</p>
       <p>Thanks for submitting your service request. We're now matching you with vetted vendors who can help.</p>
 
       <div class="info-box">
         <h3 style="margin-top: 0;">Request Details</h3>
-        <p><strong>Service:</strong> ${serviceLabel}</p>
-        <p><strong>Location:</strong> ${request.property_location}</p>
-        <p><strong>Urgency:</strong> ${URGENCY_LABELS[request.urgency]}</p>
-        <p><strong>Description:</strong> ${request.job_description}</p>
+        <p><strong>Service:</strong> ${e(serviceLabel)}</p>
+        <p><strong>Location:</strong> ${e(request.property_location)}</p>
+        <p><strong>Urgency:</strong> ${e(URGENCY_LABELS[request.urgency])}</p>
+        <p><strong>Description:</strong> ${e(request.job_description)}</p>
       </div>
 
       <h3>What's Next?</h3>
@@ -97,11 +101,11 @@ export function landlordIntroEmail(
     .map(
       (v) => `
       <div class="vendor-card">
-        <h3 style="margin: 0 0 8px;">${v.business_name}</h3>
-        <p style="margin: 4px 0;"><strong>Contact:</strong> ${v.contact_name}</p>
-        <p style="margin: 4px 0;"><strong>Phone:</strong> ${v.phone || 'N/A'}</p>
-        <p style="margin: 4px 0;"><strong>Email:</strong> ${v.email}</p>
-        ${v.website ? `<p style="margin: 4px 0;"><strong>Website:</strong> <a href="${v.website}">${v.website}</a></p>` : ''}
+        <h3 style="margin: 0 0 8px;">${e(v.business_name)}</h3>
+        <p style="margin: 4px 0;"><strong>Contact:</strong> ${e(v.contact_name)}</p>
+        <p style="margin: 4px 0;"><strong>Phone:</strong> ${e(v.phone) || 'N/A'}</p>
+        <p style="margin: 4px 0;"><strong>Email:</strong> ${e(v.email)}</p>
+        ${v.website ? `<p style="margin: 4px 0;"><strong>Website:</strong> <a href="${e(v.website)}">${e(v.website)}</a></p>` : ''}
         ${v.licensed ? '<span style="background: #52c41a; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-right: 4px;">Licensed</span>' : ''}
         ${v.insured ? '<span style="background: #52c41a; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-right: 4px;">Insured</span>' : ''}
         ${v.rental_experience ? '<span style="background: #1890ff; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px;">Rental Experience</span>' : ''}
@@ -114,15 +118,15 @@ export function landlordIntroEmail(
     subject: `Your ${serviceLabel} Vendors Are Ready!`,
     html: emailWrapper(`
       <h2>We Found Your Vendors!</h2>
-      <p>Hi ${request.landlord_name || 'there'},</p>
-      <p>Great news! We've matched you with ${vendors.length} vetted vendor${vendors.length > 1 ? 's' : ''} for your ${serviceLabel.toLowerCase()} request at ${request.property_location}.</p>
+      <p>Hi ${e(request.landlord_name) || 'there'},</p>
+      <p>Great news! We've matched you with ${vendors.length} vetted vendor${vendors.length > 1 ? 's' : ''} for your ${e(serviceLabel.toLowerCase())} request at ${e(request.property_location)}.</p>
 
       <h3>Your Matched Vendors</h3>
       ${vendorCards}
 
       <div class="info-box">
         <h3 style="margin-top: 0;">Your Request</h3>
-        <p>${request.job_description}</p>
+        <p>${e(request.job_description)}</p>
       </div>
 
       <h3>What's Next?</h3>
@@ -155,7 +159,7 @@ export function vendorIntroEmail(
   // Build service details string if available
   const serviceDetailsHtml = request.service_details
     ? Object.entries(request.service_details)
-        .map(([key, value]) => `<p><strong>${key}:</strong> ${value}</p>`)
+        .map(([key, value]) => `<p><strong>${e(key)}:</strong> ${e(String(value))}</p>`)
         .join('')
     : '';
 
@@ -163,26 +167,26 @@ export function vendorIntroEmail(
     subject: `New Project Referral: ${serviceLabel} in ${request.property_location}`,
     html: emailWrapper(`
       <h2>New Project for You!</h2>
-      <p>Hi ${vendor.contact_name},</p>
+      <p>Hi ${e(vendor.contact_name)},</p>
       <p>We have a new project for you from Real Landlording. Here are the details:</p>
 
       <div class="info-box">
         <h3 style="margin-top: 0;">🔥 Project Details</h3>
-        <p><strong>Client Name:</strong> ${request.landlord_name || 'Not provided'}</p>
-        ${request.landlord_phone ? `<p><strong>Client Phone:</strong> ${request.landlord_phone}</p>` : ''}
-        <p><strong>Client Email:</strong> ${request.landlord_email}</p>
+        <p><strong>Client Name:</strong> ${e(request.landlord_name) || 'Not provided'}</p>
+        ${request.landlord_phone ? `<p><strong>Client Phone:</strong> ${e(request.landlord_phone)}</p>` : ''}
+        <p><strong>Client Email:</strong> ${e(request.landlord_email)}</p>
       </div>
 
       <div class="info-box">
         <h3 style="margin-top: 0;">Project Type</h3>
-        <p><strong>Category:</strong> ${serviceLabel}</p>
+        <p><strong>Category:</strong> ${e(serviceLabel)}</p>
         ${serviceDetailsHtml}
-        ${finishLevelLabel ? `<p><strong>Finish Level:</strong> ${finishLevelLabel}</p>` : ''}
-        ${propertyTypeLabel ? `<p><strong>Property Type:</strong> ${propertyTypeLabel}</p>` : ''}
-        <p><strong>Property Address:</strong> ${request.property_address || request.property_location}</p>
-        <p><strong>Timeline:</strong> ${urgencyLabel}</p>
+        ${finishLevelLabel ? `<p><strong>Finish Level:</strong> ${e(finishLevelLabel)}</p>` : ''}
+        ${propertyTypeLabel ? `<p><strong>Property Type:</strong> ${e(propertyTypeLabel)}</p>` : ''}
+        <p><strong>Property Address:</strong> ${e(request.property_address || request.property_location)}</p>
+        <p><strong>Timeline:</strong> ${e(urgencyLabel)}</p>
         <p><strong>Project Description:</strong></p>
-        <p>${request.job_description}</p>
+        <p>${e(request.job_description)}</p>
       </div>
 
       <h3>✅ Next Steps</h3>
@@ -227,8 +231,8 @@ export function followUpEmail(
     subject: `How did it go with your ${serviceLabel.toLowerCase()} vendors?`,
     html: emailWrapper(`
       <h2>Quick Check-In</h2>
-      <p>Hi ${request.landlord_name || 'there'},</p>
-      <p>A few days ago, we connected you with ${vendorNames.join(', ')} for your ${serviceLabel.toLowerCase()} request.</p>
+      <p>Hi ${e(request.landlord_name) || 'there'},</p>
+      <p>A few days ago, we connected you with ${vendorNames.map(n => e(n)).join(', ')} for your ${e(serviceLabel.toLowerCase())} request.</p>
       <p>We'd love to hear how it went!</p>
 
       <h3>Please take a moment to:</h3>
@@ -255,7 +259,7 @@ export function vendorApplicationReceivedEmail(vendor: { contact_name: string; b
     subject: 'Application Received - Real Landlording Vendor Network',
     html: emailWrapper(`
       <h2>Thank You for Applying!</h2>
-      <p>Hi ${vendor.contact_name},</p>
+      <p>Hi ${e(vendor.contact_name)},</p>
       <p>Thank you for submitting your request to join the Real Landlording Vendor Network!</p>
       <p>We're excited to learn more about your services and how you can help landlords in the Philadelphia area.</p>
       <p>Our team is currently reviewing your application. We'll be in touch soon with next steps, but if you have any questions in the meantime, feel free to reply to this email.</p>
@@ -287,7 +291,7 @@ export function vendorWelcomeEmail(
     subject: 'Welcome to Real Landlording Vendor Network!',
     html: emailWrapper(`
       <h2>You're Approved!</h2>
-      <p>Hi ${vendor.contact_name},</p>
+      <p>Hi ${e(vendor.contact_name)},</p>
       <p>Great news! Your application to join the Real Landlording vendor network has been approved.</p>
       <p>You'll now receive job referrals from our community of Philadelphia landlords.</p>
 
@@ -296,8 +300,8 @@ export function vendorWelcomeEmail(
           ? `
         <div class="info-box">
           <h3 style="margin-top: 0;">Your Login Credentials</h3>
-          <p><strong>Email:</strong> ${vendor.email}</p>
-          <p><strong>Temporary Password:</strong> ${tempPassword}</p>
+          <p><strong>Email:</strong> ${e(vendor.email)}</p>
+          <p><strong>Temporary Password:</strong> ${e(tempPassword)}</p>
           <p><em>Please change your password after logging in.</em></p>
         </div>
       `
@@ -305,7 +309,7 @@ export function vendorWelcomeEmail(
         <div class="info-box">
           <h3 style="margin-top: 0;">Login to Your Dashboard</h3>
           <p>You already have an account with Real Landlording. Use your existing password to log in.</p>
-          <p><strong>Email:</strong> ${vendor.email}</p>
+          <p><strong>Email:</strong> ${e(vendor.email)}</p>
           <p>Forgot your password? <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/forgot-password">Reset it here</a></p>
         </div>
       `
@@ -334,7 +338,7 @@ export function vendorRejectedEmail(vendor: Vendor): { subject: string; html: st
     subject: 'Real Landlording Application Update',
     html: emailWrapper(`
       <h2>Application Status Update</h2>
-      <p>Hi ${vendor.contact_name},</p>
+      <p>Hi ${e(vendor.contact_name)},</p>
       <p>Thank you for your interest in joining the Real Landlording vendor network.</p>
       <p>After reviewing your application, we've decided not to move forward at this time. This decision may be based on various factors including service area coverage, current vendor capacity, or qualification requirements.</p>
 
@@ -358,7 +362,7 @@ export function noVendorMatchedEmail(request: ServiceRequest): { subject: string
     subject: `Update on Your ${serviceLabel} Request`,
     html: emailWrapper(`
       <h2>Update on Your Request</h2>
-      <p>Dear ${request.landlord_name || 'Landlord'},</p>
+      <p>Dear ${e(request.landlord_name) || 'Landlord'},</p>
       <p>Thank you for submitting your project request to Real Landlording.</p>
       <p>We've reviewed your request and want to be transparent: at this early stage, our vetted network doesn't yet cover every service type landlords may need. Your request falls into an area we're actively working to build out.</p>
       <p><strong>That said, this is exactly how Real Landlording grows.</strong></p>

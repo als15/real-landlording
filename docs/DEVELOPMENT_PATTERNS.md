@@ -11,7 +11,8 @@ This document captures recurring patterns, common issues, and their solutions to
 3. [Supabase Authentication & Authorization](#supabase-authentication--authorization)
 4. [Row Level Security (RLS) Patterns](#row-level-security-rls-patterns)
 5. [API Route Patterns](#api-route-patterns)
-6. [Common Issues & Solutions](#common-issues--solutions)
+6. [Security Patterns](#security-patterns)
+7. [Common Issues & Solutions](#common-issues--solutions)
 
 ---
 
@@ -748,4 +749,76 @@ await fetch('/api/admin/payments', {
     status: 'pending',
   }),
 });
+```
+
+---
+
+## Security Patterns
+
+### Rate Limiting
+
+Auth-related API routes use in-memory rate limiting (`src/lib/rate-limit.ts`):
+
+```typescript
+import { rateLimit } from '@/lib/rate-limit';
+
+const ip = request.headers.get('x-forwarded-for') || 'unknown';
+const { allowed } = rateLimit(`login:${ip}`, 5, 15 * 60 * 1000); // 5 attempts per 15 min
+if (!allowed) {
+  return NextResponse.json({ message: 'Too many requests. Please try again later.' }, { status: 429 });
+}
+```
+
+Applied to: login (all 3), signup, forgot-password endpoints.
+
+### HTML Escaping in Email Templates
+
+All user-provided data in email templates must be escaped with `escapeHtml()` from `src/lib/security.ts`:
+
+```typescript
+import { escapeHtml } from '@/lib/security';
+const e = escapeHtml; // shorthand
+
+// In template:
+`<p>Hi ${e(request.landlord_name)},</p>`
+```
+
+### Redirect URL Validation
+
+Login pages validate `redirectTo` params with `sanitizeRedirectUrl()` from `src/lib/security.ts`:
+
+```typescript
+import { sanitizeRedirectUrl } from '@/lib/security';
+const redirectTo = sanitizeRedirectUrl(searchParams.get('redirectTo'));
+```
+
+This prevents open redirects by ensuring the URL starts with `/` and doesn't contain `://`.
+
+### Admin Route Authorization
+
+**All admin API routes MUST use `verifyAdmin()`** from `src/lib/api/admin.ts`. Never use `createAdminClient()` directly without authentication:
+
+```typescript
+const adminResult = await verifyAdmin();
+if (!adminResult.success) return adminResult.response;
+const { adminClient } = adminResult.context;
+```
+
+### Error Response Safety
+
+Never expose database error details to clients. Keep `console.error()` for server logs, but return generic messages:
+
+```typescript
+// BAD: { message: 'Failed', error: error.message }
+// GOOD: { message: 'Failed to create request' }
+```
+
+### Cron Job Authentication
+
+Cron endpoints require `CRON_SECRET` (not optional):
+
+```typescript
+if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+  return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+}
 ```

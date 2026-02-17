@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
 
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error('Error fetching requests for follow-up:', error);
       return NextResponse.json(
-        { message: 'Failed to fetch requests', error: error.message },
+        { message: 'Failed to fetch requests' },
         { status: 500 }
       );
     }
