@@ -24,6 +24,8 @@ import {
   Form,
   InputNumber,
   DatePicker,
+  Tooltip,
+  Popover,
 } from 'antd';
 import {
   ReloadOutlined,
@@ -36,6 +38,10 @@ import {
   TrophyOutlined,
   StarOutlined,
   ArrowRightOutlined,
+  DownloadOutlined,
+  EditOutlined,
+  WarningOutlined,
+  FilterOutlined,
 } from '@ant-design/icons';
 import {
   SERVICE_TYPE_LABELS,
@@ -46,6 +52,7 @@ import {
   JobOutcomeReason,
   PAYMENT_METHOD_OPTIONS,
 } from '@/types/database';
+import { objectsToCsv, downloadCsv, formatDateForCsv } from '@/lib/utils/csv-export';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -74,6 +81,8 @@ interface CRMJob {
   review_rating: number | null;
   review_text: string | null;
   review_submitted_at: string | null;
+  expected_due_date: string | null;
+  admin_notes: string | null;
   created_at: string;
   vendor: {
     id: string;
@@ -106,6 +115,7 @@ interface CRMJob {
 interface PipelineData {
   pipeline: {
     intro_sent: number;
+    estimate_sent: number;
     vendor_accepted: number;
     job_won: number;
     in_progress: number;
@@ -124,6 +134,7 @@ interface PipelineData {
 const statusColors: Record<string, string> = {
   pending: 'default',
   intro_sent: 'blue',
+  estimate_sent: 'geekblue',
   vendor_accepted: 'cyan',
   vendor_declined: 'red',
   no_response: 'orange',
@@ -133,14 +144,41 @@ const statusColors: Record<string, string> = {
   no_show: 'red',
 };
 
-const stageFilters = [
-  { value: '', label: 'All Jobs' },
-  { value: 'intro_sent', label: 'Intro Sent (Awaiting Response)' },
-  { value: 'awaiting_outcome', label: 'Accepted (Awaiting Outcome)' },
-  { value: 'job_won', label: 'Job Won (In Progress)' },
+const MATCH_STATUS_OPTIONS: { value: MatchStatus; label: string }[] = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'intro_sent', label: 'Intro Sent' },
+  { value: 'estimate_sent', label: 'Estimate Sent' },
+  { value: 'vendor_accepted', label: 'Vendor Accepted' },
+  { value: 'vendor_declined', label: 'Vendor Declined' },
+  { value: 'no_response', label: 'No Response' },
+  { value: 'in_progress', label: 'In Progress' },
   { value: 'completed', label: 'Completed' },
-  { value: 'needs_review', label: 'Needs Review' },
-  { value: 'lost', label: 'Lost/Declined' },
+  { value: 'cancelled', label: 'Cancelled' },
+  { value: 'no_show', label: 'No Show' },
+];
+
+const stageFilters = [
+  {
+    label: 'Pipeline Stages',
+    options: [
+      { value: '', label: 'All Jobs' },
+      { value: 'intro_sent', label: 'Intro Sent' },
+      { value: 'awaiting_outcome', label: 'Awaiting Outcome' },
+      { value: 'job_won', label: 'Job Won' },
+      { value: 'completed', label: 'Completed' },
+      { value: 'needs_review', label: 'Needs Review' },
+      { value: 'lost', label: 'Lost/Declined' },
+    ],
+  },
+  {
+    label: 'Operational',
+    options: [
+      { value: 'needs_followup', label: 'Needs Follow-Up' },
+      { value: 'commission_pending', label: 'Commission Pending' },
+      { value: 'overdue', label: 'Overdue Jobs' },
+      { value: 'closed', label: 'Closed' },
+    ],
+  },
 ];
 
 export default function CRMPage() {
@@ -323,6 +361,105 @@ export default function CRMPage() {
       message.error('Failed to complete job');
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleUpdateField = async (
+    jobId: string,
+    field: string,
+    value: unknown
+  ) => {
+    try {
+      const response = await fetch(`/api/admin/matches/${jobId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: value }),
+      });
+
+      if (response.ok) {
+        // Update local state optimistically
+        setJobs((prev) =>
+          prev.map((job) =>
+            job.id === jobId ? { ...job, [field]: value } : job
+          )
+        );
+        message.success('Updated');
+      } else {
+        message.error('Failed to update');
+      }
+    } catch {
+      message.error('Failed to update');
+    }
+  };
+
+  const [exportLoading, setExportLoading] = useState(false);
+
+  const handleExportCsv = async () => {
+    setExportLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (stageFilter) params.append('stage', stageFilter);
+      if (searchTerm.trim()) params.append('search', searchTerm.trim());
+
+      const response = await fetch(`/api/admin/crm/jobs/export?${params}`);
+      if (!response.ok) {
+        message.error('Failed to export');
+        return;
+      }
+
+      const data = await response.json();
+      const exportJobs = data.jobs as CRMJob[];
+
+      const csvColumns = [
+        { key: 'vendor.business_name' as const, header: 'Vendor' },
+        { key: 'request.landlord_name' as const, header: 'Landlord Name' },
+        { key: 'request.landlord_email' as const, header: 'Landlord Email' },
+        { key: 'request.landlord_phone' as const, header: 'Landlord Phone' },
+        { key: 'request.property_address' as const, header: 'Property Address' },
+        {
+          key: 'request.service_type' as const,
+          header: 'Project Type',
+          formatter: (_val: unknown, row: Record<string, unknown>) => {
+            const req = row.request as Record<string, unknown> | undefined;
+            const st = req?.service_type as string;
+            const fl = req?.finish_level as string | undefined;
+            const label = SERVICE_TYPE_LABELS[st as keyof typeof SERVICE_TYPE_LABELS] || st;
+            return fl ? `${label} (${fl})` : label;
+          },
+        },
+        {
+          key: 'intro_sent_at' as const,
+          header: 'Date Referred',
+          formatter: (val: unknown) => formatDateForCsv(val as string | null),
+        },
+        { key: 'status' as const, header: 'Status' },
+        {
+          key: 'expected_due_date' as const,
+          header: 'Expected Due',
+          formatter: (val: unknown) => formatDateForCsv(val as string | null),
+        },
+        { key: 'admin_notes' as const, header: 'Notes' },
+        {
+          key: 'payment.status' as const,
+          header: 'Payment Status',
+          formatter: (val: unknown) => (val as string) || '',
+        },
+        {
+          key: 'payment.amount' as const,
+          header: 'Payment Amount',
+          formatter: (val: unknown) => (val != null ? `$${val}` : ''),
+        },
+      ];
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const csv = objectsToCsv(exportJobs as any, csvColumns as any);
+      const filterLabel = stageFilter || 'all';
+      downloadCsv(csv, `crm-jobs-${filterLabel}-${dayjs().format('YYYY-MM-DD')}`);
+      message.success(`Exported ${exportJobs.length} jobs`);
+    } catch {
+      message.error('Export failed');
+    } finally {
+      setExportLoading(false);
     }
   };
 
@@ -525,15 +662,15 @@ export default function CRMPage() {
 
   const columns: ColumnsType<CRMJob> = [
     {
-      title: 'Request',
-      key: 'request',
-      width: 200,
+      title: 'Vendor',
+      key: 'vendor',
+      width: 150,
       render: (_, record) => (
         <div>
-          <Text strong>{SERVICE_TYPE_LABELS[record.request.service_type as keyof typeof SERVICE_TYPE_LABELS] || record.request.service_type}</Text>
+          <Text strong>{record.vendor.business_name}</Text>
           <br />
           <Text type="secondary" style={{ fontSize: 12 }}>
-            {record.request.zip_code || 'No ZIP'}
+            {SERVICE_TYPE_LABELS[record.request.service_type as keyof typeof SERVICE_TYPE_LABELS] || record.request.service_type}
           </Text>
         </div>
       ),
@@ -541,58 +678,113 @@ export default function CRMPage() {
     {
       title: 'Landlord',
       key: 'landlord',
-      width: 180,
+      width: 150,
       render: (_, record) => (
         <div>
           <Text>{record.request.landlord_name || 'Unknown'}</Text>
           <br />
           <Text type="secondary" style={{ fontSize: 12 }}>
-            {record.request.landlord_email}
+            {record.request.property_address || record.request.zip_code || 'No address'}
           </Text>
         </div>
       ),
     },
     {
-      title: 'Vendor',
-      key: 'vendor',
-      width: 180,
-      render: (_, record) => (
-        <div>
-          <Text strong>{record.vendor.business_name}</Text>
-          <br />
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {record.vendor.contact_name}
-          </Text>
-        </div>
-      ),
-    },
-    {
-      title: 'Stage',
+      title: 'Status',
       key: 'stage',
+      width: 155,
+      render: (_, record) => (
+        <Select
+          size="small"
+          value={record.status}
+          style={{ width: '100%' }}
+          onChange={(val) => handleUpdateField(record.id, 'status', val)}
+          options={MATCH_STATUS_OPTIONS}
+          popupMatchSelectWidth={false}
+        />
+      ),
+    },
+    {
+      title: 'Referred',
+      key: 'intro_sent_at',
+      width: 90,
+      render: (_, record) => (
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          {record.intro_sent_at ? dayjs(record.intro_sent_at).format('MMM D') : '-'}
+        </Text>
+      ),
+    },
+    {
+      title: 'Due Date',
+      key: 'expected_due_date',
+      width: 130,
+      render: (_, record) => (
+        <DatePicker
+          size="small"
+          value={record.expected_due_date ? dayjs(record.expected_due_date) : null}
+          onChange={(date) =>
+            handleUpdateField(
+              record.id,
+              'expected_due_date',
+              date ? date.toISOString() : null
+            )
+          }
+          format="MMM D"
+          placeholder="Set date"
+          style={{ width: '100%' }}
+          status={
+            record.expected_due_date && dayjs(record.expected_due_date).isBefore(dayjs())
+              ? 'error'
+              : undefined
+          }
+        />
+      ),
+    },
+    {
+      title: 'Notes',
+      key: 'admin_notes',
       width: 140,
       render: (_, record) => {
-        const stage = record.status;
-        let color = statusColors[stage] || 'default';
-        let label = stage.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
-
-        if (record.job_won === true && !record.job_completed) {
-          label = 'Job Won';
-          color = 'purple';
-        } else if (record.job_completed) {
-          label = 'Completed';
-          color = 'green';
-        } else if (record.vendor_accepted && record.job_won === null) {
-          label = 'Awaiting Outcome';
-          color = 'cyan';
-        }
-
-        return <Tag color={color}>{label}</Tag>;
+        const notesText = record.admin_notes || '';
+        return (
+          <Popover
+            trigger="click"
+            title="Admin Notes"
+            content={
+              <TextArea
+                defaultValue={notesText}
+                rows={3}
+                style={{ width: 280 }}
+                onBlur={(e) => {
+                  if (e.target.value !== notesText) {
+                    handleUpdateField(record.id, 'admin_notes', e.target.value || null);
+                  }
+                }}
+                placeholder="Add notes..."
+              />
+            }
+          >
+            <div style={{ cursor: 'pointer', minHeight: 22 }}>
+              {notesText ? (
+                <Tooltip title={notesText}>
+                  <Text ellipsis style={{ maxWidth: 120, fontSize: 12 }}>
+                    {notesText}
+                  </Text>
+                </Tooltip>
+              ) : (
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  <EditOutlined /> Add
+                </Text>
+              )}
+            </div>
+          </Popover>
+        );
       },
     },
     {
       title: 'Payment',
       key: 'payment',
-      width: 120,
+      width: 100,
       render: (_, record) => {
         if (!record.payment) {
           return <Text type="secondary">-</Text>;
@@ -609,22 +801,13 @@ export default function CRMPage() {
       },
     },
     {
-      title: 'Date',
-      dataIndex: 'created_at',
-      width: 100,
-      render: (date: string) => (
-        <Text type="secondary" style={{ fontSize: 12 }}>
-          {dayjs(date).fromNow()}
-        </Text>
-      ),
-    },
-    {
-      title: 'Actions',
+      title: '',
       key: 'actions',
-      width: 80,
+      width: 40,
       render: (_, record) => (
         <Button
           type="text"
+          size="small"
           icon={<EyeOutlined />}
           onClick={() => handleViewJob(record)}
         />
@@ -645,8 +828,8 @@ export default function CRMPage() {
           <Col span={4}>
             <Card size="small" hoverable onClick={() => setStageFilter('intro_sent')}>
               <Statistic
-                title="Intro Sent"
-                value={pipeline.pipeline.intro_sent}
+                title="Intro / Estimate"
+                value={pipeline.pipeline.intro_sent + pipeline.pipeline.estimate_sent}
                 prefix={<SendOutlined />}
                 valueStyle={{ color: '#1890ff' }}
               />
@@ -726,6 +909,13 @@ export default function CRMPage() {
           <Button icon={<ReloadOutlined />} onClick={handleRefresh}>
             Refresh
           </Button>
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={handleExportCsv}
+            loading={exportLoading}
+          >
+            Export CSV
+          </Button>
         </Space>
       </Card>
 
@@ -785,6 +975,16 @@ export default function CRMPage() {
               <Descriptions.Item label="Description">
                 {selectedJob.request.job_description}
               </Descriptions.Item>
+              <Descriptions.Item label="Expected Due">
+                {selectedJob.expected_due_date
+                  ? dayjs(selectedJob.expected_due_date).format('MMM D, YYYY')
+                  : 'Not set'}
+              </Descriptions.Item>
+              {selectedJob.admin_notes && (
+                <Descriptions.Item label="Admin Notes">
+                  {selectedJob.admin_notes}
+                </Descriptions.Item>
+              )}
             </Descriptions>
 
             <Divider>Landlord</Divider>

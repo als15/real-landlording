@@ -23,6 +23,7 @@ export type JobOutcomeReason =
 export type MatchStatus =
   | 'pending'
   | 'intro_sent'
+  | 'estimate_sent'
   | 'vendor_accepted'
   | 'vendor_declined'
   | 'no_response'
@@ -917,6 +918,9 @@ export interface RequestVendorMatch {
   // CRM: Review request tracking
   review_requested_at: string | null;
   review_reminder_sent_at: string | null;
+  // CRM: Operational tracking
+  expected_due_date: string | null;
+  admin_notes: string | null;
 }
 
 export interface AdminUser {
