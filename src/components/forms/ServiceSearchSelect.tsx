@@ -18,14 +18,9 @@ import {
 
 const { Text } = Typography;
 
-export interface ServiceSearchSelectAutoFill {
-  field: string;
-  value: string;
-}
-
 interface ServiceSearchSelectProps {
   value?: ServiceCategory;
-  onChange?: (category: ServiceCategory, autoFill?: ServiceSearchSelectAutoFill) => void;
+  onChange?: (category: ServiceCategory) => void;
   placeholder?: string;
   size?: 'small' | 'middle' | 'large';
 }
@@ -117,12 +112,7 @@ export default function ServiceSearchSelect({
       return;
     }
 
-    const autoFill =
-      !item.isCategoryLevel && item.classificationField && item.classificationValue
-        ? { field: item.classificationField, value: item.classificationValue }
-        : undefined;
-
-    onChange?.(item.serviceCategory, autoFill);
+    onChange?.(item.serviceCategory);
     setSearchText('');
   };
 

@@ -23,21 +23,19 @@ import {
   UnitCount,
   OccupancyStatus,
   ContactPreference,
-  FinishLevel,
   SimpleUrgency,
   SERVICE_TAXONOMY,
   PROPERTY_TYPE_LABELS,
   UNIT_COUNT_LABELS,
   OCCUPANCY_STATUS_LABELS,
   CONTACT_PREFERENCE_LABELS,
-  FINISH_LEVEL_LABELS,
   SIMPLE_URGENCY_OPTIONS,
   ServiceRequestInput,
 } from '@/types/database';
 import AddressAutocomplete, { AddressData } from '@/components/AddressAutocomplete';
 import UrgencyToggle from '@/components/forms/UrgencyToggle';
 import MediaUpload from '@/components/MediaUpload';
-import ServiceSearchSelect, { ServiceSearchSelectAutoFill } from '@/components/forms/ServiceSearchSelect';
+import ServiceSearchSelect from '@/components/forms/ServiceSearchSelect';
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;
@@ -102,35 +100,15 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
     label,
   }));
 
-  const finishLevelOptions = Object.entries(FINISH_LEVEL_LABELS).map(([value, label]) => ({
-    value,
-    label,
-  }));
-
-  // Get classifications, emergency flag, and finish level flag for selected category
-  const classifications = selectedCategory ? SERVICE_TAXONOMY[selectedCategory].classifications : [];
+  // Get emergency flag for selected category (used in Step 2)
   const emergencyEnabled = selectedCategory ? SERVICE_TAXONOMY[selectedCategory].emergencyEnabled ?? false : false;
-  const finishLevelEnabled = selectedCategory ? SERVICE_TAXONOMY[selectedCategory].finishLevelEnabled ?? false : false;
 
-  // Reset service_details, urgency, and finish_level when category changes
+  // Reset urgency when category changes to one that doesn't support emergency
   useEffect(() => {
     if (selectedCategory) {
-      const fieldsToReset: Record<string, undefined> = {};
-      Object.keys(form.getFieldsValue()).forEach((key) => {
-        if (key.startsWith('service_detail_')) {
-          fieldsToReset[key] = undefined;
-        }
-      });
-      form.setFieldsValue(fieldsToReset);
-
       const categoryConfig = SERVICE_TAXONOMY[selectedCategory];
-      // Reset urgency to standard if new category doesn't support emergency
       if (!categoryConfig.emergencyEnabled) {
         form.setFieldsValue({ urgency: 'standard' });
-      }
-      // Reset finish_level if new category doesn't support it
-      if (!categoryConfig.finishLevelEnabled) {
-        form.setFieldsValue({ finish_level: undefined });
       }
     }
   }, [selectedCategory, form]);
@@ -138,14 +116,7 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
   // Step validation functions
   const validateStep1 = async () => {
     try {
-      const fields = ['service_type'];
-      // Add dynamic classification fields
-      if (classifications.length > 0) {
-        classifications.forEach((c) => {
-          fields.push(`service_detail_${c.label.replace(/\s+/g, '_')}`);
-        });
-      }
-      await form.validateFields(fields);
+      await form.validateFields(['service_type']);
       return true;
     } catch {
       return false;
@@ -175,10 +146,7 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
     setCurrentStep(currentStep - 1);
   };
 
-  const handleCategoryChange = (
-    category: ServiceCategory,
-    autoFill?: ServiceSearchSelectAutoFill,
-  ) => {
+  const handleCategoryChange = (category: ServiceCategory) => {
     // Check if this category has an external redirect
     const categoryConfig = SERVICE_TAXONOMY[category];
     if (categoryConfig.externalLink && categoryConfig.externalUrl) {
@@ -188,10 +156,6 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
     }
     form.setFieldValue('service_type', category);
     setSelectedCategory(category);
-    if (autoFill) {
-      const fieldName = `service_detail_${autoFill.field.replace(/\s+/g, '_')}`;
-      setTimeout(() => form.setFieldValue(fieldName, autoFill.value), 0);
-    }
   };
 
   const handleAddressSelect = (addressData: AddressData) => {
@@ -213,15 +177,6 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
   const onFinish = async (values: Record<string, unknown>) => {
     setLoading(true);
     try {
-      // Build service_details from form values
-      const serviceDetails: Record<string, string> = {};
-      Object.entries(values).forEach(([key, value]) => {
-        if (key.startsWith('service_detail_') && value) {
-          const label = key.replace('service_detail_', '').replace(/_/g, ' ');
-          serviceDetails[label] = value as string;
-        }
-      });
-
       // Map simple urgency to UrgencyLevel
       const simpleUrgency = (values.urgency as SimpleUrgency) || 'standard';
       const urgencyMapping = SIMPLE_URGENCY_OPTIONS.find((o) => o.value === simpleUrgency);
@@ -243,10 +198,8 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
         latitude: coordinates?.lat,
         longitude: coordinates?.lng,
         service_type: values.service_type as ServiceCategory,
-        service_details: Object.keys(serviceDetails).length > 0 ? serviceDetails : undefined,
         job_description: values.job_description as string,
         urgency,
-        finish_level: values.finish_level as FinishLevel | undefined,
         media_urls: mediaUrls.length > 0 ? mediaUrls : undefined,
       };
 
@@ -289,9 +242,6 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
   const onFinishFailed = (errorInfo: { errorFields: { name: (string | number)[]; errors: string[] }[] }) => {
     // Find which step has errors and navigate there
     const step1Fields = ['service_type'];
-    classifications.forEach((c) => {
-      step1Fields.push(`service_detail_${c.label.replace(/\s+/g, '_')}`);
-    });
     const step2Fields = ['job_description'];
     const step3Fields = ['first_name', 'last_name', 'landlord_email', 'property_address', 'zip_code'];
 
@@ -354,40 +304,6 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
               size="large"
             />
           </Form.Item>
-
-          {/* Dynamic sub-category questions */}
-          {classifications.map((classification, index) => {
-            const fieldName = `service_detail_${classification.label.replace(/\s+/g, '_')}`;
-            return (
-              <Form.Item
-                key={index}
-                name={fieldName}
-                label={classification.label}
-                rules={[{ required: true, message: `Please select ${classification.label.toLowerCase()}` }]}
-              >
-                <Select
-                  placeholder={`Select ${classification.label.toLowerCase()}`}
-                  options={classification.options.map((opt) => ({ value: opt, label: opt }))}
-                  size="large"
-                />
-              </Form.Item>
-            );
-          })}
-
-          {finishLevelEnabled && (
-            <Form.Item
-              name="finish_level"
-              label="Finish Level"
-              extra="This helps vendors recommend appropriate materials and solutions"
-            >
-              <Select
-                placeholder="Select finish level"
-                options={finishLevelOptions}
-                size="large"
-                allowClear
-              />
-            </Form.Item>
-          )}
 
           <Form.Item style={{ marginTop: 24 }}>
             <Button
