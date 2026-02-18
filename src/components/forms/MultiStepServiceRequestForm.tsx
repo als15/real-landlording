@@ -33,16 +33,14 @@ import {
   FINISH_LEVEL_LABELS,
   SIMPLE_URGENCY_OPTIONS,
   ServiceRequestInput,
-  getGroupedServiceCategories,
-  ServiceCategoryConfig,
 } from '@/types/database';
 import AddressAutocomplete, { AddressData } from '@/components/AddressAutocomplete';
 import UrgencyToggle from '@/components/forms/UrgencyToggle';
 import MediaUpload from '@/components/MediaUpload';
+import ServiceSearchSelect, { ServiceSearchSelectAutoFill } from '@/components/forms/ServiceSearchSelect';
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;
-const { OptGroup, Option } = Select;
 
 interface MultiStepServiceRequestFormProps {
   onSuccess?: (requestId: string, email: string, isLoggedIn: boolean, requestCount: number) => void;
@@ -82,9 +80,6 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
     };
     fetchUserProfile();
   }, [form]);
-
-  // Get grouped categories for dropdown
-  const groupedCategories = getGroupedServiceCategories();
 
   // Options for dropdowns
   const propertyTypeOptions = Object.entries(PROPERTY_TYPE_LABELS).map(([value, label]) => ({
@@ -180,17 +175,23 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
     setCurrentStep(currentStep - 1);
   };
 
-  const handleCategoryChange = (value: ServiceCategory) => {
+  const handleCategoryChange = (
+    category: ServiceCategory,
+    autoFill?: ServiceSearchSelectAutoFill,
+  ) => {
     // Check if this category has an external redirect
-    const categoryConfig = SERVICE_TAXONOMY[value];
+    const categoryConfig = SERVICE_TAXONOMY[category];
     if (categoryConfig.externalLink && categoryConfig.externalUrl) {
-      // Redirect to external URL
       window.open(categoryConfig.externalUrl, '_blank');
-      // Reset the select back to empty
       form.setFieldValue('service_type', undefined);
       return;
     }
-    setSelectedCategory(value);
+    form.setFieldValue('service_type', category);
+    setSelectedCategory(category);
+    if (autoFill) {
+      const fieldName = `service_detail_${autoFill.field.replace(/\s+/g, '_')}`;
+      setTimeout(() => form.setFieldValue(fieldName, autoFill.value), 0);
+    }
   };
 
   const handleAddressSelect = (addressData: AddressData) => {
@@ -346,30 +347,12 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
             label="Service Category"
             rules={[{ required: true, message: 'Please select a service type' }]}
           >
-            <Select
-              placeholder="Select a service category"
-              showSearch
-              filterOption={(input, option) => {
-                // Handle both Option and OptGroup
-                const children = option?.children;
-                if (children && typeof children === 'string') {
-                  return (children as string).toLowerCase().includes(input.toLowerCase());
-                }
-                return false;
-              }}
+            <ServiceSearchSelect
+              value={selectedCategory ?? undefined}
               onChange={handleCategoryChange}
+              placeholder="Search for a service..."
               size="large"
-            >
-              {groupedCategories.map((group) => (
-                <OptGroup key={group.group} label={group.label}>
-                  {group.categories.map((cat) => (
-                    <Option key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </Option>
-                  ))}
-                </OptGroup>
-              ))}
-            </Select>
+            />
           </Form.Item>
 
           {/* Dynamic sub-category questions */}

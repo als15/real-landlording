@@ -92,7 +92,9 @@ export type ServiceCategory =
   | 'cleaning'
   | 'cleanout_junk_removal'
   | 'compliance_city'
+  | 'deed_preparation'
   | 'electrician'
+  | 'entity_structuring'
   | 'environmental_testing'
   | 'exterior'
   | 'financing'
@@ -105,7 +107,9 @@ export type ServiceCategory =
   | 'landscaping_snow'
   | 'lead_testing'
   | 'legal_eviction'
+  | 'mold_remediation'
   | 'movers'
+  | 'notary_services'
   | 'painting'
   | 'pest_control'
   | 'photography'
@@ -117,6 +121,7 @@ export type ServiceCategory =
   | 're_agent'
   | 'roofer'
   | 'structural'
+  | 'title_ownership'
   | 'training'
   | 'waterproofing';
 
@@ -135,6 +140,7 @@ export interface ServiceCategoryConfig {
   externalUrl?: string; // URL to redirect to for external link categories
   emergencyEnabled?: boolean; // Whether this service category supports emergency requests
   finishLevelEnabled?: boolean; // Whether this service category shows finish level options
+  searchKeywords?: string[]; // Synonyms for search (e.g., "ac" for HVAC)
 }
 
 // Complete service taxonomy with all categories and sub-options
@@ -144,14 +150,15 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
     label: 'Roofer',
     group: 'trades_technical',
     emergencyEnabled: true,
+    searchKeywords: ['roof', 'shingle', 'gutter', 'leak'],
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Leak Repair', 'Full Replacement', 'Maintenance/Coating', 'Gutter Repair', 'Skylight Issue', 'Other'],
+        options: ['Leak Repair', 'Emergency Tarping', 'Full Replacement', 'Partial Replacement', 'Maintenance/Coating', 'Flashing Repair', 'Gutter Repair', 'Storm Damage', 'Insurance Claim Support', 'Skylight Issue', 'Ice Dam Removal', 'Roof Inspection Report', 'Other'],
       },
       {
         label: 'Roof Type',
-        options: ['Flat Roof (Rubber/Bitumen)', 'Shingle (Asphalt)', 'Slate', 'Fiberglass', 'Metal', 'Other'],
+        options: ['Flat Roof (Rubber/Bitumen)', 'TPO', 'Shingle (Asphalt)', 'Slate', 'Fiberglass', 'Metal', 'Green Roof', 'Modified Bitumen', 'Other'],
       },
     ],
   },
@@ -159,10 +166,11 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
     label: 'GC',
     group: 'trades_technical',
     finishLevelEnabled: true,
+    searchKeywords: ['gc', 'renovation', 'rehab', 'remodel', 'contractor'],
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Full Gut', 'Large Rehab', 'Prep for Listing', 'Kitchen', 'Bath', 'Finish Basement', 'Addition', 'Scope for Purchase Decision', 'Rental Improvement Fund Help', '203k Project'],
+        options: ['Full Gut', 'Partial Rehab', 'Large Rehab', 'Unit Turn Rehab', 'Prep for Listing', 'Kitchen', 'Bath', 'Finish Basement', 'Addition', 'ADU Conversion', 'Garage Conversion', 'Scope for Purchase Decision', 'Rental Improvement Fund Help', '203k Project', 'Owner Rep Services', 'Insurance Scope Review', 'Punch List Completion'],
       },
     ],
   },
@@ -170,14 +178,15 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
     label: 'Plumber/Sewer',
     group: 'trades_technical',
     emergencyEnabled: true,
+    searchKeywords: ['plumbing', 'drain', 'pipe', 'water heater', 'toilet', 'plumber'],
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Leak', 'Clog/Blockage', 'No Hot Water', 'Low Water Pressure', 'New Installation', 'Frozen Pipes', 'Sewer/Water Line', 'Sewer Scope', 'Hydrojetting', 'Other'],
+        options: ['Leak', 'Emergency Leak', 'Clog/Blockage', 'No Hot Water', 'Low Water Pressure', 'New Installation', 'Fixture Replacement', 'Frozen Pipes', 'Sewer/Water Line', 'Backflow Issue', 'Sewer Scope', 'Hydrojetting', 'Gas Line Work', 'Water Pressure Regulator', 'Other'],
       },
       {
         label: 'Fixture Involved',
-        options: ['All', 'Kitchen Sink', 'Bathroom Sink', 'Toilet', 'Shower/Tub', 'Water Heater', 'Main Line', 'Outdoor Spigot', 'Basement', 'Other'],
+        options: ['All', 'Kitchen Sink', 'Bathroom Sink', 'Toilet', 'Shower/Tub', 'Water Heater', 'Tankless Water Heater', 'Main Line', 'Outdoor Spigot', 'Basement', 'Laundry', 'Radiator', 'Other'],
       },
     ],
   },
@@ -185,10 +194,27 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
     label: 'Waterproofing/Moisture',
     group: 'trades_technical',
     emergencyEnabled: true,
+    searchKeywords: ['water', 'basement', 'moisture', 'flood', 'damp'],
     classifications: [
       {
         label: 'Service Needed',
-        options: ['French Drain', 'Sump Pump', 'Unknown', 'Other'],
+        options: ['French Drain', 'Interior Drain System', 'Exterior Waterproofing', 'Sump Pump', 'Sump Pump Repair', 'Battery Backup Sump', 'Foundation Sealing', 'Moisture Intrusion Diagnosis', 'Crawlspace Encapsulation', 'Dehumidification System', 'Efflorescence Treatment', 'Unknown', 'Other'],
+      },
+    ],
+  },
+  mold_remediation: {
+    label: 'Mold Remediation',
+    group: 'trades_technical',
+    emergencyEnabled: true,
+    searchKeywords: ['mold', 'mildew', 'air quality', 'fungus'],
+    classifications: [
+      {
+        label: 'Service Needed',
+        options: ['Mold Inspection', 'Air Quality Testing', 'Surface Mold Removal', 'Full Remediation', 'Containment Setup', 'Post-Remediation Clearance', 'Moisture Source Identification', 'Prevention / Mitigation Plan', 'Insurance Documentation'],
+      },
+      {
+        label: 'Area Affected',
+        options: ['Basement', 'Bathroom', 'Kitchen', 'Crawlspace', 'Attic', 'Wall Cavities', 'HVAC System', 'Whole Unit', 'Other'],
       },
     ],
   },
@@ -196,14 +222,15 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
     label: 'Electrician',
     group: 'trades_technical',
     emergencyEnabled: true,
+    searchKeywords: ['electric', 'wiring', 'outlet', 'panel', 'electrical'],
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Power Outage', 'Flickering Lights', 'Dead Outlet', 'New Wiring', 'Fixture Install', 'Panel Install/Upgrade', 'EV Charger', 'Other'],
+        options: ['Power Outage', 'Partial Outage', 'Flickering Lights', 'Dead Outlet', 'GFCI Issues', 'New Wiring', 'Rewiring', 'Fixture Install', 'Panel Install/Upgrade', 'Code Violation Repair', 'EV Charger', 'Exterior Lighting', 'Security Lighting', 'Knob & Tube Replacement', 'Aluminum Wiring', 'Other'],
       },
       {
         label: 'Location',
-        options: ['Interior', 'Exterior', 'Other'],
+        options: ['Interior', 'Exterior', 'Basement', 'Garage', 'Common Area', 'Utility Room', 'Other'],
       },
     ],
   },
@@ -211,14 +238,15 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
     label: 'HVAC Specialist',
     group: 'trades_technical',
     emergencyEnabled: true,
+    searchKeywords: ['ac', 'air conditioning', 'heating', 'furnace', 'boiler'],
     classifications: [
       {
         label: 'Equipment Type',
-        options: ['Gas Furnace', 'Electric Furnace', 'Boiler', 'Central AC', 'Heat Pump', 'Ductless Mini-Split', 'Oil Furnace'],
+        options: ['Gas Furnace', 'Electric Furnace', 'Boiler', 'Central AC', 'Heat Pump', 'Ductless Mini-Split', 'PTAC', 'Oil Furnace', 'Radiant Heat'],
       },
       {
         label: 'Service Needed',
-        options: ['Routine Maintenance', 'No Heat', 'Not Cooling', 'Strange Noise', 'Leak', 'Thermostat Issue', 'Other'],
+        options: ['Routine Maintenance', 'Seasonal Tune-Up', 'No Heat', 'Not Cooling', 'Short Cycling', 'Strange Noise', 'Refrigerant Leak', 'Condensate Leak', 'Thermostat Issue', 'System Replacement', 'Energy Efficiency Upgrade', 'Duct Cleaning', 'Carbon Monoxide Issue', 'Other'],
       },
     ],
   },
@@ -226,10 +254,11 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
     label: 'Exterior',
     group: 'trades_technical',
     finishLevelEnabled: true,
+    searchKeywords: ['siding', 'windows', 'doors', 'masonry', 'brick', 'stucco', 'porch'],
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Siding', 'Windows', 'Doors', 'Masonry/Brickwork', 'Stucco', 'Decking', 'Paving', 'Welding', 'Fencing'],
+        options: ['Siding', 'Siding Repair', 'Siding Replacement', 'Windows', 'Window Repair', 'Doors', 'Door Repair', 'Masonry/Brickwork', 'Stucco', 'Decking', 'Porch Repair', 'Paving', 'Welding', 'Fencing', 'Railing', 'Power Washing', 'Facade Repair', 'Stoop Repair'],
       },
     ],
   },
@@ -237,10 +266,11 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
     label: 'Flooring',
     group: 'trades_technical',
     finishLevelEnabled: true,
+    searchKeywords: ['floor', 'hardwood', 'carpet', 'tile', 'lvp', 'vinyl'],
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Hardwood Refinishing/Repair', 'Carpet Installation', 'LVP/Tile Installation', 'Other'],
+        options: ['Hardwood Refinishing/Repair', 'Hardwood Repair', 'Carpet Installation', 'Carpet Removal', 'LVP/Tile Installation', 'Subfloor Repair', 'Moisture Damage Repair', 'Leveling / Self-Leveler', 'Other'],
       },
     ],
   },
@@ -248,10 +278,15 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
     label: 'Appliance Repair',
     group: 'trades_technical',
     emergencyEnabled: true,
+    searchKeywords: ['appliance', 'washer', 'dryer', 'fridge', 'oven', 'dishwasher'],
     classifications: [
       {
         label: 'Appliance Type',
-        options: ['Washer/Dryer', 'Oven/Range', 'Refrigerator', 'Dishwasher', 'Other'],
+        options: ['Washer/Dryer', 'Oven/Range', 'Refrigerator', 'Dishwasher', 'Microwave', 'Garbage Disposal', 'Range Hood', 'Mini Fridge', 'Other'],
+      },
+      {
+        label: 'Service Needed',
+        options: ['Diagnosis', 'Replacement', 'Install', 'Gas Appliance Hookup'],
       },
     ],
   },
@@ -259,10 +294,11 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
     label: 'Handyman',
     group: 'trades_technical',
     emergencyEnabled: true,
+    searchKeywords: ['handyman', 'odd jobs', 'fix', 'repair', 'small job'],
     classifications: [
       {
         label: 'Service Needed',
-        options: ['General Repair', 'Assembly', 'Drywall Patching', 'Small Painting', 'Minor Plumbing', 'Other'],
+        options: ['General Repair', 'Punch List', 'Assembly', 'Drywall Patching', 'Small Painting', 'Caulking/Sealing', 'Door Adjustments', 'Minor Plumbing', 'Minor Electrical', 'Weather Stripping', 'Lock Replacement'],
       },
     ],
   },
@@ -270,20 +306,22 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
     label: 'Painting',
     group: 'trades_technical',
     finishLevelEnabled: true,
+    searchKeywords: ['paint', 'painter', 'interior paint', 'exterior paint'],
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Unit Turn Painting', 'Touch-Up', 'Exterior'],
+        options: ['Unit Turn Painting', 'Touch-Up', 'Exterior', 'Full Interior Paint', 'Trim & Doors', 'Lead-Safe Painting', 'Stairwells & Common Areas', 'Graffiti Removal'],
       },
     ],
   },
   structural: {
     label: 'Structural',
     group: 'trades_technical',
+    searchKeywords: ['foundation', 'beam', 'joist', 'structural engineer'],
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Foundation', 'Basement', 'Joists', 'Stairs', 'Other'],
+        options: ['Foundation', 'Basement', 'Crack Repair', 'Beams', 'Joists', 'Load-Bearing Wall Review', 'Stairs', 'Structural Engineer Coordination', 'Underpinning', 'Sagging Floors', 'Other'],
       },
     ],
   },
@@ -291,10 +329,11 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
     label: 'Architect/Design',
     group: 'trades_technical',
     finishLevelEnabled: true,
+    searchKeywords: ['architect', 'design', 'plans', 'zoning', 'permit'],
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Plans', 'Zoning', 'Layout', 'Design Services', 'Consulting', 'Other'],
+        options: ['Plans', 'As-Built Plans', 'Zoning', 'Use Feasibility', 'Layout', 'Design Services', 'Consulting', 'Permit Drawings', 'Value Engineering', 'Change of Use Analysis', 'Variance Support', 'Other'],
       },
     ],
   },
@@ -304,20 +343,22 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
     label: 'Cleaning',
     group: 'property_care',
     emergencyEnabled: true,
+    searchKeywords: ['clean', 'cleaner', 'deep clean', 'turnover'],
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Deep Clean Tenant Turn', 'Light Clean', 'Post-Construction Clean'],
+        options: ['Deep Clean Tenant Turn', 'Light Clean', 'Recurring Cleaning', 'Post-Construction Clean', 'Move-In Ready Clean', 'Common Area Cleaning', 'Biohazard Cleanup'],
       },
     ],
   },
   cleanout_junk_removal: {
     label: 'Clean Out/Junk Removal',
     group: 'property_care',
+    searchKeywords: ['junk', 'trash', 'cleanout', 'removal', 'demo', 'hoarder'],
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Light Demo', 'Light Cleanout', 'Heavy Cleanout', 'Construction Debris', 'Appliance Removal', 'Furniture Removal'],
+        options: ['Light Demo', 'Light Cleanout', 'Heavy Cleanout', 'Hoarder Unit', 'Construction Debris', 'Appliance Removal', 'Furniture Removal', 'Basement Cleanout', 'Attic Cleanout', 'Estate Cleanout', 'Eviction Cleanout'],
       },
     ],
   },
@@ -325,44 +366,48 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
     label: 'Pest Control',
     group: 'property_care',
     emergencyEnabled: true,
+    searchKeywords: ['pest', 'exterminator', 'bug', 'rodent', 'mouse', 'rat', 'bed bug'],
     classifications: [
       {
         label: 'Service Needed',
-        options: ['General Interior Treatment', 'General Exterior Treatment', 'Recurring Service', 'Other'],
+        options: ['General Interior Treatment', 'General Exterior Treatment', 'Recurring Service', 'Emergency Infestation', 'Exclusion/Sealing', 'Sanitation Support', 'Other'],
       },
       {
         label: 'Pest Type',
-        options: ['Rodents', 'Bed Bugs', 'Termite/WDI Inspection', 'Mosquito/Yard Treatment', 'Wildlife', 'Other'],
+        options: ['Rodents', 'Bed Bugs', 'Roaches', 'Ants', 'Termite/WDI Inspection', 'Mosquito/Yard Treatment', 'Wildlife', 'Birds/Bats', 'Fleas', 'Other'],
       },
     ],
   },
   landscaping_snow: {
     label: 'Landscaping/Snow',
     group: 'property_care',
+    searchKeywords: ['lawn', 'snow', 'tree', 'yard', 'landscape', 'ice'],
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Lawn Maintenance', 'Snow Removal'],
+        options: ['Lawn Maintenance', 'Snow Removal', 'Tree Trimming', 'Tree Removal', 'Hardscaping', 'Seasonal Cleanup', 'Ice Management', 'Drainage Grading', 'Fence Line Clearing'],
       },
     ],
   },
   preventative_maintenance: {
     label: 'Preventative Maintenance',
     group: 'property_care',
+    searchKeywords: ['maintenance', 'preventive', 'checkup', 'seasonal'],
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Routine Maintenance Package', 'Premium Maintenance Package'],
+        options: ['Routine Maintenance Package', 'Premium Maintenance Package', 'Annual Property Checkup', 'Seasonal Prep (Winter/Summer)', 'Vacancy Prep Package'],
       },
     ],
   },
   property_check: {
     label: 'Property Check / Site Visit',
     group: 'property_care',
+    searchKeywords: ['site visit', 'property check', 'inspection', 'walkthrough'],
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Vacant Property Check', 'Tenant-Occupied Check', 'Post-Storm Check', 'Security Check', 'Insurance Documentation Visit', 'Other'],
+        options: ['Vacant Property Check', 'Tenant-Occupied Check', 'Post-Storm Check', 'Security Check', 'Insurance Documentation Visit', 'Contractor Oversight Visit', 'Photo/Video Documentation', 'City Inspection Walkthrough', 'Pre-Purchase Walkthrough'],
       },
     ],
   },
@@ -370,10 +415,11 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
     label: 'Movers',
     group: 'property_care',
     emergencyEnabled: true,
+    searchKeywords: ['moving', 'mover', 'relocation', 'haul'],
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Small Move', 'Large Move', 'Heavy Lifting'],
+        options: ['Small Move', 'Large Move', 'Heavy Lifting', 'Appliance Move', 'Storage Move', 'Emergency Move', 'Tenant Relocation Support'],
       },
     ],
   },
@@ -382,56 +428,100 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
   lead_testing: {
     label: 'Lead Testing',
     group: 'compliance_testing',
+    searchKeywords: ['lead', 'lead paint', 'lead-safe', 'certification'],
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Lead-Safe Certification', 'Lead-Free Certification'],
+        options: ['Lead-Safe Certification', 'Lead-Free Certification', 'Risk Assessment', 'Lead Paint Inspection', 'Lead Abatement Coordination', 'Dust Wipe Testing'],
       },
     ],
   },
   fire_safety_compliance: {
     label: 'Fire & Safety Compliance',
     group: 'compliance_testing',
+    searchKeywords: ['fire', 'smoke detector', 'sprinkler', 'safety'],
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Fire Extinguishers', 'Smoke Detectors', 'Fire Escape', 'Sprinklers', 'Other'],
+        options: ['Fire Extinguishers', 'Smoke Detectors', 'CO Detectors', 'Fire Escape', 'Sprinklers', 'Emergency Lighting', 'Exit Signage', 'Fire Door Inspection', 'Other'],
       },
     ],
   },
   environmental_testing: {
     label: 'Environmental Testing',
     group: 'compliance_testing',
+    searchKeywords: ['asbestos', 'radon', 'environmental', 'air quality', 'testing'],
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Asbestos', 'Radon', 'Soil', 'Water', 'Other'],
+        options: ['Asbestos', 'Asbestos Abatement', 'Radon', 'Soil', 'Water', 'Air Quality Testing', 'Vapor Intrusion', 'Other'],
       },
     ],
   },
   compliance_city: {
     label: 'Compliance & City Requirements',
     group: 'compliance_testing',
+    searchKeywords: ['compliance', 'code violation', 'permit', 'license', 'section 8', 'pha'],
     classifications: [
       {
         label: 'Issue Type',
-        options: ['Get Compliant', 'Remedy Code Violations', 'Permit Expediting', 'Zoning', 'PHA Inspection Prep'],
+        options: ['Get Compliant', 'Remedy Code Violations', 'Permit Expediting', 'Zoning', 'Certificate of Occupancy', 'Rental License', 'PHA / Section 8 Inspection Prep', 'Reinspection Coordination', 'Violation Clearance Letter'],
       },
     ],
   },
   legal_eviction: {
     label: 'Legal & Eviction Services',
     group: 'compliance_testing',
+    searchKeywords: ['lawyer', 'attorney', 'court', 'tenant dispute', 'eviction', 'legal'],
     classifications: [
       {
         label: 'Issue Type',
-        options: ['Eviction Filing', 'Possession Assistance', 'Notice Preparation', 'Tenant Dispute Consultation', 'Other'],
+        options: ['Eviction Filing', 'Possession Assistance', 'Notice Preparation', 'Tenant Dispute Consultation', 'Cash for Keys', 'Lease Review', 'Court Representation', 'Affidavit Preparation', 'Demand Letter Drafting', 'Collections / Judgments', 'Other'],
+      },
+    ],
+  },
+  notary_services: {
+    label: 'Notary Services',
+    group: 'compliance_testing',
+    searchKeywords: ['notary', 'notarize', 'signing', 'witness'],
+    classifications: [
+      {
+        label: 'Service Needed',
+        options: ['General Notary', 'Mobile Notary', 'Remote Online Notary (RON)', 'Same-Day / Emergency Notary', 'After-Hours / Weekend Notary'],
+      },
+      {
+        label: 'Document Type',
+        options: ['Deeds', 'Affidavits', 'Power of Attorney', 'Lease Agreements', 'Loan Documents', 'Court Documents', 'Settlement / Closing Docs', 'Identity Verification'],
+      },
+      {
+        label: 'Location Preference',
+        options: ['On-Site (Property)', 'Office Visit', 'Remote / Online'],
+      },
+    ],
+  },
+  deed_preparation: {
+    label: 'Deed Preparation & Recording',
+    group: 'compliance_testing',
+    searchKeywords: ['deed', 'quitclaim', 'title transfer', 'recording'],
+    classifications: [
+      {
+        label: 'Service Needed',
+        options: ['Deed Drafting', 'Quitclaim Deed', 'Warranty Deed', 'Special Warranty Deed', 'Deed Correction', 'Add / Remove Owner', 'LLC ↔ Personal Title Transfer', 'Estate / Inheritance Transfer'],
+      },
+      {
+        label: 'Recording & Filing',
+        options: ['County Recording', 'Expedited Recording', 'Recording Status Follow-Up'],
+      },
+      {
+        label: 'Support Services',
+        options: ['Notary Coordination', 'Title Info Coordination', 'Closing Attorney Coordination'],
       },
     ],
   },
   property_tax_appeals: {
     label: 'Property Tax Appeals',
     group: 'compliance_testing',
+    searchKeywords: ['tax', 'property tax', 'tax appeal'],
     classifications: [],
     externalLink: true,
     externalUrl: 'https://www.incentertaxsolutions.com/partners/sheryl-sitman-at-real-landlording/',
@@ -441,60 +531,88 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
   property_management: {
     label: 'Property Management / Tenant Placement',
     group: 'professional_financial',
+    searchKeywords: ['property manager', 'tenant placement', 'management', 'leasing'],
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Tenant Placement', 'Full-Service Management', 'Managing Agent', 'Other'],
+        options: ['Tenant Placement', 'Full-Service Management', 'Managing Agent', 'Leasing Only', 'Section 8 Placement', 'Short-Term Rental Mgmt', 'Problem Tenant Takeover', 'Other'],
       },
     ],
   },
   insurance: {
     label: 'Insurance',
     group: 'professional_financial',
+    searchKeywords: ['insurance', 'policy', 'claim', 'coverage'],
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Property Insurance', 'Umbrella', 'Builders Risk', 'Public Adjustor', 'Restoration', 'Other'],
+        options: ['Property Insurance', 'Umbrella', 'Builders Risk', 'Policy Review', 'Claims Assistance', 'Public Adjustor', 'Restoration Coordination', 'Loss Runs Review', 'Other'],
       },
     ],
   },
   financing: {
     label: 'Financing',
     group: 'professional_financial',
+    searchKeywords: ['mortgage', 'loan', 'financing', 'refi', 'hard money', 'dscr'],
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Conventional Mortgage', 'Hard Money', 'Refi', 'DSCR', '203k', 'Other'],
+        options: ['Conventional Mortgage', 'Hard Money', 'Refi', 'DSCR', '203k', 'Bridge Loan', 'Construction Loan', 'Portfolio Refi', 'Rate Shopping', 'Other'],
       },
     ],
   },
   bookkeeping_accounting: {
     label: 'Bookkeeping/Accounting',
     group: 'professional_financial',
+    searchKeywords: ['bookkeeper', 'accountant', 'tax', 'cpa', 'accounting'],
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Rental Bookkeeping', 'Tax Filing'],
+        options: ['Rental Bookkeeping', 'Tax Filing', 'Entity Setup Support', 'Expense Cleanup', 'Portfolio Review', '1099 Prep', 'Cost Segregation Intro'],
       },
     ],
   },
   acquisitions: {
     label: 'Acquisitions',
     group: 'professional_financial',
+    searchKeywords: ['invest', 'investing', 'buy', 'flip', 'brrrr', 'deal'],
     classifications: [
       {
         label: 'Service Needed',
-        options: ['1:1 Philly Investing Coaching', 'New Construction', 'Flips', 'Buy & Hold'],
+        options: ['1:1 Philly Investing Coaching', 'New Construction', 'Flips', 'Buy & Hold', 'Deal Analysis', 'BRRRR Strategy', 'Off-Market Sourcing', 'JV Structuring', 'Due Diligence Support'],
       },
     ],
   },
   re_agent: {
     label: 'RE Agent',
     group: 'professional_financial',
+    searchKeywords: ['realtor', 'real estate agent', 'broker', 'sales'],
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Sales Agent', 'Buyers Agent', 'Commercial Agent', 'Other'],
+        options: ['Sales Agent', 'Buyers Agent', 'Commercial Agent', 'Leasing Agent', 'Investment Sales', 'Rent Analysis', 'Other'],
+      },
+    ],
+  },
+  title_ownership: {
+    label: 'Title & Ownership Services',
+    group: 'professional_financial',
+    searchKeywords: ['title', 'title search', 'lien', 'ownership'],
+    classifications: [
+      {
+        label: 'Service Needed',
+        options: ['Title Search (Basic)', 'Ownership Verification', 'Lien Lookup', 'Judgment Search', 'Title Issue Resolution (Non-Insurance)'],
+      },
+    ],
+  },
+  entity_structuring: {
+    label: 'Entity & Asset Structuring',
+    group: 'professional_financial',
+    searchKeywords: ['llc', 'entity', 'asset protection', 'series llc', 'operating agreement'],
+    classifications: [
+      {
+        label: 'Service Needed',
+        options: ['LLC Setup (Property-Holding)', 'Series LLC Structuring', 'Property-to-LLC Transfer Support', 'Operating Agreement Review (Light)', 'Registered Agent Setup'],
       },
     ],
   },
@@ -503,20 +621,22 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
   photography: {
     label: 'Property Photography & Media',
     group: 'creative_knowledge',
+    searchKeywords: ['photo', 'photographer', 'drone', 'matterport', 'video', 'media'],
     classifications: [
       {
         label: 'Service Needed',
-        options: ['Listing Photos', 'Matterport', 'Drone', 'Floorplan'],
+        options: ['Listing Photos', 'Matterport', 'Drone', 'Floorplan', 'Drone Video', 'Virtual Staging', 'Before/After Documentation'],
       },
     ],
   },
   training: {
     label: 'Boost My Knowhow (Education)',
     group: 'creative_knowledge',
+    searchKeywords: ['training', 'coaching', 'education', 'workshop', 'learn', 'course'],
     classifications: [
       {
         label: 'Training Type',
-        options: ['Landlord Workshops', '1:1 Landlord Coaching', '1:1 Philly Investing Coaching', 'Expert Portfolio Review', 'Section 8 Hacking', 'Self-Guided Rehab Course'],
+        options: ['Landlord Workshops', '1:1 Landlord Coaching', '1:1 Philly Investing Coaching', 'Expert Portfolio Review', 'Section 8 Hacking', 'Self-Guided Rehab Course', 'Compliance Training', 'Financial Optimization', 'Emergency Preparedness Training'],
       },
     ],
   },
