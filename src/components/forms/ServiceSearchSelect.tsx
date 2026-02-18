@@ -81,6 +81,7 @@ export default function ServiceSearchSelect({
   size = 'large',
 }: ServiceSearchSelectProps) {
   const [searchText, setSearchText] = useState('');
+  const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
 
   const defaultOptions = useMemo(() => buildDefaultOptions(), []);
 
@@ -112,17 +113,24 @@ export default function ServiceSearchSelect({
       return;
     }
 
+    setSelectedLabel(
+      item.isCategoryLevel
+        ? item.categoryLabel
+        : `${item.subCategoryLabel} — ${item.categoryLabel}`,
+    );
     onChange?.(item.serviceCategory);
     setSearchText('');
   };
 
-  // Find current label for display
-  const currentLabel = value ? SERVICE_TAXONOMY[value]?.label : undefined;
+  // Display label: show what user selected, fall back to category name
+  const displayLabel = value
+    ? selectedLabel ?? SERVICE_TAXONOMY[value]?.label
+    : undefined;
 
   return (
     <Select
       showSearch
-      value={value ? { value, label: currentLabel } as unknown as string : undefined}
+      value={value ? { value, label: displayLabel } as unknown as string : undefined}
       placeholder={placeholder}
       size={size}
       filterOption={false}
