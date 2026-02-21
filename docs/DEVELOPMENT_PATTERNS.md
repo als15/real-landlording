@@ -866,3 +866,42 @@ if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
   return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 }
 ```
+
+### Anti-Spam / Bot Protection (Signup)
+
+Located in `src/lib/validation.ts` and applied in `src/app/api/auth/signup/route.ts`.
+
+**Name Validation** — `validateName(name)` rejects gibberish names on signup:
+- Too short (<2) or too long (>100)
+- No vowels, 5+ consecutive consonants, >70% non-letter chars
+- Contains URLs or email addresses
+
+```typescript
+import { validateName } from '@/lib/validation';
+
+const result = validateName(name);
+if (!result.valid) {
+  return NextResponse.json({ message: result.reason }, { status: 400 });
+}
+```
+
+**Suspicious Name Detection** — `isNameSuspicious(name)` flags accounts in admin UI:
+- Null/empty, no vowels, 4+ consecutive consonants, >15 char single-word names
+- Used by admin landlord directory to show "BOT?" tags and "Suspect" filter
+
+**Honeypot Field** — Hidden `website` field on signup form (`src/app/auth/signup/page.tsx`):
+- Invisible to real users (positioned off-screen), filled by bots
+- Server returns fake success if honeypot is filled (doesn't reveal detection)
+- Uses `position: absolute; left: -9999px` (not `display:none` — bots detect that)
+
+### Admin Landlord Deletion
+
+**Single delete:** `DELETE /api/admin/landlords/[id]`
+- Nullifies `landlord_id` on associated `service_requests` (preserves request data)
+- Deletes landlord record from `landlords` table
+- Deletes Supabase Auth user if landlord had `auth_user_id`
+
+**Bulk delete:** `POST /api/admin/landlords/bulk-delete`
+- Accepts `{ ids: string[] }` (max 100 per request)
+- Same cleanup logic as single delete, batched
+- Returns `{ deletedCount, authUsersDeleted }`

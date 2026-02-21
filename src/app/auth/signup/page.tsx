@@ -18,13 +18,15 @@ export default function SignupPage() {
   const router = useRouter();
   const { message } = App.useApp();
 
-  const onFinish = async (values: { email: string; password: string; name: string }) => {
+  const onFinish = async (values: { email: string; password: string; name: string; website?: string }) => {
     setLoading(true);
     try {
+      // Pass honeypot field as _hp
+      const { website, ...rest } = values;
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
+        body: JSON.stringify({ ...rest, _hp: website }),
       });
 
       const data = await response.json();
@@ -163,6 +165,15 @@ export default function SignupPage() {
             placeholder="Confirm Password"
             size="large"
           />
+        </Form.Item>
+
+        {/* Honeypot field — hidden from real users, filled by bots */}
+        <Form.Item
+          name="website"
+          style={{ position: 'absolute', left: '-9999px', height: 0, overflow: 'hidden' }}
+          aria-hidden="true"
+        >
+          <Input tabIndex={-1} autoComplete="off" />
         </Form.Item>
 
         <Form.Item>
