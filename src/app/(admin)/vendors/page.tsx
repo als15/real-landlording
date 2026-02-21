@@ -39,6 +39,7 @@ const slaStatusColors: Record<SlaStatus, string> = {
 const matchStatusColors: Record<MatchStatus, string> = {
   pending: 'default',
   intro_sent: 'processing',
+  estimate_sent: 'processing',
   vendor_accepted: 'success',
   vendor_declined: 'error',
   no_response: 'warning',
@@ -51,6 +52,7 @@ const matchStatusColors: Record<MatchStatus, string> = {
 const matchStatusLabels: Record<MatchStatus, string> = {
   pending: 'Pending',
   intro_sent: 'Intro Sent',
+  estimate_sent: 'Estimate Sent',
   vendor_accepted: 'Accepted',
   vendor_declined: 'Declined',
   no_response: 'No Response',

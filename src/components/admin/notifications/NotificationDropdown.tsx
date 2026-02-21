@@ -277,7 +277,7 @@ export default function NotificationDropdown() {
       onOpenChange={setOpen}
       placement="bottomRight"
       arrow={false}
-      overlayInnerStyle={{ padding: 0 }}
+      styles={{ content: { padding: 0 } }}
     >
       <Badge count={unreadCount} size="small" offset={[-2, 2]}>
         <Button

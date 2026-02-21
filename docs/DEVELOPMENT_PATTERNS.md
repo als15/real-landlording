@@ -368,6 +368,50 @@ export async function POST(request: NextRequest) {
 
 ---
 
+## CRM / Referral Lifecycle
+
+### Data Model
+
+The CRM tracks referral jobs via `request_vendor_matches` joined with `referral_payments`. Key fields:
+
+| Field | Table | Description |
+|-------|-------|-------------|
+| `status` | `request_vendor_matches` | Match lifecycle stage (enum `match_status`) |
+| `job_won` / `job_completed` | `request_vendor_matches` | Boolean outcome flags |
+| `expected_due_date` | `request_vendor_matches` | Admin-set deadline for follow-up |
+| `admin_notes` | `request_vendor_matches` | Internal notes per match |
+| `referral_payments.*` | `referral_payments` | Payment tracking per match |
+
+### Match Status Enum
+
+The `match_status` enum includes: `pending`, `intro_sent`, `estimate_sent`, `vendor_accepted`, `vendor_declined`, `no_response`, `in_progress`, `completed`, `cancelled`, `no_show`.
+
+### CRM API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/admin/crm/pipeline` | GET | Pipeline stage counts |
+| `/api/admin/crm/jobs` | GET | Paginated jobs with filters |
+| `/api/admin/crm/jobs/export` | GET | All filtered jobs (no pagination, for CSV export) |
+| `/api/admin/matches/[id]` | PATCH | Update match fields (status, expected_due_date, admin_notes, job outcome, etc.) |
+
+### Operational Filter Presets
+
+The jobs API supports these `stage` query param values:
+
+- **Pipeline stages:** `intro_sent`, `awaiting_outcome`, `job_won`, `in_progress`, `completed`, `needs_review`, `lost`
+- **Operational presets:**
+  - `needs_followup` — status IN (intro_sent, estimate_sent, vendor_accepted) AND job_won IS NULL
+  - `commission_pending` — job_won = true, then post-filtered to exclude completed jobs without outstanding payments
+  - `overdue` — expected_due_date < NOW() AND status not in terminal states
+  - `closed` — status IN (completed, vendor_declined, no_response, no_show, cancelled)
+
+### CSV Export
+
+The CRM page exports via `/api/admin/crm/jobs/export` (returns all matching jobs without pagination). CSV formatting happens client-side using `src/lib/utils/csv-export.ts` (`objectsToCsv` + `downloadCsv`).
+
+---
+
 ## Common Issues & Solutions
 
 ### Issue: Password Reset Returns 500 "Failed to update password"

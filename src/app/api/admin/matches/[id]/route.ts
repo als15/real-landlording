@@ -23,6 +23,8 @@ export async function PATCH(
       outcome_notes,
       review_requested_at,
       status,
+      expected_due_date,
+      admin_notes,
       // For creating payment when job is marked complete
       create_payment,
       payment_amount,
@@ -70,6 +72,14 @@ export async function PATCH(
     // Direct status override (if provided)
     if (status !== undefined && !updates.status) {
       updates.status = status;
+    }
+
+    // Operational fields
+    if (expected_due_date !== undefined) {
+      updates.expected_due_date = expected_due_date;
+    }
+    if (admin_notes !== undefined) {
+      updates.admin_notes = admin_notes;
     }
 
     // Update the match

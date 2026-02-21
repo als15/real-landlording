@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
     // Calculate pipeline counts
     const pipeline = {
       intro_sent: 0,
+      estimate_sent: 0,
       vendor_accepted: 0,
       job_won: 0,
       in_progress: 0,
@@ -50,6 +51,9 @@ export async function GET(request: NextRequest) {
       switch (match.status) {
         case 'intro_sent':
           pipeline.intro_sent++;
+          break;
+        case 'estimate_sent':
+          pipeline.estimate_sent++;
           break;
         case 'vendor_accepted':
           if (match.job_won === true) {
