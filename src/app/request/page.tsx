@@ -96,7 +96,7 @@ export default function ServiceRequestPage() {
               font-size: 26px !important;
             }
             .request-form-card {
-              padding: 32px !important;
+              padding: 40px !important;
             }
           }
         `}</style>
@@ -252,17 +252,11 @@ export default function ServiceRequestPage() {
               style={{
                 background: brandColors.white,
                 borderRadius: 16,
-                padding: 16,
+                padding: 24,
                 boxShadow: '0 4px 24px rgba(0, 0, 0, 0.06)',
                 border: `1px solid ${brandColors.border}`
               }}
             >
-              <Title level={3} style={{ marginBottom: 8, color: brandColors.primary }}>
-                Submit Your Request
-              </Title>
-              <Paragraph type="secondary" style={{ marginBottom: 24 }}>
-                Fill out the form below and we&apos;ll match you with up to 3 qualified vendors.
-              </Paragraph>
               <MultiStepServiceRequestForm onSuccess={handleFormSuccess} />
             </div>
 

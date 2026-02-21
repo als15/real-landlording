@@ -22,6 +22,7 @@ function validateServiceRequestInput(body: Record<string, unknown>): {
     'landlord_email',
     'first_name',
     'last_name',
+    'landlord_phone',
     'service_type',
     'property_address',
     'zip_code',
@@ -50,7 +51,7 @@ function validateServiceRequestInput(body: Record<string, unknown>): {
     }
   }
 
-  // Phone format validation (optional field)
+  // Phone format validation (required field)
   if (body.landlord_phone && typeof body.landlord_phone === 'string') {
     const phoneDigits = body.landlord_phone.replace(/\D/g, '');
     if (phoneDigits.length < 10) {
@@ -94,6 +95,7 @@ describe('Service Request Validation', () => {
         landlord_email: 'test@example.com',
         first_name: 'Test',
         last_name: 'User',
+        landlord_phone: '2155551234',
         service_type: 'plumber_sewer',
         property_address: '123 Test St',
         zip_code: '19103',
@@ -109,6 +111,7 @@ describe('Service Request Validation', () => {
       const input = {
         first_name: 'Test',
         last_name: 'User',
+        landlord_phone: '2155551234',
         service_type: 'plumber_sewer',
         property_address: '123 Test St',
         zip_code: '19103',
@@ -135,6 +138,7 @@ describe('Service Request Validation', () => {
         landlord_email: '',
         first_name: 'Test',
         last_name: 'User',
+        landlord_phone: '2155551234',
         service_type: 'plumber_sewer',
         property_address: '123 Test St',
         zip_code: '19103',
@@ -160,6 +164,7 @@ describe('Service Request Validation', () => {
           landlord_email: email,
           first_name: 'Test',
           last_name: 'User',
+          landlord_phone: '2155551234',
           service_type: 'plumber_sewer',
           property_address: '123 Test St',
           zip_code: '19103',
@@ -184,6 +189,7 @@ describe('Service Request Validation', () => {
           landlord_email: email,
           first_name: 'Test',
           last_name: 'User',
+          landlord_phone: '2155551234',
           service_type: 'plumber_sewer',
           property_address: '123 Test St',
           zip_code: '19103',
@@ -205,6 +211,7 @@ describe('Service Request Validation', () => {
           landlord_email: 'test@example.com',
           first_name: 'Test',
           last_name: 'User',
+          landlord_phone: '2155551234',
           service_type: 'plumber_sewer',
           property_address: '123 Test St',
           zip_code: zip,
@@ -224,6 +231,7 @@ describe('Service Request Validation', () => {
           landlord_email: 'test@example.com',
           first_name: 'Test',
           last_name: 'User',
+          landlord_phone: '2155551234',
           service_type: 'plumber_sewer',
           property_address: '123 Test St',
           zip_code: zip,
@@ -282,7 +290,7 @@ describe('Service Request Validation', () => {
       }
     });
 
-    it('should allow empty phone (optional field)', () => {
+    it('should fail when phone is missing (required field)', () => {
       const input = {
         landlord_email: 'test@example.com',
         first_name: 'Test',
@@ -294,7 +302,8 @@ describe('Service Request Validation', () => {
       };
 
       const result = validateServiceRequestInput(input);
-      expect(result.errors).not.toContain('Invalid phone number');
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain('Missing required field: landlord_phone');
     });
   });
 
@@ -307,6 +316,7 @@ describe('Service Request Validation', () => {
           landlord_email: 'test@example.com',
           first_name: 'Test',
           last_name: 'User',
+          landlord_phone: '2155551234',
           service_type: 'plumber_sewer',
           property_address: '123 Test St',
           zip_code: '19103',
@@ -324,6 +334,7 @@ describe('Service Request Validation', () => {
         landlord_email: 'test@example.com',
         first_name: 'Test',
         last_name: 'User',
+        landlord_phone: '2155551234',
         service_type: 'plumber_sewer',
         property_address: '123 Test St',
         zip_code: '19103',
@@ -345,6 +356,7 @@ describe('Service Request Validation', () => {
           landlord_email: 'test@example.com',
           first_name: 'Test',
           last_name: 'User',
+          landlord_phone: '2155551234',
           service_type: serviceType,
           property_address: '123 Test St',
           zip_code: '19103',
@@ -361,6 +373,7 @@ describe('Service Request Validation', () => {
         landlord_email: 'test@example.com',
         first_name: 'Test',
         last_name: 'User',
+        landlord_phone: '2155551234',
         service_type: 'not_a_real_service',
         property_address: '123 Test St',
         zip_code: '19103',
