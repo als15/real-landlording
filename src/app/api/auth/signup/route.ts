@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { rateLimit } from '@/lib/rate-limit';
+import { validateName } from '@/lib/validation';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,11 +14,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email, name, password, requestId } = await request.json();
+    const { email, name, password, requestId, _hp } = await request.json();
 
-    if (!email || !password) {
+    // Honeypot check — if filled, a bot submitted the form.
+    // Return fake success to avoid revealing detection.
+    if (_hp) {
+      return NextResponse.json({
+        message: 'Account created! Please check your email to verify your account before signing in.',
+        user: { id: 'ok', email },
+        needsEmailConfirmation: true,
+      });
+    }
+
+    if (!email || !password || !name) {
       return NextResponse.json(
-        { message: 'Email and password are required' },
+        { message: 'Name, email, and password are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate name to reject gibberish / bot submissions
+    const nameValidation = validateName(name);
+    if (!nameValidation.valid) {
+      return NextResponse.json(
+        { message: nameValidation.reason || 'Invalid name' },
         { status: 400 }
       );
     }

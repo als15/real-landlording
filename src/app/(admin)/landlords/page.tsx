@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import {
   Table,
   Card,
@@ -15,6 +15,8 @@ import {
   Divider,
   Empty,
   Spin,
+  Modal,
+  App,
 } from 'antd';
 import {
   ReloadOutlined,
@@ -24,6 +26,9 @@ import {
   DownloadOutlined,
   FileTextOutlined,
   ArrowRightOutlined,
+  DeleteOutlined,
+  WarningOutlined,
+  ExclamationCircleOutlined,
 } from '@ant-design/icons';
 import { Landlord, ServiceRequest, RequestVendorMatch, SERVICE_TYPE_LABELS, REQUEST_STATUS_LABELS, RequestStatus, URGENCY_LABELS, UrgencyLevel } from '@/types/database';
 import {
@@ -32,6 +37,7 @@ import {
   formatDateTimeForCsv,
   formatArrayForCsv,
 } from '@/lib/utils/csv-export';
+import { isNameSuspicious } from '@/lib/validation';
 import type { ColumnsType } from 'antd/es/table';
 
 const { Title, Text } = Typography;
@@ -41,6 +47,10 @@ interface LandlordWithRequests extends Landlord {
   requests?: (ServiceRequest & {
     matches?: RequestVendorMatch[];
   })[];
+}
+
+function isSuspectAccount(landlord: Landlord): boolean {
+  return isNameSuspicious(landlord.name) && landlord.request_count === 0;
 }
 
 function PropertyMap({ address }: { address: string }) {
@@ -80,7 +90,11 @@ export default function LandlordsPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<string | null>(null);
   const [loadingLandlordDetails, setLoadingLandlordDetails] = useState(false);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const [showSuspectOnly, setShowSuspectOnly] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const { message, modal } = App.useApp();
 
   // Debounce search input
   useEffect(() => {
@@ -128,6 +142,16 @@ export default function LandlordsPage() {
     fetchLandlords();
   }, [fetchLandlords]);
 
+  // Filter for suspect-only view (client-side)
+  const displayedLandlords = useMemo(() => {
+    if (!showSuspectOnly) return landlords;
+    return landlords.filter(isSuspectAccount);
+  }, [landlords, showSuspectOnly]);
+
+  const suspectCount = useMemo(() => {
+    return landlords.filter(isSuspectAccount).length;
+  }, [landlords]);
+
   const handleViewLandlord = async (landlord: Landlord) => {
     setSelectedLandlord(landlord); // Show drawer immediately with basic data
     setSelectedProperty(landlord.properties?.[0] || null);
@@ -145,6 +169,96 @@ export default function LandlordsPage() {
     } finally {
       setLoadingLandlordDetails(false);
     }
+  };
+
+  const handleDeleteLandlord = (landlord: Landlord) => {
+    const warnings: string[] = [];
+    if (landlord.request_count > 0) {
+      warnings.push(`This landlord has ${landlord.request_count} request(s). Request data will be preserved but unlinked.`);
+    }
+    if (landlord.auth_user_id) {
+      warnings.push('Their Supabase auth account will also be deleted.');
+    }
+
+    modal.confirm({
+      title: `Delete ${landlord.name || landlord.email}?`,
+      icon: <ExclamationCircleOutlined />,
+      content: (
+        <div>
+          <p>This action cannot be undone.</p>
+          {warnings.map((w, i) => (
+            <p key={i} style={{ color: '#ff4d4f' }}>{w}</p>
+          ))}
+        </div>
+      ),
+      okText: 'Delete',
+      okType: 'danger',
+      onOk: async () => {
+        try {
+          const response = await fetch(`/api/admin/landlords/${landlord.id}`, {
+            method: 'DELETE',
+          });
+          if (response.ok) {
+            message.success('Landlord deleted');
+            setDrawerOpen(false);
+            setSelectedLandlord(null);
+            fetchLandlords();
+          } else {
+            const data = await response.json();
+            message.error(data.message || 'Failed to delete');
+          }
+        } catch {
+          message.error('Failed to delete landlord');
+        }
+      },
+    });
+  };
+
+  const handleBulkDelete = () => {
+    const selectedLandlords = landlords.filter((l) => selectedRowKeys.includes(l.id));
+    const withRequests = selectedLandlords.filter((l) => l.request_count > 0).length;
+    const withAuth = selectedLandlords.filter((l) => l.auth_user_id).length;
+
+    modal.confirm({
+      title: `Delete ${selectedRowKeys.length} landlord(s)?`,
+      icon: <ExclamationCircleOutlined />,
+      content: (
+        <div>
+          <p>This action cannot be undone.</p>
+          {withRequests > 0 && (
+            <p style={{ color: '#ff4d4f' }}>{withRequests} landlord(s) have requests. Request data will be preserved but unlinked.</p>
+          )}
+          {withAuth > 0 && (
+            <p style={{ color: '#ff4d4f' }}>{withAuth} auth account(s) will also be deleted.</p>
+          )}
+        </div>
+      ),
+      okText: `Delete ${selectedRowKeys.length}`,
+      okType: 'danger',
+      onOk: async () => {
+        setDeleting(true);
+        try {
+          const response = await fetch('/api/admin/landlords/bulk-delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: selectedRowKeys }),
+          });
+          if (response.ok) {
+            const data = await response.json();
+            message.success(`Deleted ${data.deletedCount} landlord(s)${data.authUsersDeleted ? ` (${data.authUsersDeleted} auth accounts)` : ''}`);
+            setSelectedRowKeys([]);
+            fetchLandlords();
+          } else {
+            const data = await response.json();
+            message.error(data.message || 'Bulk delete failed');
+          }
+        } catch {
+          message.error('Bulk delete failed');
+        } finally {
+          setDeleting(false);
+        }
+      },
+    });
   };
 
   const handleExportCsv = async () => {
@@ -178,7 +292,15 @@ export default function LandlordsPage() {
       title: 'Name',
       dataIndex: 'name',
       key: 'name',
-      render: (name) => name || '-',
+      render: (name, record) => {
+        const suspicious = isNameSuspicious(name);
+        return (
+          <Space>
+            <span>{name || '-'}</span>
+            {suspicious && <Tag color="red">BOT?</Tag>}
+          </Space>
+        );
+      },
     },
     {
       title: 'Email',
@@ -222,13 +344,23 @@ export default function LandlordsPage() {
       title: 'Actions',
       key: 'actions',
       render: (_, record) => (
-        <Button
-          size="small"
-          icon={<EyeOutlined />}
-          onClick={() => handleViewLandlord(record)}
-        >
-          View
-        </Button>
+        <Space>
+          <Button
+            size="small"
+            icon={<EyeOutlined />}
+            onClick={() => handleViewLandlord(record)}
+          >
+            View
+          </Button>
+          <Button
+            size="small"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => handleDeleteLandlord(record)}
+          >
+            Delete
+          </Button>
+        </Space>
       ),
     },
   ];
@@ -260,19 +392,62 @@ export default function LandlordsPage() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+          <Button
+            type={showSuspectOnly ? 'primary' : 'default'}
+            danger={showSuspectOnly}
+            icon={<WarningOutlined />}
+            onClick={() => setShowSuspectOnly(!showSuspectOnly)}
+          >
+            Suspect {suspectCount > 0 && `(${suspectCount})`}
+          </Button>
         </Space>
       </Card>
+
+      {/* Bulk action bar */}
+      {selectedRowKeys.length > 0 && (
+        <Card
+          size="small"
+          style={{
+            marginBottom: 16,
+            backgroundColor: '#fff2f0',
+            borderColor: '#ffccc7',
+          }}
+        >
+          <Space>
+            <Text strong>{selectedRowKeys.length} selected</Text>
+            <Button
+              danger
+              type="primary"
+              icon={<DeleteOutlined />}
+              loading={deleting}
+              onClick={handleBulkDelete}
+            >
+              Delete Selected
+            </Button>
+            <Button onClick={() => setSelectedRowKeys([])}>
+              Clear Selection
+            </Button>
+          </Space>
+        </Card>
+      )}
 
       <Card>
         <Table
           columns={columns}
-          dataSource={landlords}
+          dataSource={displayedLandlords}
           rowKey="id"
           loading={loading}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (keys) => setSelectedRowKeys(keys),
+          }}
+          rowClassName={(record) =>
+            isSuspectAccount(record) ? 'suspicious-row' : ''
+          }
           pagination={{
             current: page,
             pageSize,
-            total,
+            total: showSuspectOnly ? displayedLandlords.length : total,
             onChange: (p, ps) => {
               setPage(p);
               setPageSize(ps);
@@ -283,19 +458,50 @@ export default function LandlordsPage() {
         />
       </Card>
 
+      {/* Suspicious row highlighting */}
+      <style jsx global>{`
+        .suspicious-row {
+          background-color: #fff1f0 !important;
+        }
+        .suspicious-row:hover > td {
+          background-color: #ffe7e6 !important;
+        }
+      `}</style>
+
       {/* Landlord Details Drawer */}
       <Drawer
-        title="Landlord Details"
+        title={
+          <Space>
+            <span>Landlord Details</span>
+            {selectedLandlord && isNameSuspicious(selectedLandlord.name) && (
+              <Tag color="red">Suspicious</Tag>
+            )}
+          </Space>
+        }
         placement="right"
         width={500}
         onClose={() => setDrawerOpen(false)}
         open={drawerOpen}
+        extra={
+          selectedLandlord && (
+            <Button
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => handleDeleteLandlord(selectedLandlord)}
+            >
+              Delete
+            </Button>
+          )
+        }
       >
         {selectedLandlord && (
           <>
             <Descriptions column={1} bordered size="small">
               <Descriptions.Item label="Name">
-                {selectedLandlord.name || '-'}
+                <Space>
+                  {selectedLandlord.name || '-'}
+                  {isNameSuspicious(selectedLandlord.name) && <Tag color="red">BOT?</Tag>}
+                </Space>
               </Descriptions.Item>
               <Descriptions.Item label="Email">
                 {selectedLandlord.email}
