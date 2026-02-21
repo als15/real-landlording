@@ -234,16 +234,16 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
   };
 
   const steps = [
-    { title: 'Service', subTitle: 'What do you need?' },
-    { title: 'Details', subTitle: 'Tell us more' },
-    { title: 'Your Info', subTitle: 'Contact & Property' },
+    { title: 'Service' },
+    { title: 'Details' },
+    { title: 'Contact' },
   ];
 
   const onFinishFailed = (errorInfo: { errorFields: { name: (string | number)[]; errors: string[] }[] }) => {
     // Find which step has errors and navigate there
     const step1Fields = ['service_type'];
     const step2Fields = ['job_description'];
-    const step3Fields = ['first_name', 'last_name', 'landlord_email', 'property_address', 'zip_code'];
+    const step3Fields = ['first_name', 'last_name', 'landlord_email', 'landlord_phone', 'property_address', 'zip_code'];
 
     const hasStep1Errors = errorInfo.errorFields.some((field) =>
       step1Fields.includes(field.name[0] as string)
@@ -290,41 +290,45 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
       >
         {/* Step 1: Service Selection */}
         <div style={{ display: currentStep === 0 ? 'block' : 'none' }}>
-          <Title level={5}>What service do you need?</Title>
+          <div style={{ textAlign: 'center', marginBottom: 24 }}>
+            <Title level={4} style={{ marginBottom: 4 }}>What do you need help with?</Title>
+            <Text type="secondary">Search or browse to find the right service</Text>
+          </div>
 
           <Form.Item
             name="service_type"
-            label="Service Category"
             rules={[{ required: true, message: 'Please select a service type' }]}
+            style={{ marginBottom: 32 }}
           >
             <ServiceSearchSelect
               value={selectedCategory ?? undefined}
               onChange={handleCategoryChange}
-              placeholder="Search for a service..."
+              placeholder="e.g. Plumber, Electrician, Lead Testing..."
               size="large"
             />
           </Form.Item>
 
-          <Form.Item style={{ marginTop: 24 }}>
-            <Button
-              type="primary"
-              size="large"
-              block
-              onClick={handleNext}
-              icon={<ArrowRightOutlined />}
-            >
-              Next: Job Details
-            </Button>
-          </Form.Item>
+          <Button
+            type="primary"
+            size="large"
+            block
+            onClick={handleNext}
+            icon={<ArrowRightOutlined />}
+          >
+            Next: Job Details
+          </Button>
         </div>
 
         {/* Step 2: Job Details */}
         <div style={{ display: currentStep === 1 ? 'block' : 'none' }}>
-          <Title level={5}>Tell us about the job</Title>
+          <div style={{ marginBottom: 20 }}>
+            <Title level={4} style={{ marginBottom: 4 }}>Tell us about the job</Title>
+            <Text type="secondary">The more detail you provide, the better we can match you</Text>
+          </div>
 
           <Form.Item
             name="job_description"
-            label="Describe the Job"
+            label="Job Description"
             rules={[
               { required: true, message: 'Please describe the job' },
               { min: 20, message: 'Please provide more detail (at least 20 characters)' },
@@ -383,7 +387,10 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
 
         {/* Step 3: Contact & Property Info */}
         <div style={{ display: currentStep === 2 ? 'block' : 'none' }}>
-          <Title level={5}>Contact Information</Title>
+          <div style={{ marginBottom: 20 }}>
+            <Title level={4} style={{ marginBottom: 4 }}>Almost done!</Title>
+            <Text type="secondary">We need your contact and property info to send you matches</Text>
+          </div>
 
           <Row gutter={16}>
             <Col xs={24} md={12}>
@@ -424,6 +431,7 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
                 name="landlord_phone"
                 label="Phone"
                 rules={[
+                  { required: true, message: 'Please enter your phone number' },
                   {
                     validator: (_, value) => {
                       if (!value) return Promise.resolve();
@@ -481,8 +489,8 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
             </Form.Item>
           )}
 
-          <Divider />
-          <Title level={5}>Property Information</Title>
+          <Divider style={{ margin: '20px 0 16px' }} />
+          <Title level={5} style={{ marginBottom: 16 }}>Property Information</Title>
 
           <Form.Item
             name="property_address"
