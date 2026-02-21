@@ -15,6 +15,7 @@ export async function POST(request: NextRequest) {
       !body.landlord_email ||
       !body.first_name ||
       !body.last_name ||
+      !body.landlord_phone ||
       !body.service_type ||
       !body.property_address ||
       !body.zip_code ||
