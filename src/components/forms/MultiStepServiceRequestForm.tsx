@@ -303,20 +303,22 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
             <ServiceSearchSelect
               value={selectedCategory ?? undefined}
               onChange={handleCategoryChange}
-              placeholder="e.g. Plumber, Electrician, Lead Testing..."
+              placeholder="Search for a service..."
               size="large"
             />
           </Form.Item>
 
-          <Button
-            type="primary"
-            size="large"
-            block
-            onClick={handleNext}
-            icon={<ArrowRightOutlined />}
-          >
-            Next: Job Details
-          </Button>
+          <Form.Item style={{ marginTop: 24 }}>
+            <Button
+              type="primary"
+              size="large"
+              block
+              onClick={handleNext}
+              icon={<ArrowRightOutlined />}
+            >
+              Next: Job Details
+            </Button>
+          </Form.Item>
         </div>
 
         {/* Step 2: Job Details */}
