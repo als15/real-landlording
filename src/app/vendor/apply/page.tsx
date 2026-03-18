@@ -291,7 +291,7 @@ export default function VendorApplyPage() {
                 }
               }
             ]}
-            extra={<span style={{ fontSize: 12, color: '#888' }}>By providing your phone number, you consent to receive SMS notifications about your application status and new referral leads. Msg &amp; data rates may apply. Reply STOP to opt out.</span>}
+            extra={<span style={{ fontSize: 12, color: '#888' }}>By providing your phone number, you consent to receive SMS notifications about your application status and new referral leads. Msg &amp; data rates may apply. Reply STOP to opt out. Your mobile information will not be sold or shared with third parties for promotional or marketing purposes. See our <a href="/terms/vendor" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.</span>}
           >
             <Input placeholder="(215) 555-0123" size="large" />
           </Form.Item>
