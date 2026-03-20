@@ -42,9 +42,11 @@ const { Title, Text } = Typography;
 
 interface MultiStepServiceRequestFormProps {
   onSuccess?: (requestId: string, email: string, isLoggedIn: boolean, requestCount: number) => void;
+  preSelectedCategory?: ServiceCategory;
+  preFilledDescription?: string;
 }
 
-export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServiceRequestFormProps) {
+export default function MultiStepServiceRequestForm({ onSuccess, preSelectedCategory, preFilledDescription }: MultiStepServiceRequestFormProps) {
   const [form] = Form.useForm();
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -78,6 +80,18 @@ export default function MultiStepServiceRequestForm({ onSuccess }: MultiStepServ
     };
     fetchUserProfile();
   }, [form]);
+
+  // Apply pre-selected category and description from URL slug
+  useEffect(() => {
+    if (preSelectedCategory) {
+      form.setFieldsValue({
+        service_type: preSelectedCategory,
+        ...(preFilledDescription ? { job_description: preFilledDescription } : {}),
+      });
+      setSelectedCategory(preSelectedCategory);
+      setCurrentStep(1);
+    }
+  }, [preSelectedCategory, preFilledDescription, form]);
 
   // Options for dropdowns
   const propertyTypeOptions = Object.entries(PROPERTY_TYPE_LABELS).map(([value, label]) => ({

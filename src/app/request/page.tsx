@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Typography, Row, Col, Layout, Space, Modal, Button, Steps } from 'antd'
 import { CheckCircleOutlined, ClockCircleOutlined, SafetyCertificateOutlined, TeamOutlined, StarFilled, DashboardOutlined } from '@ant-design/icons'
 import MultiStepServiceRequestForm from '@/components/forms/MultiStepServiceRequestForm'
@@ -9,7 +10,17 @@ import FAQ from '@/components/FAQ'
 import PublicHeader from '@/components/layout/PublicHeader'
 import PublicFooter from '@/components/layout/PublicFooter'
 import { brandColors } from '@/theme/config'
+import { ServiceCategory } from '@/types/database'
 import Link from 'next/link'
+
+// Slug-to-config mapping for pre-filled request URLs
+// e.g. /request?slug=hvac-tuneup pre-selects HVAC and fills description
+const SERVICE_SLUG_CONFIG: Record<string, { category: ServiceCategory; description: string }> = {
+  'hvac-tuneup': {
+    category: 'hvac',
+    description: 'I want to schedule Seasonal tune-up - HVAC specialist',
+  },
+}
 
 const { Title, Text, Paragraph } = Typography
 const { Content } = Layout
@@ -48,6 +59,18 @@ const stats = [
 ]
 
 export default function ServiceRequestPage() {
+  return (
+    <Suspense>
+      <ServiceRequestPageContent />
+    </Suspense>
+  )
+}
+
+function ServiceRequestPageContent() {
+  const searchParams = useSearchParams()
+  const slug = searchParams.get('slug')
+  const slugConfig = slug ? SERVICE_SLUG_CONFIG[slug] : undefined
+
   const [showSignupNudge, setShowSignupNudge] = useState(false)
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
   const [submittedEmail, setSubmittedEmail] = useState('')
@@ -257,7 +280,11 @@ export default function ServiceRequestPage() {
                 border: `1px solid ${brandColors.border}`
               }}
             >
-              <MultiStepServiceRequestForm onSuccess={handleFormSuccess} />
+              <MultiStepServiceRequestForm
+                onSuccess={handleFormSuccess}
+                preSelectedCategory={slugConfig?.category}
+                preFilledDescription={slugConfig?.description}
+              />
             </div>
 
             {/* FAQ Section */}
