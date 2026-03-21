@@ -826,7 +826,7 @@ export default function CRMPage() {
       {pipeline && (
         <Row gutter={16} style={{ marginBottom: 24 }}>
           <Col span={4}>
-            <Card size="small" hoverable onClick={() => setStageFilter('intro_sent')}>
+            <Card size="small" hoverable onClick={() => { setStageFilter('intro_sent'); setPage(1); }}>
               <Statistic
                 title="Intro / Estimate"
                 value={pipeline.pipeline.intro_sent + pipeline.pipeline.estimate_sent}
@@ -836,7 +836,7 @@ export default function CRMPage() {
             </Card>
           </Col>
           <Col span={4}>
-            <Card size="small" hoverable onClick={() => setStageFilter('awaiting_outcome')}>
+            <Card size="small" hoverable onClick={() => { setStageFilter('awaiting_outcome'); setPage(1); }}>
               <Statistic
                 title="Awaiting Outcome"
                 value={pipeline.pipeline.vendor_accepted}
@@ -846,7 +846,7 @@ export default function CRMPage() {
             </Card>
           </Col>
           <Col span={4}>
-            <Card size="small" hoverable onClick={() => setStageFilter('job_won')}>
+            <Card size="small" hoverable onClick={() => { setStageFilter('job_won'); setPage(1); }}>
               <Statistic
                 title="Jobs Won"
                 value={pipeline.pipeline.job_won + pipeline.pipeline.in_progress}
@@ -856,7 +856,7 @@ export default function CRMPage() {
             </Card>
           </Col>
           <Col span={4}>
-            <Card size="small" hoverable onClick={() => setStageFilter('completed')}>
+            <Card size="small" hoverable onClick={() => { setStageFilter('completed'); setPage(1); }}>
               <Statistic
                 title="Completed"
                 value={pipeline.pipeline.completed}
@@ -895,7 +895,7 @@ export default function CRMPage() {
           <Select
             style={{ width: 250 }}
             value={stageFilter}
-            onChange={setStageFilter}
+            onChange={(v) => { setStageFilter(v); setPage(1); }}
             options={stageFilters}
             placeholder="Filter by stage"
           />
@@ -903,7 +903,7 @@ export default function CRMPage() {
             placeholder="Search landlord or vendor..."
             style={{ width: 250 }}
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
             allowClear
           />
           <Button icon={<ReloadOutlined />} onClick={handleRefresh}>

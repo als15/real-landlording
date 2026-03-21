@@ -44,13 +44,7 @@ export async function GET(request: NextRequest) {
       query = query.eq('vendor_id', vendorId);
     }
 
-    // Pagination
-    const from = (page - 1) * pageSize;
-    const to = from + pageSize - 1;
-
-    const { data, error, count } = await query
-      .order('created_at', { ascending: false })
-      .range(from, to);
+    const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching jobs:', error);
@@ -61,14 +55,15 @@ export async function GET(request: NextRequest) {
     }
 
     const filteredData = applyPostQueryFilters(data || [], { serviceType, search });
-
     const matchIds = filteredData.map((job) => job.id as string);
     const payments = await fetchPaymentsByMatchIds(adminClient, matchIds);
     const jobsWithPayments = attachPaymentsAndFilter(filteredData, payments, stage);
 
+    const from = (page - 1) * pageSize;
+
     return NextResponse.json({
-      jobs: jobsWithPayments,
-      total: count || 0,
+      jobs: jobsWithPayments.slice(from, from + pageSize),
+      total: jobsWithPayments.length,
       page,
       pageSize,
     });
