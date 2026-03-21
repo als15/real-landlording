@@ -2,7 +2,8 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Card, Form, Input, Button, Typography, App, Space, Divider, Spin } from 'antd';
+import { Card, Form, Input, Button, Typography, Space, Divider, Spin } from 'antd';
+import { useNotify } from '@/hooks/useNotify';
 import { LockOutlined, MailOutlined, HomeOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { sanitizeRedirectUrl } from '@/lib/security';
@@ -15,7 +16,7 @@ function VendorLoginForm() {
   const searchParams = useSearchParams();
   const redirectTo = sanitizeRedirectUrl(searchParams.get('redirectTo'), '/vendor/dashboard');
   const error = searchParams.get('error');
-  const { message } = App.useApp();
+  const { message } = useNotify();
 
   // Show error messages from redirects
   useEffect(() => {

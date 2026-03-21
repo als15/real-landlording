@@ -2,7 +2,8 @@
 
 import { Suspense, useEffect, useState, useCallback, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Table, Card, Tag, Space, Button, Select, Input, Typography, Drawer, Descriptions, Divider, App, Badge, Modal, Form, Checkbox, Rate, Slider, InputNumber, Tooltip, Spin, Pagination } from 'antd'
+import { Table, Card, Tag, Space, Button, Select, Input, Typography, Drawer, Descriptions, Divider, Badge, Modal, Form, Checkbox, Rate, Slider, InputNumber, Tooltip, Spin, Pagination } from 'antd'
+import { useNotify } from '@/hooks/useNotify'
 import { ReloadOutlined, PlusOutlined, EditOutlined, EyeOutlined, FilterOutlined, InfoCircleOutlined, DownloadOutlined, SendOutlined, CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined, DeleteOutlined } from '@ant-design/icons'
 import { Vendor, VendorStatus, SlaStatus, VENDOR_STATUS_LABELS, SLA_STATUS_LABELS, SERVICE_TYPE_LABELS, SERVICE_TAXONOMY, ServiceCategory, getGroupedServiceCategories, RequestVendorMatch, ServiceRequest, REQUEST_STATUS_LABELS, RequestStatus, URGENCY_LABELS, UrgencyLevel, MatchStatus } from '@/types/database'
 import type { ColumnsType } from 'antd/es/table'
@@ -97,7 +98,7 @@ function VendorsPageContent() {
   const [editForm] = Form.useForm()
   const [editSelectedServices, setEditSelectedServices] = useState<ServiceCategory[]>([])
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
-  const { message, notification } = App.useApp()
+  const { message } = useNotify()
 
   // Get classifications (equipment types) for selected services
   const getServiceClassifications = (services: ServiceCategory[]) => {
@@ -166,11 +167,7 @@ function VendorsPageContent() {
       }
     } catch (error) {
       console.error('Error fetching vendors:', error)
-      notification.error({
-        title: 'Failed to fetch vendors',
-        description: 'Please try refreshing the page.',
-        duration: 8,
-      })
+      message.error('Please try refreshing the page.')
     } finally {
       setLoading(false)
     }
@@ -191,19 +188,11 @@ function VendorsPageContent() {
             setSelectedVendor(vendor)
             setDrawerOpen(true)
           } else {
-            notification.error({
-              title: 'Vendor not found',
-              description: 'The vendor you are looking for does not exist.',
-              duration: 8,
-            })
+            message.error('The vendor you are looking for does not exist.')
           }
         } catch (error) {
           console.error('Error fetching vendor:', error)
-          notification.error({
-            title: 'Failed to load vendor',
-            description: 'Please try again.',
-            duration: 8,
-          })
+          message.error('Failed to load vendor. Please try again.')
         }
       }
       fetchAndOpenVendor()
@@ -271,11 +260,7 @@ function VendorsPageContent() {
       message.success('Export complete')
     } catch (error) {
       console.error('Export error:', error)
-      notification.error({
-        title: 'Export Failed',
-        description: 'Failed to export vendor data. Please try again.',
-        duration: 8,
-      })
+      message.error('Failed to export vendor data. Please try again.')
     }
   }
 
@@ -301,11 +286,7 @@ function VendorsPageContent() {
         throw new Error('Failed to update status')
       }
     } catch {
-      notification.error({
-        title: 'Status Update Failed',
-        description: 'Failed to update vendor status. Please try again.',
-        duration: 8,
-      })
+      message.error('Failed to update vendor status. Please try again.')
     }
   }
 
@@ -328,11 +309,7 @@ function VendorsPageContent() {
         throw new Error(error.message || 'Failed to add vendor')
       }
     } catch (error) {
-      notification.error({
-        title: 'Failed to Add Vendor',
-        description: error instanceof Error ? error.message : 'Something went wrong. Please try again.',
-        duration: 0, // Won't auto-close, user must dismiss
-      })
+      message.error(error instanceof Error ? error.message : 'Failed to add vendor. Please try again.')
     } finally {
       setSubmitting(false)
     }
@@ -440,11 +417,7 @@ function VendorsPageContent() {
         throw new Error(error.message || 'Failed to update vendor')
       }
     } catch (error) {
-      notification.error({
-        title: 'Failed to Update Vendor',
-        description: error instanceof Error ? error.message : 'Something went wrong. Please try again.',
-        duration: 0, // Won't auto-close, user must dismiss
-      })
+      message.error(error instanceof Error ? error.message : 'Failed to update vendor. Please try again.')
     } finally {
       setSubmitting(false)
     }
@@ -476,11 +449,7 @@ function VendorsPageContent() {
         throw new Error(error.message || 'Failed to send SLA')
       }
     } catch (error) {
-      notification.error({
-        title: 'Failed to Send SLA',
-        description: error instanceof Error ? error.message : 'Failed to send SLA. Please try again.',
-        duration: 8,
-      })
+      message.error(error instanceof Error ? error.message : 'Failed to send SLA. Please try again.')
     }
   }
 
@@ -497,11 +466,7 @@ function VendorsPageContent() {
         throw new Error(error.message || 'Failed to resend SLA')
       }
     } catch (error) {
-      notification.error({
-        title: 'Failed to Resend SLA',
-        description: error instanceof Error ? error.message : 'Failed to resend SLA notification. Please try again.',
-        duration: 8,
-      })
+      message.error(error instanceof Error ? error.message : 'Failed to resend SLA. Please try again.')
     }
   }
 
@@ -532,11 +497,7 @@ function VendorsPageContent() {
             throw new Error(error.message || 'Failed to delete vendor')
           }
         } catch (error) {
-          notification.error({
-            title: 'Failed to Delete Vendor',
-            description: error instanceof Error ? error.message : 'Failed to delete vendor. Please try again.',
-            duration: 8,
-          })
+          message.error(error instanceof Error ? error.message : 'Failed to delete vendor. Please try again.')
         }
       },
     })

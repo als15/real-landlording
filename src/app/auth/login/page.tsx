@@ -2,7 +2,8 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Form, Input, Button, Typography, App, Divider, Spin } from 'antd';
+import { Form, Input, Button, Typography, Divider, Spin } from 'antd';
+import { useNotify } from '@/hooks/useNotify';
 import { LockOutlined, MailOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import AuthLayout from '@/components/layout/AuthLayout';
@@ -17,7 +18,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const redirectTo = sanitizeRedirectUrl(searchParams.get('redirectTo'));
   const error = searchParams.get('error');
-  const { message } = App.useApp();
+  const { message } = useNotify();
 
   useEffect(() => {
     if (error === 'not_landlord') {

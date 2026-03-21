@@ -14,13 +14,13 @@ import {
   Form,
   InputNumber,
   DatePicker,
-  App,
   Statistic,
   Row,
   Col,
   Descriptions,
   Drawer,
 } from 'antd';
+import { useNotify } from '@/hooks/useNotify';
 import {
   ReloadOutlined,
   PlusOutlined,
@@ -119,7 +119,7 @@ export default function PaymentsPage() {
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
-  const { message, modal } = App.useApp();
+  const { message, modal } = useNotify();
   const [form] = Form.useForm();
 
   const fetchPayments = useCallback(async () => {

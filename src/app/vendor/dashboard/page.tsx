@@ -16,9 +16,9 @@ import {
   Row,
   Col,
   Rate,
-  App,
   Empty,
 } from 'antd';
+import { useNotify } from '@/hooks/useNotify';
 import {
   EyeOutlined,
   CheckCircleOutlined,
@@ -76,7 +76,7 @@ export default function VendorDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [selectedJob, setSelectedJob] = useState<JobWithRequest | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
-  const { message } = App.useApp();
+  const { message } = useNotify();
 
   useEffect(() => {
     fetchData();

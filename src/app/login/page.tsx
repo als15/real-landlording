@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, Form, Input, Button, Typography, App } from 'antd';
+import { Card, Form, Input, Button, Typography } from 'antd';
+import { useNotify } from '@/hooks/useNotify';
 import { LockOutlined, MailOutlined, HomeOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -10,7 +11,7 @@ const { Title, Text } = Typography;
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { message } = App.useApp();
+  const { message } = useNotify();
 
   const onFinish = async (values: { email: string; password: string }) => {
     setLoading(true);

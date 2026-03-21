@@ -1,6 +1,7 @@
 'use client'
 
-import { Modal, Button, Form, Input, App, Steps } from 'antd'
+import { Modal, Button, Form, Input, Steps } from 'antd'
+import { useNotify } from '@/hooks/useNotify'
 import { CheckCircleOutlined, EyeOutlined, BellOutlined, SafetyCertificateOutlined, ThunderboltOutlined, ClockCircleOutlined, TeamOutlined, MailOutlined } from '@ant-design/icons'
 import { useState } from 'react'
 import { brandColors } from '@/theme/config'
@@ -27,7 +28,7 @@ const nextSteps = [
 export default function SignupNudge({ open, email, requestId, requestCount = 1, onClose }: SignupNudgeProps) {
   const [loading, setLoading] = useState(false)
   const [form] = Form.useForm()
-  const { message } = App.useApp()
+  const { message } = useNotify()
 
   // Graduated messaging based on request count
   const isRepeatRequester = requestCount > 1

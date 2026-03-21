@@ -8,7 +8,6 @@ import {
   Space,
   Tag,
   Typography,
-  App,
   Checkbox,
   Alert,
   Descriptions,
@@ -19,6 +18,7 @@ import {
   Spin,
   Empty,
 } from 'antd';
+import { useNotify } from '@/hooks/useNotify';
 import {
   WarningOutlined,
   TrophyOutlined,
@@ -89,7 +89,7 @@ export default function VendorMatchingModal({
   const [activeTab, setActiveTab] = useState('suggestions');
   const [meta, setMeta] = useState<SuggestionsResponse['meta'] | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
-  const { message } = App.useApp();
+  const { message } = useNotify();
 
   // Debounce search input
   useEffect(() => {

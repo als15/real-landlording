@@ -9,12 +9,12 @@ import {
   Typography,
   Row,
   Col,
-  App,
   Steps,
   Divider,
   Radio,
   Checkbox,
 } from 'antd';
+import { useNotify } from '@/hooks/useNotify';
 import { ArrowLeftOutlined, ArrowRightOutlined, SendOutlined } from '@ant-design/icons';
 import {
   ServiceCategory,
@@ -56,7 +56,7 @@ export default function MultiStepServiceRequestForm({ onSuccess, preSelectedCate
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const { message } = App.useApp();
+  const { message } = useNotify();
 
   // Check if user is logged in and pre-fill their info
   useEffect(() => {
@@ -461,12 +461,23 @@ export default function MultiStepServiceRequestForm({ onSuccess, preSelectedCate
                     }
                   }
                 ]}
-                extra={<span style={{ fontSize: 12, color: '#888' }}>By providing your phone number, you consent to receive SMS updates about your request (confirmations, vendor matches, follow-ups). Msg &amp; data rates may apply. Reply STOP to opt out. Your mobile information will not be sold or shared with third parties for promotional or marketing purposes. See our <a href="/terms/user" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.</span>}
               >
                 <Input placeholder="(215) 555-0123" size="large" />
               </Form.Item>
             </Col>
           </Row>
+
+          <Form.Item
+            name="sms_consent"
+            valuePropName="checked"
+            style={{ marginBottom: 8 }}
+          >
+            <Checkbox>
+              <span style={{ fontSize: 13 }}>
+                I agree to receive SMS notifications from Real Landlording (request confirmations, vendor matches, follow-ups). Message frequency may vary. Standard message and data rates may apply. Reply STOP to opt out. Reply HELP for help. We will not share mobile information with third parties for promotional or marketing purposes. See our <a href="/terms/user" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
+              </span>
+            </Checkbox>
+          </Form.Item>
 
           <Row gutter={16}>
             <Col xs={24} md={12}>

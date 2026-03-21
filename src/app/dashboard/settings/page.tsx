@@ -8,10 +8,10 @@ import {
   Button,
   Typography,
   Space,
-  App,
   Divider,
   Alert,
 } from 'antd';
+import { useNotify } from '@/hooks/useNotify';
 import { LockOutlined, SaveOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -19,7 +19,7 @@ const { Title, Text } = Typography;
 export default function SettingsPage() {
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
-  const { message } = App.useApp();
+  const { message } = useNotify();
 
   const handleChangePassword = async (values: {
     current_password: string;

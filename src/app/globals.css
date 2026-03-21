@@ -91,3 +91,12 @@ html {
   font-size: 14px;
   color: var(--rl-text);
 }
+
+/* Prominent error/warning notifications */
+.ant-notification-notice-error {
+  border-left: 4px solid #b85042 !important;
+}
+
+.ant-notification-notice-warning {
+  border-left: 4px solid #c9a76a !important;
+}

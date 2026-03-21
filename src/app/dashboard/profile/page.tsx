@@ -9,9 +9,9 @@ import {
   Typography,
   Space,
   Spin,
-  App,
   Divider,
 } from 'antd';
+import { useNotify } from '@/hooks/useNotify';
 import { UserOutlined, MailOutlined, PhoneOutlined, SaveOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -32,7 +32,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState<LandlordProfile | null>(null);
-  const { message } = App.useApp();
+  const { message } = useNotify();
 
   useEffect(() => {
     fetchProfile();

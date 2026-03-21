@@ -11,7 +11,6 @@ import {
   Modal,
   Descriptions,
   Divider,
-  App,
   Badge,
   Input,
   Select,
@@ -19,6 +18,7 @@ import {
   InputNumber,
   Form,
 } from 'antd';
+import { useNotify } from '@/hooks/useNotify';
 import {
   ReloadOutlined,
   CheckOutlined,
@@ -70,7 +70,7 @@ export default function ApplicationsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
-  const { message } = App.useApp();
+  const { message } = useNotify();
 
   // Form for editable fields
   const [form] = Form.useForm();

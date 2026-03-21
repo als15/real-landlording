@@ -14,7 +14,6 @@ import {
   Drawer,
   Descriptions,
   Divider,
-  App,
   Statistic,
   Row,
   Col,
@@ -27,6 +26,7 @@ import {
   Tooltip,
   Popover,
 } from 'antd';
+import { useNotify } from '@/hooks/useNotify';
 import {
   ReloadOutlined,
   EyeOutlined,
@@ -195,7 +195,7 @@ export default function CRMPage() {
   const [outcomeModalOpen, setOutcomeModalOpen] = useState(false);
   const [completeModalOpen, setCompleteModalOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
-  const { message } = App.useApp();
+  const { message } = useNotify();
   const router = useRouter();
   const [form] = Form.useForm();
 

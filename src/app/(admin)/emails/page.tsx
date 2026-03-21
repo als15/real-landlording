@@ -8,12 +8,12 @@ import {
   Space,
   Button,
   Typography,
-  App,
   Badge,
   Tooltip,
   Input,
   Select,
 } from 'antd';
+import { useNotify } from '@/hooks/useNotify';
 import {
   ReloadOutlined,
   CheckCircleOutlined,
@@ -49,7 +49,7 @@ export default function EmailsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const { message } = App.useApp();
+  const { message } = useNotify();
 
   const fetchEmails = useCallback(async () => {
     setLoading(true);

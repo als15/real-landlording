@@ -15,9 +15,9 @@ import {
   Divider,
   Rate,
   Input,
-  App,
   Badge,
 } from 'antd';
+import { useNotify } from '@/hooks/useNotify';
 import {
   EyeOutlined,
   PlusOutlined,
@@ -65,7 +65,7 @@ export default function DashboardPage() {
   const [reviewTreatment, setReviewTreatment] = useState(0);
   const [reviewText, setReviewText] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
-  const { message } = App.useApp();
+  const { message } = useNotify();
 
   useEffect(() => {
     fetchRequests();

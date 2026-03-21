@@ -14,7 +14,6 @@ import {
   Drawer,
   Descriptions,
   Divider,
-  App,
   Badge,
   Image,
   Row,
@@ -23,6 +22,7 @@ import {
   Tooltip,
   Dropdown,
 } from 'antd';
+import { useNotify } from '@/hooks/useNotify';
 import {
   ReloadOutlined,
   EyeOutlined,
@@ -161,7 +161,7 @@ function RequestsPageContent() {
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [savingMedia, setSavingMedia] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
-  const { message } = App.useApp();
+  const { message } = useNotify();
   const searchParams = useSearchParams();
   const router = useRouter();
   const viewRequestId = searchParams.get('view');

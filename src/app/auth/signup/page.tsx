@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Form, Input, Button, Typography, App, Divider, Result, Alert } from 'antd';
+import { Form, Input, Button, Typography, Divider, Result, Alert } from 'antd';
+import { useNotify } from '@/hooks/useNotify';
 import { LockOutlined, MailOutlined, UserOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import AuthLayout from '@/components/layout/AuthLayout';
@@ -16,7 +17,7 @@ export default function SignupPage() {
   const [userEmail, setUserEmail] = useState('');
   const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(true);
   const router = useRouter();
-  const { message } = App.useApp();
+  const { message } = useNotify();
 
   const onFinish = async (values: { email: string; password: string; name: string; website?: string }) => {
     setLoading(true);

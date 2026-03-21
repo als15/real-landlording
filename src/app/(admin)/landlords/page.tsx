@@ -16,8 +16,8 @@ import {
   Empty,
   Spin,
   Modal,
-  App,
 } from 'antd';
+import { useNotify } from '@/hooks/useNotify';
 import {
   ReloadOutlined,
   EyeOutlined,
@@ -94,7 +94,7 @@ export default function LandlordsPage() {
   const [showSuspectOnly, setShowSuspectOnly] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
-  const { message, modal } = App.useApp();
+  const { message, modal } = useNotify();
 
   // Debounce search input
   useEffect(() => {

@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Layout, Card, Form, Input, Select, Button, Checkbox, Typography, Space, Row, Col, Divider, App, Result, Steps, Switch } from 'antd'
+import { Layout, Card, Form, Input, Select, Button, Checkbox, Typography, Space, Row, Col, Divider, Result, Steps, Switch } from 'antd'
+import { useNotify } from '@/hooks/useNotify'
 import { CheckCircleOutlined, DollarOutlined, ThunderboltOutlined, SafetyCertificateOutlined, TeamOutlined, AppstoreOutlined, ArrowLeftOutlined, ArrowRightOutlined, InstagramOutlined, FacebookOutlined, LinkedinOutlined, SendOutlined } from '@ant-design/icons'
 import {
   getGroupedServiceCategories,
@@ -68,7 +69,7 @@ export default function VendorApplyPage() {
   const [currentStep, setCurrentStep] = useState(0)
   const [selectedServices, setSelectedServices] = useState<ServiceCategory[]>([])
   const [referralSource, setReferralSource] = useState<string | null>(null)
-  const { message } = App.useApp()
+  const { message } = useNotify()
 
   const groupedCategories = getGroupedServiceCategories()
 
@@ -291,12 +292,23 @@ export default function VendorApplyPage() {
                 }
               }
             ]}
-            extra={<span style={{ fontSize: 12, color: '#888' }}>By providing your phone number, you consent to receive SMS notifications about your application status and new referral leads. Msg &amp; data rates may apply. Reply STOP to opt out. Your mobile information will not be sold or shared with third parties for promotional or marketing purposes. See our <a href="/terms/vendor" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.</span>}
           >
             <Input placeholder="(215) 555-0123" size="large" />
           </Form.Item>
         </Col>
       </Row>
+
+      <Form.Item
+        name="sms_consent"
+        valuePropName="checked"
+        style={{ marginBottom: 8 }}
+      >
+        <Checkbox>
+          <span style={{ fontSize: 13 }}>
+            I agree to receive SMS notifications from Real Landlording (application updates, new referral leads). Message frequency may vary. Standard message and data rates may apply. Reply STOP to opt out. Reply HELP for help. We will not share mobile information with third parties for promotional or marketing purposes. See our <a href="/terms/vendor" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
+          </span>
+        </Checkbox>
+      </Form.Item>
 
       <Form.Item name="website" label="Website (optional)">
         <Input placeholder="https://smithplumbing.com" size="large" />
@@ -598,7 +610,6 @@ export default function VendorApplyPage() {
             Vendor Terms of Service & Privacy Policy
           </a>
           , including responding to referrals within 24 hours and maintaining professional service standards. I understand Real Landlording may charge referral fees for successful jobs.
-          I also consent to receive SMS messages related to my vendor account. Msg &amp; data rates may apply. Reply STOP to opt out.
         </Checkbox>
       </Form.Item>
     </>
