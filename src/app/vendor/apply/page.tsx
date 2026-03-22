@@ -71,6 +71,7 @@ export default function VendorApplyPage() {
   const [referralSource, setReferralSource] = useState<string | null>(null)
   const [licenseNotRequired, setLicenseNotRequired] = useState(false)
   const [notCurrentlyLicensed, setNotCurrentlyLicensed] = useState(false)
+  const [newsletterOptIn, setNewsletterOptIn] = useState(false)
   const { message } = useNotify()
 
   const groupedCategories = getGroupedServiceCategories()
@@ -199,6 +200,7 @@ export default function VendorApplyPage() {
           ...values,
           license_not_required: licenseNotRequired,
           not_currently_licensed: notCurrentlyLicensed,
+          newsletter_opt_in: newsletterOptIn,
         })
       })
 
@@ -644,13 +646,19 @@ export default function VendorApplyPage() {
         ]}
       >
         <Checkbox>
-          I have read and agree to the{' '}
+          By submitting, I agree to the{' '}
           <a href="/terms/vendor" target="_blank" rel="noopener noreferrer" style={{ color: brandColors.accent }}>
             Vendor Terms of Service & Privacy Policy
-          </a>
-          , including responding to referrals within 24 hours and maintaining professional service standards. I understand Real Landlording may charge referral fees for successful jobs.
+          </a>.
         </Checkbox>
       </Form.Item>
+      <Checkbox
+        checked={newsletterOptIn}
+        onChange={(e) => setNewsletterOptIn(e.target.checked)}
+        style={{ marginTop: -8 }}
+      >
+        Keep me updated with tips and vendor recommendations from Real Landlording
+      </Checkbox>
     </>
   )
 

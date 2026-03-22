@@ -915,6 +915,7 @@ export interface Vendor {
   licensed_areas: string[];
   license_not_required: boolean;
   not_currently_licensed: boolean;
+  newsletter_opt_in: boolean;
   insured: boolean;
   rental_experience: boolean;
   service_areas: string[];
@@ -1186,6 +1187,7 @@ export interface VendorInput {
   licensed_areas?: string[];
   license_not_required?: boolean;
   not_currently_licensed?: boolean;
+  newsletter_opt_in?: boolean;
   insured: boolean;
   rental_experience: boolean;
   service_areas: string[];

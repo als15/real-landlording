@@ -128,6 +128,7 @@ export async function POST(request: NextRequest) {
         accepted_payments: Array.isArray(body.accepted_payments) ? body.accepted_payments : null,
         referral_source: body.referral_source || null,
         referral_source_name: body.referral_source_name || null,
+        newsletter_opt_in: body.newsletter_opt_in || false,
       })
       .select()
       .single();
