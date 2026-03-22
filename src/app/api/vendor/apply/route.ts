@@ -50,8 +50,12 @@ export async function POST(request: NextRequest) {
         );
     }
 
-    // Determine if vendor is licensed based on licensed_areas
-    const licensedAreas = Array.isArray(body.licensed_areas) ? body.licensed_areas : [];
+    // Determine if vendor is licensed based on licensed_areas and checkbox status
+    const licenseNotRequired = body.license_not_required === true;
+    const notCurrentlyLicensed = body.not_currently_licensed === true;
+    const licensedAreas = (licenseNotRequired || notCurrentlyLicensed)
+      ? []
+      : (Array.isArray(body.licensed_areas) ? body.licensed_areas : []);
     const isLicensed = licensedAreas.length > 0;
 
     // Calculate initial vetting score
@@ -106,6 +110,8 @@ export async function POST(request: NextRequest) {
         terms_accepted: true,
         terms_accepted_at: new Date().toISOString(),
         status: 'pending_review',
+        license_not_required: licenseNotRequired || false,
+        not_currently_licensed: notCurrentlyLicensed || false,
         // Social media
         social_instagram: body.social_instagram || null,
         social_facebook: body.social_facebook || null,

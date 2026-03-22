@@ -172,6 +172,8 @@ export default function ApplicationsPage() {
       rental_experience: app.rental_experience || false,
       qualifications: app.qualifications || '',
       licensed_areas: app.licensed_areas || [],
+      license_not_required: app.license_not_required || false,
+      not_currently_licensed: app.not_currently_licensed || false,
       years_in_business: app.years_in_business,
       employee_count: app.employee_count || '',
       emergency_services: app.emergency_services || false,
@@ -628,6 +630,12 @@ export default function ApplicationsPage() {
                 onChange={(values) => form.setFieldValue('licensed_areas', values)}
               />
             </Form.Item>
+            {form.getFieldValue('license_not_required') && (
+              <Text type="secondary" italic style={{ display: 'block', marginTop: -8, marginBottom: 8 }}>Vendor indicated: License not required for their services</Text>
+            )}
+            {form.getFieldValue('not_currently_licensed') && (
+              <Text type="secondary" italic style={{ display: 'block', marginTop: -8, marginBottom: 8 }}>Vendor indicated: Not currently licensed</Text>
+            )}
 
             <Form.Item label="Experience & Qualifications" name="qualifications">
               <TextArea rows={3} placeholder="Describe experience and qualifications..." />

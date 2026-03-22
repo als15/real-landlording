@@ -252,14 +252,18 @@ export default function VendorProfilePage() {
               <ServiceAreaDisplay serviceAreas={vendor.service_areas} />
             </div>
 
-            {vendor.licensed_areas && vendor.licensed_areas.length > 0 && (
+            {vendor.licensed_areas && vendor.licensed_areas.length > 0 ? (
               <>
                 <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>Licensed In</Text>
                 <div style={{ marginBottom: 16 }}>
                   <ServiceAreaDisplay serviceAreas={vendor.licensed_areas} />
                 </div>
               </>
-            )}
+            ) : vendor.license_not_required ? (
+              <Text type="secondary" italic style={{ display: 'block', marginBottom: 16 }}>License not required for services provided</Text>
+            ) : vendor.not_currently_licensed ? (
+              <Text type="secondary" italic style={{ display: 'block', marginBottom: 16 }}>Not currently licensed</Text>
+            ) : null}
           </Card>
         </Col>
 

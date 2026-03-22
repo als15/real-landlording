@@ -69,6 +69,8 @@ export default function VendorApplyPage() {
   const [currentStep, setCurrentStep] = useState(0)
   const [selectedServices, setSelectedServices] = useState<ServiceCategory[]>([])
   const [referralSource, setReferralSource] = useState<string | null>(null)
+  const [licenseNotRequired, setLicenseNotRequired] = useState(false)
+  const [notCurrentlyLicensed, setNotCurrentlyLicensed] = useState(false)
   const { message } = useNotify()
 
   const groupedCategories = getGroupedServiceCategories()
@@ -108,7 +110,7 @@ export default function VendorApplyPage() {
   // Fields required per step
   const fieldsPerStep: Record<number, string[]> = {
     0: ['contact_name', 'business_name', 'email', 'phone'],
-    1: ['services', 'service_areas'],
+    1: ['services', 'service_areas', 'licensed_areas'],
     2: ['years_in_business', 'qualifications'],
     3: [], // Business details step - all optional
     4: ['terms_accepted'],
@@ -193,7 +195,11 @@ export default function VendorApplyPage() {
       const response = await fetch('/api/vendor/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values)
+        body: JSON.stringify({
+          ...values,
+          license_not_required: licenseNotRequired,
+          not_currently_licensed: notCurrentlyLicensed,
+        })
       })
 
       if (!response.ok) {
@@ -417,11 +423,44 @@ export default function VendorApplyPage() {
 
       <Form.Item
         name="licensed_areas"
-        label="Licensed Locations (optional)"
-        extra="Search for cities, states, or enter zip codes where you hold a license"
+        label="Licensed Locations"
+        extra={!(licenseNotRequired || notCurrentlyLicensed) ? "Search for cities, states, or enter zip codes where you hold a license" : undefined}
+        rules={[{
+          required: !(licenseNotRequired || notCurrentlyLicensed),
+          message: 'Add at least one licensed location, or select an option below'
+        }]}
       >
-        <ServiceAreaAutocomplete placeholder="Search for locations where you are licensed..." />
+        <ServiceAreaAutocomplete
+          placeholder="Search for locations where you are licensed..."
+          disabled={licenseNotRequired || notCurrentlyLicensed}
+        />
       </Form.Item>
+      <div style={{ marginTop: -16, marginBottom: 16 }}>
+        <Checkbox
+          checked={licenseNotRequired}
+          onChange={(e) => {
+            setLicenseNotRequired(e.target.checked)
+            if (e.target.checked) setNotCurrentlyLicensed(false)
+            form.setFieldsValue({ licensed_areas: e.target.checked ? [] : form.getFieldValue('licensed_areas') })
+            setTimeout(() => form.validateFields(['licensed_areas']), 0)
+          }}
+        >
+          Not required for the services I provide
+        </Checkbox>
+        <br />
+        <Checkbox
+          checked={notCurrentlyLicensed}
+          onChange={(e) => {
+            setNotCurrentlyLicensed(e.target.checked)
+            if (e.target.checked) setLicenseNotRequired(false)
+            form.setFieldsValue({ licensed_areas: e.target.checked ? [] : form.getFieldValue('licensed_areas') })
+            setTimeout(() => form.validateFields(['licensed_areas']), 0)
+          }}
+          style={{ marginTop: 4 }}
+        >
+          Not currently licensed
+        </Checkbox>
+      </div>
     </>
   )
 
