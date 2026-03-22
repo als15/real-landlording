@@ -90,7 +90,10 @@ export default function ServiceSearchSelect({
     return filterServiceOptions(searchText);
   }, [searchText, defaultOptions]);
 
-  // Group items for display
+  const isSearching = searchText.trim().length > 0;
+
+  // Group items for display — only used when browsing (no search text).
+  // When searching, we render a flat list to preserve relevance order.
   const groupedOptions = useMemo(() => {
     const groups: Record<string, ServiceSearchItem[]> = {};
     for (const item of displayItems) {
@@ -142,9 +145,8 @@ export default function ServiceSearchSelect({
       optionLabelProp="label"
       listHeight={350}
     >
-      {Object.entries(groupedOptions).map(([groupLabel, items]) => (
-        <Select.OptGroup key={groupLabel} label={groupLabel}>
-          {items.map((item) => (
+      {isSearching
+        ? displayItems.map((item) => (
             <Select.Option
               key={item.key}
               value={item.key}
@@ -160,11 +162,37 @@ export default function ServiceSearchSelect({
                     {item.categoryLabel}
                   </Text>
                 )}
+                {item.isCategoryLevel && (
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {item.groupLabel}
+                  </Text>
+                )}
               </div>
             </Select.Option>
+          ))
+        : Object.entries(groupedOptions).map(([groupLabel, items]) => (
+            <Select.OptGroup key={groupLabel} label={groupLabel}>
+              {items.map((item) => (
+                <Select.Option
+                  key={item.key}
+                  value={item.key}
+                  label={item.isCategoryLevel ? item.categoryLabel : `${item.subCategoryLabel} — ${item.categoryLabel}`}
+                  data-item={item}
+                >
+                  <div>
+                    <div style={{ fontWeight: 600, lineHeight: 1.3 }}>
+                      {item.subCategoryLabel}
+                    </div>
+                    {!item.isCategoryLevel && (
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        {item.categoryLabel}
+                      </Text>
+                    )}
+                  </div>
+                </Select.Option>
+              ))}
+            </Select.OptGroup>
           ))}
-        </Select.OptGroup>
-      ))}
     </Select>
   );
 }
