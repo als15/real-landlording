@@ -8,7 +8,9 @@ import { notifyNewRequest, notifyEmergencyRequest } from '@/lib/notifications';
 
 export async function POST(request: NextRequest) {
   try {
-    const body: ServiceRequestInput = await request.json();
+    const rawBody = await request.json();
+    const { newsletter_opt_in, ...rest } = rawBody;
+    const body: ServiceRequestInput = rest;
 
     // Validate required fields
     if (
@@ -54,6 +56,7 @@ export async function POST(request: NextRequest) {
           last_name: body.last_name,
           phone: body.landlord_phone || null,
           request_count: 0, // Will be incremented by trigger
+          newsletter_opt_in: newsletter_opt_in || false,
         })
         .select('id, request_count')
         .single();
@@ -124,6 +127,7 @@ export async function POST(request: NextRequest) {
         last_name: body.last_name,
         name: landlordName,
         phone: body.landlord_phone || undefined, // Only update if provided
+        ...(newsletter_opt_in ? { newsletter_opt_in: true } : {}),
       })
       .eq('id', existingLandlord.id);
 

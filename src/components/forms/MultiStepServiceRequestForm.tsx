@@ -56,6 +56,7 @@ export default function MultiStepServiceRequestForm({ onSuccess, preSelectedCate
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [newsletterOptIn, setNewsletterOptIn] = useState(false);
   const { message } = useNotify();
 
   // Check if user is logged in and pre-fill their info
@@ -220,7 +221,7 @@ export default function MultiStepServiceRequestForm({ onSuccess, preSelectedCate
       const response = await fetch('/api/requests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestData),
+        body: JSON.stringify({ ...requestData, newsletter_opt_in: newsletterOptIn }),
       });
 
       if (!response.ok) {
@@ -582,10 +583,18 @@ export default function MultiStepServiceRequestForm({ onSuccess, preSelectedCate
               onChange={(e) => setTermsAccepted(e.target.checked)}
             >
               <Text style={{ fontSize: 13 }}>
-                By submitting this request, I acknowledge that I have read, understood, and agree to be bound by the{' '}
+                By submitting, I agree to the{' '}
                 <a href="/terms/user" target="_blank" rel="noopener noreferrer">Terms of Service & Privacy Policy</a>.
-                I understand that my use of the Real Landlording platform is at my own risk, and I agree to conduct my own due diligence regarding any third-party vendors or solutions provided.
-                I also consent to receive SMS messages related to my service requests. Msg &amp; data rates may apply. Reply STOP to opt out.
+              </Text>
+            </Checkbox>
+            <br />
+            <Checkbox
+              checked={newsletterOptIn}
+              onChange={(e) => setNewsletterOptIn(e.target.checked)}
+              style={{ marginTop: 8 }}
+            >
+              <Text style={{ fontSize: 13 }}>
+                Keep me updated with tips and vendor recommendations from Real Landlording
               </Text>
             </Checkbox>
           </div>
