@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { App } from 'antd';
 
 /**
@@ -16,7 +17,7 @@ export function useNotify() {
   const app = App.useApp();
   const { notification } = app;
 
-  const enhancedMessage = {
+  const enhancedMessage = useMemo(() => ({
     ...app.message,
     error(content: string) {
       notification.error({
@@ -36,7 +37,7 @@ export function useNotify() {
         pauseOnHover: true,
       });
     },
-  };
+  }), [app.message, notification]);
 
   return { ...app, message: enhancedMessage };
 }
