@@ -136,8 +136,13 @@ export default function VendorDashboardPage() {
     {
       title: 'Service',
       key: 'service',
-      render: (_, record) =>
-        SERVICE_TYPE_LABELS[record.request.service_type ],
+      render: (_, record) => {
+        if (record.request.service_type === 'other') {
+          const customDesc = (record.request.service_details as Record<string, string> | undefined)?.custom_service_description;
+          return customDesc || 'Other Service';
+        }
+        return SERVICE_TYPE_LABELS[record.request.service_type];
+      },
     },
     {
       title: 'Location',
@@ -295,7 +300,9 @@ export default function VendorDashboardPage() {
             {/* Service Information */}
             <Descriptions column={2} bordered size="small" title={<><HomeOutlined style={{ marginRight: 8 }} />Service Details</>}>
               <Descriptions.Item label="Service Type" span={2}>
-                {SERVICE_TYPE_LABELS[selectedJob.request.service_type ]}
+                {selectedJob.request.service_type === 'other'
+                  ? (selectedJob.request.service_details as Record<string, string> | undefined)?.custom_service_description || 'Other Service'
+                  : SERVICE_TYPE_LABELS[selectedJob.request.service_type]}
               </Descriptions.Item>
               <Descriptions.Item label="Urgency">
                 <Tag color={urgencyColors[selectedJob.request.urgency]}>

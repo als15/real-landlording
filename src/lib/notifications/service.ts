@@ -13,6 +13,7 @@ import {
   SERVICE_TYPE_LABELS,
   ServiceCategory,
 } from '@/types/database';
+import { getServiceDisplayLabel } from '@/lib/utils/serviceLabel';
 
 interface CreateNotificationParams {
   userType: NotificationUserType;
@@ -90,9 +91,10 @@ export async function notifyNewRequest(
     zip_code?: string;
     landlord_name?: string;
     urgency?: string;
+    service_details?: Record<string, string> | null;
   }
 ): Promise<{ success: boolean; error?: string }> {
-  const serviceLabel = SERVICE_TYPE_LABELS[request.service_type] || request.service_type;
+  const serviceLabel = getServiceDisplayLabel(request.service_type, request.service_details, SERVICE_TYPE_LABELS);
   const location = request.zip_code || 'Unknown';
 
   return createNotification(supabase, {
@@ -121,9 +123,10 @@ export async function notifyEmergencyRequest(
     zip_code?: string;
     landlord_name?: string;
     job_description?: string;
+    service_details?: Record<string, string> | null;
   }
 ): Promise<{ success: boolean; error?: string }> {
-  const serviceLabel = SERVICE_TYPE_LABELS[request.service_type] || request.service_type;
+  const serviceLabel = getServiceDisplayLabel(request.service_type, request.service_details, SERVICE_TYPE_LABELS);
   const location = request.zip_code || 'Unknown';
 
   return createNotification(supabase, {
@@ -152,9 +155,10 @@ export async function notifyStaleRequest(
     service_type: ServiceCategory;
     zip_code?: string;
     created_at: string;
+    service_details?: Record<string, string> | null;
   }
 ): Promise<void> {
-  const serviceLabel = SERVICE_TYPE_LABELS[request.service_type] || request.service_type;
+  const serviceLabel = getServiceDisplayLabel(request.service_type, request.service_details, SERVICE_TYPE_LABELS);
   const daysOld = Math.floor(
     (Date.now() - new Date(request.created_at).getTime()) / (1000 * 60 * 60 * 24)
   );
@@ -218,9 +222,9 @@ export async function notifyVendorAccepted(
     vendor_id: string;
   },
   vendor: { business_name: string },
-  request: { service_type: ServiceCategory; zip_code?: string }
+  request: { service_type: ServiceCategory; zip_code?: string; service_details?: Record<string, string> | null }
 ): Promise<void> {
-  const serviceLabel = SERVICE_TYPE_LABELS[request.service_type] || request.service_type;
+  const serviceLabel = getServiceDisplayLabel(request.service_type, request.service_details, SERVICE_TYPE_LABELS);
 
   await createNotification(supabase, {
     userType: 'admin',
@@ -250,10 +254,10 @@ export async function notifyVendorDeclined(
     vendor_id: string;
   },
   vendor: { business_name: string },
-  request: { service_type: ServiceCategory; zip_code?: string },
+  request: { service_type: ServiceCategory; zip_code?: string; service_details?: Record<string, string> | null },
   reason?: string
 ): Promise<void> {
-  const serviceLabel = SERVICE_TYPE_LABELS[request.service_type] || request.service_type;
+  const serviceLabel = getServiceDisplayLabel(request.service_type, request.service_details, SERVICE_TYPE_LABELS);
 
   await createNotification(supabase, {
     userType: 'admin',
@@ -325,9 +329,10 @@ export async function notifyVendorNewLead(
     service_type: ServiceCategory;
     zip_code?: string;
     job_description?: string;
+    service_details?: Record<string, string> | null;
   }
 ): Promise<void> {
-  const serviceLabel = SERVICE_TYPE_LABELS[request.service_type] || request.service_type;
+  const serviceLabel = getServiceDisplayLabel(request.service_type, request.service_details, SERVICE_TYPE_LABELS);
 
   await createNotification(supabase, {
     userType: 'vendor',
@@ -390,10 +395,11 @@ export async function notifyLandlordVendorsMatched(
   request: {
     id: string;
     service_type: ServiceCategory;
+    service_details?: Record<string, string> | null;
   },
   vendorCount: number
 ): Promise<void> {
-  const serviceLabel = SERVICE_TYPE_LABELS[request.service_type] || request.service_type;
+  const serviceLabel = getServiceDisplayLabel(request.service_type, request.service_details, SERVICE_TYPE_LABELS);
 
   await createNotification(supabase, {
     userType: 'landlord',

@@ -448,7 +448,13 @@ function RequestsPageContent() {
 
       const csv = objectsToCsv(data, [
         { key: 'id', header: 'ID' },
-        { key: 'service_type', header: 'Service Type', formatter: (v) => SERVICE_TYPE_LABELS[String(v)] || String(v) },
+        { key: 'service_type', header: 'Service Type', formatter: (v, row) => {
+          if (String(v) === 'other') {
+            const details = (row as Record<string, unknown>).service_details as Record<string, string> | undefined;
+            return `Other: ${details?.custom_service_description || 'Custom Service'}`;
+          }
+          return SERVICE_TYPE_LABELS[String(v)] || String(v);
+        }},
         { key: 'landlord_name', header: 'Landlord Name' },
         { key: 'landlord_email', header: 'Landlord Email' },
         { key: 'landlord_phone', header: 'Landlord Phone' },
@@ -503,7 +509,19 @@ function RequestsPageContent() {
       title: 'Service',
       dataIndex: 'service_type',
       key: 'service_type',
-      render: (type) => SERVICE_TYPE_LABELS[type] || type,
+      render: (type: string, record: ServiceRequest) => {
+        if (type === 'other') {
+          const customDesc = (record.service_details as Record<string, string> | undefined)?.custom_service_description;
+          return (
+            <Tooltip title="Landlord couldn't find a matching service in our taxonomy">
+              <Tag color="orange" style={{ whiteSpace: 'normal', lineHeight: 1.4 }}>
+                <strong>{customDesc || 'Custom Service'}</strong>
+              </Tag>
+            </Tooltip>
+          );
+        }
+        return SERVICE_TYPE_LABELS[type] || type;
+      },
       width: 150,
     },
     {
@@ -820,7 +838,18 @@ function RequestsPageContent() {
 
             <Descriptions column={2} bordered size="small">
               <Descriptions.Item label="Service Type" span={2}>
-                <Tag color="blue">{SERVICE_TYPE_LABELS[selectedRequest.service_type]}</Tag>
+                {selectedRequest.service_type === 'other' ? (
+                  <Space direction="vertical" size={4}>
+                    <Tag color="orange" style={{ fontWeight: 600 }}>
+                      <strong>{(selectedRequest.service_details as Record<string, string> | undefined)?.custom_service_description || 'Custom Service'}</strong>
+                    </Tag>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      Not found in service taxonomy — requires manual matching
+                    </Text>
+                  </Space>
+                ) : (
+                  <Tag color="blue">{SERVICE_TYPE_LABELS[selectedRequest.service_type]}</Tag>
+                )}
               </Descriptions.Item>
               <Descriptions.Item label="Urgency">
                 <Tag color={urgencyColors[selectedRequest.urgency]}>
@@ -844,12 +873,12 @@ function RequestsPageContent() {
               )}
             </Descriptions>
 
-            {/* Service-specific details */}
-            {selectedRequest.service_details && Object.keys(selectedRequest.service_details).length > 0 && (
+            {/* Service-specific details (exclude custom_service_description, shown above) */}
+            {selectedRequest.service_details && Object.entries(selectedRequest.service_details).filter(([key]) => key !== 'custom_service_description').length > 0 && (
               <>
                 <Divider style={{ marginTop: 16, marginBottom: 16 }}>Service Details</Divider>
                 <Descriptions column={1} bordered size="small">
-                  {Object.entries(selectedRequest.service_details).map(([key, value]) => (
+                  {Object.entries(selectedRequest.service_details).filter(([key]) => key !== 'custom_service_description').map(([key, value]) => (
                     <Descriptions.Item key={key} label={key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}>
                       {value}
                     </Descriptions.Item>

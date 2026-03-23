@@ -1,5 +1,6 @@
 import { ServiceRequest, Vendor, SERVICE_TYPE_LABELS, URGENCY_LABELS, PROPERTY_TYPE_LABELS, FINISH_LEVEL_LABELS } from '@/types/database';
 import { escapeHtml } from '@/lib/security';
+import { getServiceDisplayLabel } from '@/lib/utils/serviceLabel';
 
 // Shorthand for escapeHtml in templates
 const e = escapeHtml;
@@ -46,7 +47,7 @@ function emailWrapper(content: string): string {
 
 // Email when landlord submits a request
 export function requestReceivedEmail(request: ServiceRequest): { subject: string; html: string } {
-  const serviceLabel = SERVICE_TYPE_LABELS[request.service_type] || request.service_type;
+  const serviceLabel = getServiceDisplayLabel(request.service_type, request.service_details as Record<string, string> | undefined, SERVICE_TYPE_LABELS);
 
   return {
     subject: `Request Received: ${serviceLabel}`,
@@ -95,7 +96,7 @@ export function landlordIntroEmail(
   request: ServiceRequest,
   vendors: Vendor[]
 ): { subject: string; html: string } {
-  const serviceLabel = SERVICE_TYPE_LABELS[request.service_type] || request.service_type;
+  const serviceLabel = getServiceDisplayLabel(request.service_type, request.service_details as Record<string, string> | undefined, SERVICE_TYPE_LABELS);
 
   const vendorCards = vendors
     .map(
@@ -151,7 +152,7 @@ export function vendorIntroEmail(
   request: ServiceRequest,
   vendor: Vendor
 ): { subject: string; html: string } {
-  const serviceLabel = SERVICE_TYPE_LABELS[request.service_type] || request.service_type;
+  const serviceLabel = getServiceDisplayLabel(request.service_type, request.service_details as Record<string, string> | undefined, SERVICE_TYPE_LABELS);
   const propertyTypeLabel = request.property_type ? PROPERTY_TYPE_LABELS[request.property_type] : null;
   const finishLevelLabel = request.finish_level ? FINISH_LEVEL_LABELS[request.finish_level] : null;
   const urgencyLabel = URGENCY_LABELS[request.urgency]?.split(' - ')[0] || request.urgency;
@@ -225,7 +226,7 @@ export function followUpEmail(
   request: ServiceRequest,
   vendorNames: string[]
 ): { subject: string; html: string } {
-  const serviceLabel = SERVICE_TYPE_LABELS[request.service_type] || request.service_type;
+  const serviceLabel = getServiceDisplayLabel(request.service_type, request.service_details as Record<string, string> | undefined, SERVICE_TYPE_LABELS);
 
   return {
     subject: `How did it go with your ${serviceLabel.toLowerCase()} vendors?`,
@@ -356,7 +357,7 @@ export function vendorRejectedEmail(vendor: Vendor): { subject: string; html: st
 
 // Email when no vendors are matched for a request
 export function noVendorMatchedEmail(request: ServiceRequest): { subject: string; html: string } {
-  const serviceLabel = SERVICE_TYPE_LABELS[request.service_type] || request.service_type;
+  const serviceLabel = getServiceDisplayLabel(request.service_type, request.service_details as Record<string, string> | undefined, SERVICE_TYPE_LABELS);
 
   return {
     subject: `Update on Your ${serviceLabel} Request`,

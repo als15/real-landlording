@@ -163,7 +163,13 @@ export default function DashboardPage() {
       title: 'Service',
       dataIndex: 'service_type',
       key: 'service_type',
-      render: (type) => SERVICE_TYPE_LABELS[type ] || type,
+      render: (type: string, record: ServiceRequest) => {
+        if (type === 'other') {
+          const customDesc = (record.service_details as Record<string, string> | undefined)?.custom_service_description;
+          return customDesc || 'Other Service';
+        }
+        return SERVICE_TYPE_LABELS[type] || type;
+      },
     },
     {
       title: 'Location',
@@ -261,7 +267,9 @@ export default function DashboardPage() {
           <>
             <Descriptions column={2} bordered size="small">
               <Descriptions.Item label="Service" span={2}>
-                {SERVICE_TYPE_LABELS[selectedRequest.service_type]}
+                {selectedRequest.service_type === 'other'
+                  ? (selectedRequest.service_details as Record<string, string> | undefined)?.custom_service_description || 'Other Service'
+                  : SERVICE_TYPE_LABELS[selectedRequest.service_type]}
               </Descriptions.Item>
               <Descriptions.Item label="Location">
                 {selectedRequest.property_address || selectedRequest.zip_code || selectedRequest.property_location}

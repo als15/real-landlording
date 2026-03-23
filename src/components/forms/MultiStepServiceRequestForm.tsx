@@ -52,6 +52,7 @@ export default function MultiStepServiceRequestForm({ onSuccess, preSelectedCate
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | null>(null);
+  const [isCustomService, setIsCustomService] = useState(false);
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [isOwner, setIsOwner] = useState(true);
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
@@ -117,22 +118,27 @@ export default function MultiStepServiceRequestForm({ onSuccess, preSelectedCate
   }));
 
   // Get emergency flag for selected category (used in Step 2)
-  const emergencyEnabled = selectedCategory ? SERVICE_TAXONOMY[selectedCategory].emergencyEnabled ?? false : false;
+  const emergencyEnabled = selectedCategory && !isCustomService ? SERVICE_TAXONOMY[selectedCategory]?.emergencyEnabled ?? false : false;
 
   // Reset urgency when category changes to one that doesn't support emergency
   useEffect(() => {
-    if (selectedCategory) {
+    if (selectedCategory && !isCustomService) {
       const categoryConfig = SERVICE_TAXONOMY[selectedCategory];
-      if (!categoryConfig.emergencyEnabled) {
+      if (!categoryConfig?.emergencyEnabled) {
         form.setFieldsValue({ urgency: 'standard' });
       }
+    } else if (isCustomService) {
+      form.setFieldsValue({ urgency: 'standard' });
     }
-  }, [selectedCategory, form]);
+  }, [selectedCategory, isCustomService, form]);
 
   // Step validation functions
   const validateStep1 = async () => {
     try {
-      await form.validateFields(['service_type']);
+      const fieldsToValidate = isCustomService
+        ? ['service_type', 'custom_service_description']
+        : ['service_type'];
+      await form.validateFields(fieldsToValidate);
       return true;
     } catch {
       return false;
@@ -198,6 +204,12 @@ export default function MultiStepServiceRequestForm({ onSuccess, preSelectedCate
       const urgencyMapping = SIMPLE_URGENCY_OPTIONS.find((o) => o.value === simpleUrgency);
       const urgency: UrgencyLevel = urgencyMapping?.mapsTo || 'medium';
 
+      // Build service_details with custom description for "other" service type
+      const serviceDetails: Record<string, string> = {};
+      if (values.service_type === 'other' && values.custom_service_description) {
+        serviceDetails.custom_service_description = values.custom_service_description as string;
+      }
+
       const requestData: ServiceRequestInput = {
         landlord_email: values.landlord_email as string,
         first_name: values.first_name as string,
@@ -217,6 +229,7 @@ export default function MultiStepServiceRequestForm({ onSuccess, preSelectedCate
         job_description: values.job_description as string,
         urgency,
         media_urls: mediaUrls.length > 0 ? mediaUrls : undefined,
+        ...(Object.keys(serviceDetails).length > 0 ? { service_details: serviceDetails } : {}),
       };
 
       const response = await fetch('/api/requests', {
@@ -235,6 +248,7 @@ export default function MultiStepServiceRequestForm({ onSuccess, preSelectedCate
       form.resetFields();
       setCurrentStep(0);
       setSelectedCategory(null);
+      setIsCustomService(false);
       setCoordinates(null);
       setMediaUrls([]);
       setIsOwner(true);
@@ -257,7 +271,7 @@ export default function MultiStepServiceRequestForm({ onSuccess, preSelectedCate
 
   const onFinishFailed = (errorInfo: { errorFields: { name: (string | number)[]; errors: string[] }[] }) => {
     // Find which step has errors and navigate there
-    const step1Fields = ['service_type'];
+    const step1Fields = ['service_type', 'custom_service_description'];
     const step2Fields = ['job_description'];
     const step3Fields = ['first_name', 'last_name', 'landlord_email', 'landlord_phone', 'property_address', 'zip_code'];
 
@@ -308,21 +322,72 @@ export default function MultiStepServiceRequestForm({ onSuccess, preSelectedCate
         <div style={{ display: currentStep === 0 ? 'block' : 'none' }}>
           <div style={{ textAlign: 'center', marginBottom: 24 }}>
             <Title level={4} style={{ marginBottom: 4 }}>What do you need help with?</Title>
-            <Text type="secondary">Search or browse to find the right service</Text>
+            <Text type="secondary">
+              {isCustomService ? 'Describe the service you need' : 'Search or browse to find the right service'}
+            </Text>
           </div>
 
-          <Form.Item
-            name="service_type"
-            rules={[{ required: true, message: 'Please select a service type' }]}
-            style={{ marginBottom: 32 }}
-          >
-            <ServiceSearchSelect
-              value={selectedCategory ?? undefined}
-              onChange={handleCategoryChange}
-              placeholder="Search for a service..."
-              size="large"
-            />
-          </Form.Item>
+          {!isCustomService ? (
+            <>
+              <Form.Item
+                name="service_type"
+                rules={[{ required: true, message: 'Please select a service type' }]}
+                style={{ marginBottom: 12 }}
+              >
+                <ServiceSearchSelect
+                  value={selectedCategory ?? undefined}
+                  onChange={handleCategoryChange}
+                  placeholder="Search for a service..."
+                  size="large"
+                />
+              </Form.Item>
+              <div style={{ textAlign: 'center', marginBottom: 32 }}>
+                <Button
+                  type="link"
+                  onClick={() => {
+                    setIsCustomService(true);
+                    setSelectedCategory(null);
+                    form.setFieldsValue({ service_type: 'other' });
+                  }}
+                  style={{ fontSize: 14, padding: 0 }}
+                >
+                  Can&apos;t find what you&apos;re looking for?
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <Form.Item name="service_type" hidden>
+                <Input />
+              </Form.Item>
+              <Form.Item
+                name="custom_service_description"
+                rules={[
+                  { required: true, message: 'Please describe the service you need' },
+                  { min: 3, message: 'Please provide at least 3 characters' },
+                ]}
+                style={{ marginBottom: 12 }}
+              >
+                <Input
+                  placeholder="e.g. Pool maintenance, Solar panel installation..."
+                  size="large"
+                  maxLength={100}
+                />
+              </Form.Item>
+              <div style={{ textAlign: 'center', marginBottom: 32 }}>
+                <Button
+                  type="link"
+                  onClick={() => {
+                    setIsCustomService(false);
+                    form.setFieldsValue({ service_type: undefined, custom_service_description: undefined });
+                  }}
+                  style={{ fontSize: 14, padding: 0 }}
+                >
+                  Back to service list
+                </Button>
+              </div>
+            </>
+          )}
 
           <Form.Item style={{ marginTop: 24 }}>
             <Button
