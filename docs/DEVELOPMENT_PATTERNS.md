@@ -12,7 +12,8 @@ This document captures recurring patterns, common issues, and their solutions to
 4. [Row Level Security (RLS) Patterns](#row-level-security-rls-patterns)
 5. [API Route Patterns](#api-route-patterns)
 6. [Security Patterns](#security-patterns)
-7. [Common Issues & Solutions](#common-issues--solutions)
+7. [Service Taxonomy (DB-Driven)](#service-taxonomy-db-driven)
+8. [Common Issues & Solutions](#common-issues--solutions)
 
 ---
 
@@ -409,6 +410,70 @@ The jobs API supports these `stage` query param values:
 ### CSV Export
 
 The CRM page exports via `/api/admin/crm/jobs/export` (returns all matching jobs without pagination). CSV formatting happens client-side using `src/lib/utils/csv-export.ts` (`objectsToCsv` + `downloadCsv`).
+
+---
+
+## Service Taxonomy (DB-Driven)
+
+Service categories and groups are stored in the database (`service_category_groups` and `service_categories` tables) and managed via the admin UI at `/service-categories`.
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/lib/serviceTaxonomy.ts` | Server-side cached data loading |
+| `src/hooks/useServiceTaxonomy.ts` | Client-side React hook |
+| `src/app/api/service-categories/route.ts` | Public API endpoint |
+| `src/app/api/admin/service-categories/route.ts` | Admin CRUD API |
+| `src/app/(admin)/service-categories/page.tsx` | Admin management UI |
+| `src/lib/serviceSearchIndex.ts` | Search index for service selection |
+
+### Client Components
+
+Use the `useServiceTaxonomy()` hook:
+
+```typescript
+import { useServiceTaxonomy } from '@/hooks/useServiceTaxonomy';
+
+function MyComponent() {
+  const { labels, taxonomyMap, groupLabels, loading } = useServiceTaxonomy();
+  // labels: Record<string, string> — key → display label
+  // taxonomyMap: Record<string, ServiceCategoryConfig> — same shape as old SERVICE_TAXONOMY
+  // groupLabels: Record<string, string> — group key → group label
+}
+```
+
+### Server-Side Code (API Routes, Templates)
+
+Use async functions from `src/lib/serviceTaxonomy.ts`:
+
+```typescript
+import { getServiceTypeLabels, getServiceTaxonomyMap } from '@/lib/serviceTaxonomy';
+
+const labels = await getServiceTypeLabels();
+const taxonomy = await getServiceTaxonomyMap();
+```
+
+Data is cached in-memory for 5 minutes. Call `invalidateServiceTaxonomyCache()` after admin writes.
+
+### Database Schema
+
+- `service_category_groups`: `id`, `key` (unique), `label`, `sort_order`, `is_active`
+- `service_categories`: `id`, `key` (unique), `label`, `group_key` (FK), `sort_order`, `is_active`, `classifications` (JSONB), `emergency_enabled`, `finish_level_enabled`, `external_link`, `external_url`, `search_keywords` (JSONB)
+- RLS: public SELECT, writes via `createAdminClient()` (service role)
+
+### Deprecated Exports (database.ts)
+
+The following exports in `src/types/database.ts` are deprecated and will be removed in a future cleanup:
+
+- `SERVICE_TAXONOMY` → use `useServiceTaxonomy().taxonomyMap` or `getServiceTaxonomyMap()`
+- `SERVICE_TYPE_LABELS` → use `useServiceTaxonomy().labels` or `getServiceTypeLabels()`
+- `SERVICE_CATEGORY_GROUP_LABELS` → use `useServiceTaxonomy().groupLabels` or `getGroupLabels()`
+- `getServiceCategoryOptions()` → use hook data
+- `getServiceCategoriesByGroup()` → use hook data
+- `getGroupedServiceCategories()` → use hook data
+
+Server-side files (email templates, SMS templates, notification service, matching logic) still import from `database.ts` during transition.
 
 ---
 

@@ -67,14 +67,10 @@ export type FinishLevel = 'premium' | 'standard' | 'budget';
 // Simplified urgency for form UI (maps to UrgencyLevel)
 export type SimpleUrgency = 'standard' | 'emergency';
 
-// Service Category Groups
-export type ServiceCategoryGroup =
-  | 'trades_technical'
-  | 'property_care'
-  | 'compliance_testing'
-  | 'professional_financial'
-  | 'creative_knowledge';
+// Service Category Groups (widened to string — values are now DB-driven)
+export type ServiceCategoryGroup = string;
 
+/** @deprecated Use getGroupLabels() from '@/lib/serviceTaxonomy' (server) or useServiceTaxonomy().groupLabels (client) */
 export const SERVICE_CATEGORY_GROUP_LABELS: Record<ServiceCategoryGroup, string> = {
   trades_technical: 'Fix It / Build It',
   property_care: 'Property Care & Maintenance',
@@ -83,47 +79,8 @@ export const SERVICE_CATEGORY_GROUP_LABELS: Record<ServiceCategoryGroup, string>
   creative_knowledge: 'Creative & Knowledge',
 };
 
-// Service Categories (alphabetically ordered)
-export type ServiceCategory =
-  | 'acquisitions'
-  | 'appliance_repair'
-  | 'architect_design'
-  | 'bookkeeping_accounting'
-  | 'cleaning'
-  | 'cleanout_junk_removal'
-  | 'compliance_city'
-  | 'deed_preparation'
-  | 'electrician'
-  | 'entity_structuring'
-  | 'environmental_testing'
-  | 'exterior'
-  | 'financing'
-  | 'fire_safety_compliance'
-  | 'flooring'
-  | 'general_contractor'
-  | 'handyman'
-  | 'hvac'
-  | 'insurance'
-  | 'landscaping_snow'
-  | 'lead_testing'
-  | 'legal_eviction'
-  | 'mold_remediation'
-  | 'movers'
-  | 'notary_services'
-  | 'painting'
-  | 'pest_control'
-  | 'photography'
-  | 'plumber_sewer'
-  | 'preventative_maintenance'
-  | 'property_check'
-  | 'property_management'
-  | 'property_tax_appeals'
-  | 're_agent'
-  | 'roofer'
-  | 'structural'
-  | 'title_ownership'
-  | 'training'
-  | 'waterproofing';
+// Service Categories (widened to string — values are now DB-driven)
+export type ServiceCategory = string;
 
 // Service classification question
 export interface ServiceClassification {
@@ -143,7 +100,7 @@ export interface ServiceCategoryConfig {
   searchKeywords?: string[]; // Synonyms for search (e.g., "ac" for HVAC)
 }
 
-// Complete service taxonomy with all categories and sub-options
+/** @deprecated Use getServiceTaxonomyMap() from '@/lib/serviceTaxonomy' (server) or useServiceTaxonomy().taxonomyMap (client) */
 export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = {
   // === TRADES & TECHNICAL ===
   roofer: {
@@ -642,7 +599,7 @@ export const SERVICE_TAXONOMY: Record<ServiceCategory, ServiceCategoryConfig> = 
   },
 };
 
-// Helper to get sorted category options for dropdowns
+/** @deprecated Use getServiceCategories() from '@/lib/serviceTaxonomy' (server) or useServiceTaxonomy() (client) */
 export const getServiceCategoryOptions = () => {
   return Object.entries(SERVICE_TAXONOMY)
     .map(([value, config]) => ({
@@ -653,7 +610,7 @@ export const getServiceCategoryOptions = () => {
     .sort((a, b) => a.label.localeCompare(b.label));
 };
 
-// Helper to get categories grouped by their parent group
+/** @deprecated Use getGroupedServiceCategories() from '@/lib/serviceTaxonomy' (server) or useServiceTaxonomy() (client) */
 export const getServiceCategoriesByGroup = () => {
   const grouped: Record<ServiceCategoryGroup, { value: ServiceCategory; label: string }[]> = {
     trades_technical: [],
@@ -678,7 +635,7 @@ export const getServiceCategoriesByGroup = () => {
   return grouped;
 };
 
-// Get ordered groups with their categories for UI display
+/** @deprecated Use getGroupedServiceCategories() from '@/lib/serviceTaxonomy' (server) or useServiceTaxonomy() (client) */
 export const getGroupedServiceCategories = () => {
   const groupOrder: ServiceCategoryGroup[] = [
     'trades_technical',
@@ -700,7 +657,7 @@ export const getGroupedServiceCategories = () => {
 // Legacy ServiceType for backward compatibility (maps to ServiceCategory)
 export type ServiceType = ServiceCategory;
 
-// Legacy labels for backward compatibility
+/** @deprecated Use getServiceTypeLabels() from '@/lib/serviceTaxonomy' (server) or useServiceTaxonomy().labels (client) */
 export const SERVICE_TYPE_LABELS: Record<ServiceCategory, string> = Object.fromEntries(
   Object.entries(SERVICE_TAXONOMY).map(([key, config]) => [key, config.label])
 ) as Record<ServiceCategory, string>;

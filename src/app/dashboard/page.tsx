@@ -28,11 +28,11 @@ import {
   RequestVendorMatch,
   Vendor,
   REQUEST_STATUS_LABELS,
-  SERVICE_TYPE_LABELS,
   URGENCY_LABELS,
   PROPERTY_TYPE_LABELS,
   FINISH_LEVEL_LABELS,
 } from '@/types/database';
+import { useServiceTaxonomy } from '@/hooks/useServiceTaxonomy';
 import type { ColumnsType } from 'antd/es/table';
 import Link from 'next/link';
 
@@ -52,6 +52,7 @@ interface RequestWithMatches extends ServiceRequest {
 }
 
 export default function DashboardPage() {
+  const { labels: SERVICE_TYPE_LABELS } = useServiceTaxonomy();
   const [requests, setRequests] = useState<RequestWithMatches[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<RequestWithMatches | null>(null);
@@ -162,7 +163,7 @@ export default function DashboardPage() {
       title: 'Service',
       dataIndex: 'service_type',
       key: 'service_type',
-      render: (type) => SERVICE_TYPE_LABELS[type as keyof typeof SERVICE_TYPE_LABELS] || type,
+      render: (type) => SERVICE_TYPE_LABELS[type ] || type,
     },
     {
       title: 'Location',

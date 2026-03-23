@@ -31,18 +31,19 @@ import {
 } from '@ant-design/icons';
 import {
   Vendor,
-  SERVICE_TYPE_LABELS,
   CONTACT_PREFERENCE_LABELS,
   EMPLOYEE_COUNT_OPTIONS,
   JOB_SIZE_RANGE_OPTIONS,
   ACCEPTED_PAYMENTS_OPTIONS,
 } from '@/types/database';
+import { useServiceTaxonomy } from '@/hooks/useServiceTaxonomy';
 import { brandColors } from '@/theme/config';
 import ServiceAreaDisplay from '@/components/ServiceAreaDisplay';
 
 const { Title, Text } = Typography;
 
 export default function VendorProfilePage() {
+  const { labels: SERVICE_TYPE_LABELS } = useServiceTaxonomy();
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -232,7 +233,7 @@ export default function VendorProfilePage() {
                   {Object.entries(vendor.service_specialties).map(([service, specialties]) => (
                     <div key={service} style={{ marginBottom: 8 }}>
                       <Text strong style={{ fontSize: 13 }}>
-                        {SERVICE_TYPE_LABELS[service as keyof typeof SERVICE_TYPE_LABELS] || service}:
+                        {SERVICE_TYPE_LABELS[service ] || service}:
                       </Text>
                       <div style={{ marginTop: 4 }}>
                         <Space wrap size="small">

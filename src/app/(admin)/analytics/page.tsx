@@ -33,7 +33,8 @@ import {
   Funnel,
   LabelList,
 } from 'recharts';
-import { SERVICE_TYPE_LABELS, JOB_OUTCOME_REASON_LABELS, JobOutcomeReason } from '@/types/database';
+import { JOB_OUTCOME_REASON_LABELS, JobOutcomeReason } from '@/types/database';
+import { useServiceTaxonomy } from '@/hooks/useServiceTaxonomy';
 import type { ColumnsType } from 'antd/es/table';
 
 const { Title, Text } = Typography;
@@ -162,6 +163,7 @@ const URGENCY_LABELS: Record<string, string> = {
 };
 
 export default function AnalyticsPage() {
+  const { labels: SERVICE_TYPE_LABELS } = useServiceTaxonomy();
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [conversionData, setConversionData] = useState<ConversionData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -214,7 +216,7 @@ export default function AnalyticsPage() {
       title: 'Service Type',
       dataIndex: 'service_type',
       key: 'service_type',
-      render: (type) => SERVICE_TYPE_LABELS[type as keyof typeof SERVICE_TYPE_LABELS] || type,
+      render: (type) => SERVICE_TYPE_LABELS[type ] || type,
     },
     {
       title: 'Requests',
@@ -331,8 +333,8 @@ export default function AnalyticsPage() {
 
   // Prepare bar chart data (top 8 service types)
   const topServiceTypes = data.requestsByServiceType.slice(0, 8).map((item) => ({
-    name: (SERVICE_TYPE_LABELS[item.service_type as keyof typeof SERVICE_TYPE_LABELS] || item.service_type).slice(0, 12),
-    fullName: SERVICE_TYPE_LABELS[item.service_type as keyof typeof SERVICE_TYPE_LABELS] || item.service_type,
+    name: (SERVICE_TYPE_LABELS[item.service_type ] || item.service_type).slice(0, 12),
+    fullName: SERVICE_TYPE_LABELS[item.service_type ] || item.service_type,
     count: item.count,
   }));
 

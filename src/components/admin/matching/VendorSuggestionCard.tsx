@@ -7,7 +7,7 @@ import {
   StarFilled,
 } from '@ant-design/icons';
 import type { VendorWithMatchScore } from '@/lib/matching';
-import { SERVICE_TYPE_LABELS } from '@/types/database';
+import { useServiceTaxonomy } from '@/hooks/useServiceTaxonomy';
 import MatchScoreBadge from './MatchScoreBadge';
 import MatchFactorsList from './MatchFactorsList';
 import ConfidenceIndicator from './ConfidenceIndicator';
@@ -34,6 +34,7 @@ export default function VendorSuggestionCard({
   showDetails = false,
   rank,
 }: VendorSuggestionCardProps) {
+  const { labels: SERVICE_TYPE_LABELS } = useServiceTaxonomy();
   const { matchScore } = vendor;
 
   // Get key positive factors (high scores)

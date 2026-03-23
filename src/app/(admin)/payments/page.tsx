@@ -37,8 +37,8 @@ import {
   PaymentStatus,
   PAYMENT_STATUS_LABELS,
   PAYMENT_METHOD_OPTIONS,
-  SERVICE_TYPE_LABELS,
 } from '@/types/database';
+import { useServiceTaxonomy } from '@/hooks/useServiceTaxonomy';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { objectsToCsv, downloadCsv, formatDateTimeForCsv } from '@/lib/utils/csv-export';
@@ -107,6 +107,7 @@ const statusColors: Record<PaymentStatus, string> = {
 };
 
 export default function PaymentsPage() {
+  const { labels: SERVICE_TYPE_LABELS } = useServiceTaxonomy();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -379,7 +380,7 @@ export default function PaymentsPage() {
       width: 180,
       render: (_, record) => (
         <div>
-          <Text>{SERVICE_TYPE_LABELS[record.request?.service_type as keyof typeof SERVICE_TYPE_LABELS] || record.request?.service_type || 'N/A'}</Text>
+          <Text>{(record.request?.service_type && SERVICE_TYPE_LABELS[record.request.service_type]) || record.request?.service_type || 'N/A'}</Text>
           <br />
           <Text type="secondary" style={{ fontSize: 12 }}>
             {record.request?.landlord_name || record.request?.landlord_email || 'N/A'}
@@ -646,7 +647,7 @@ export default function PaymentsPage() {
                 <Title level={5} style={{ marginTop: 24 }}>Job</Title>
                 <Descriptions column={1} size="small">
                   <Descriptions.Item label="Service">
-                    {SERVICE_TYPE_LABELS[selectedPayment.request.service_type as keyof typeof SERVICE_TYPE_LABELS] || selectedPayment.request.service_type}
+                    {SERVICE_TYPE_LABELS[selectedPayment.request.service_type ] || selectedPayment.request.service_type}
                   </Descriptions.Item>
                   <Descriptions.Item label="Property">
                     {selectedPayment.request.property_address || 'N/A'} {selectedPayment.request.zip_code}

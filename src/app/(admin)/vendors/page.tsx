@@ -5,7 +5,8 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { Table, Card, Tag, Space, Button, Select, Input, Typography, Drawer, Descriptions, Divider, Badge, Modal, Form, Checkbox, Rate, Slider, InputNumber, Tooltip, Spin, Pagination } from 'antd'
 import { useNotify } from '@/hooks/useNotify'
 import { ReloadOutlined, PlusOutlined, EditOutlined, EyeOutlined, FilterOutlined, InfoCircleOutlined, DownloadOutlined, SendOutlined, CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined, DeleteOutlined } from '@ant-design/icons'
-import { Vendor, VendorStatus, SlaStatus, VENDOR_STATUS_LABELS, SLA_STATUS_LABELS, SERVICE_TYPE_LABELS, SERVICE_TAXONOMY, ServiceCategory, getGroupedServiceCategories, RequestVendorMatch, ServiceRequest, REQUEST_STATUS_LABELS, RequestStatus, URGENCY_LABELS, UrgencyLevel, MatchStatus } from '@/types/database'
+import { Vendor, VendorStatus, SlaStatus, VENDOR_STATUS_LABELS, SLA_STATUS_LABELS, ServiceCategory, RequestVendorMatch, ServiceRequest, REQUEST_STATUS_LABELS, RequestStatus, URGENCY_LABELS, UrgencyLevel, MatchStatus } from '@/types/database'
+import { useServiceTaxonomy } from '@/hooks/useServiceTaxonomy'
 import type { ColumnsType } from 'antd/es/table'
 import ServiceAreaAutocomplete from '@/components/ServiceAreaAutocomplete'
 import ServiceAreaDisplay from '@/components/ServiceAreaDisplay'
@@ -77,6 +78,7 @@ export default function VendorsPage() {
 }
 
 function VendorsPageContent() {
+  const { labels: SERVICE_TYPE_LABELS, taxonomyMap: SERVICE_TAXONOMY, categories: serviceCategoriesRaw, groups: serviceGroupsRaw } = useServiceTaxonomy()
   const [vendors, setVendors] = useState<Vendor[]>([])
   const [loading, setLoading] = useState(true)
   const [total, setTotal] = useState(0)
@@ -544,7 +546,7 @@ function VendorsPageContent() {
         <Space wrap size="small">
           {services.slice(0, 2).map(s => (
             <Tag key={s} color="blue">
-              {SERVICE_TYPE_LABELS[s as keyof typeof SERVICE_TYPE_LABELS] || s}
+              {SERVICE_TYPE_LABELS[s ] || s}
             </Tag>
           ))}
           {services.length > 2 && <Tag>+{services.length - 2}</Tag>}
@@ -637,7 +639,13 @@ function VendorsPageContent() {
     }
   ]
 
-  const groupedCategories = getGroupedServiceCategories()
+  const groupedCategories = serviceGroupsRaw.map(g => ({
+    group: g.key,
+    label: g.label,
+    categories: serviceCategoriesRaw
+      .filter(c => c.group_key === g.key)
+      .map(c => ({ value: c.key, label: c.label })),
+  }))
 
   return (
     <div>
@@ -777,7 +785,7 @@ function VendorsPageContent() {
             <Space wrap>
               {selectedVendor.services.map(s => (
                 <Tag key={s} color="blue">
-                  {SERVICE_TYPE_LABELS[s as keyof typeof SERVICE_TYPE_LABELS] || s}
+                  {SERVICE_TYPE_LABELS[s ] || s}
                 </Tag>
               ))}
             </Space>
@@ -789,7 +797,7 @@ function VendorsPageContent() {
                 {Object.entries(selectedVendor.service_specialties).map(([service, specialties]) => (
                   <div key={service} style={{ marginBottom: 8 }}>
                     <Text strong style={{ display: 'block', marginBottom: 4 }}>
-                      {SERVICE_TYPE_LABELS[service as keyof typeof SERVICE_TYPE_LABELS] || service}:
+                      {SERVICE_TYPE_LABELS[service ] || service}:
                     </Text>
                     <Space wrap size="small">
                       {(specialties as string[]).map((specialty: string) => (
@@ -938,7 +946,7 @@ function VendorsPageContent() {
                       title={
                         <Space>
                           <Tag color="blue">
-                            {SERVICE_TYPE_LABELS[match.request?.service_type as keyof typeof SERVICE_TYPE_LABELS] || match.request?.service_type}
+                            {SERVICE_TYPE_LABELS[match.request?.service_type ] || match.request?.service_type}
                           </Tag>
                           <Tag color={matchStatusColors[match.status]}>
                             {matchStatusLabels[match.status]}

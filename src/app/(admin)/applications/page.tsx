@@ -34,8 +34,6 @@ import {
 } from '@ant-design/icons';
 import {
   Vendor,
-  SERVICE_TYPE_LABELS,
-  SERVICE_TAXONOMY,
   ServiceCategory,
   EMPLOYEE_COUNT_OPTIONS,
   JOB_SIZE_RANGE_OPTIONS,
@@ -43,6 +41,7 @@ import {
   REFERRAL_SOURCE_OPTIONS,
   CONTACT_PREFERENCE_LABELS,
 } from '@/types/database';
+import { useServiceTaxonomy } from '@/hooks/useServiceTaxonomy';
 import {
   objectsToCsv,
   downloadCsv,
@@ -58,6 +57,7 @@ const { Title, Text } = Typography;
 const { TextArea, Search } = Input;
 
 export default function ApplicationsPage() {
+  const { labels: SERVICE_TYPE_LABELS, taxonomyMap: SERVICE_TAXONOMY } = useServiceTaxonomy();
   const [applications, setApplications] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState<Vendor | null>(null);
@@ -401,7 +401,7 @@ export default function ApplicationsPage() {
         <Space wrap size="small">
           {services.slice(0, 2).map((s) => (
             <Tag key={s} color="blue">
-              {SERVICE_TYPE_LABELS[s as keyof typeof SERVICE_TYPE_LABELS] || s}
+              {SERVICE_TYPE_LABELS[s ] || s}
             </Tag>
           ))}
           {services.length > 2 && <Tag>+{services.length - 2}</Tag>}

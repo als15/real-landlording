@@ -1,8 +1,4 @@
-import {
-  ServiceCategory,
-  SERVICE_TAXONOMY,
-  SERVICE_CATEGORY_GROUP_LABELS,
-} from '@/types/database';
+import type { ServiceCategoryConfig } from '@/types/database';
 
 /** A flat, searchable item representing either a category or a sub-category option. */
 export interface ServiceSearchItem {
@@ -15,7 +11,7 @@ export interface ServiceSearchItem {
   /** Group label (e.g. "Fix It / Build It") */
   groupLabel: string;
   /** ServiceCategory key to set in form */
-  serviceCategory: ServiceCategory;
+  serviceCategory: string;
   /** If this is a sub-category, which classification field it belongs to */
   classificationField?: string;
   /** If this is a sub-category, the value to auto-fill */
@@ -27,24 +23,26 @@ export interface ServiceSearchItem {
 }
 
 /**
- * Build the flat search index from SERVICE_TAXONOMY at module load time.
+ * Build a flat search index from a taxonomy map and group labels.
  * Each category gets one category-level entry plus one entry per classification option.
  */
-function buildIndex(): ServiceSearchItem[] {
+export function buildSearchIndex(
+  taxonomyMap: Record<string, ServiceCategoryConfig>,
+  groupLabels: Record<string, string>,
+): ServiceSearchItem[] {
   const items: ServiceSearchItem[] = [];
 
-  for (const [key, config] of Object.entries(SERVICE_TAXONOMY)) {
-    const category = key as ServiceCategory;
-    const groupLabel = SERVICE_CATEGORY_GROUP_LABELS[config.group];
+  for (const [key, config] of Object.entries(taxonomyMap)) {
+    const groupLabel = groupLabels[config.group] ?? config.group;
     const keywords = (config.searchKeywords ?? []).join(' ');
 
     // 1. Category-level entry
     items.push({
-      key: `cat__${category}`,
+      key: `cat__${key}`,
       subCategoryLabel: config.label,
       categoryLabel: config.label,
       groupLabel,
-      serviceCategory: category,
+      serviceCategory: key,
       isCategoryLevel: true,
       searchText: `${config.label} ${keywords} ${groupLabel}`.toLowerCase(),
     });
@@ -52,13 +50,13 @@ function buildIndex(): ServiceSearchItem[] {
     // 2. Sub-category entries (one per classification option)
     for (const classification of config.classifications) {
       for (const option of classification.options) {
-        const itemKey = `sub__${category}__${classification.label}__${option}`;
+        const itemKey = `sub__${key}__${classification.label}__${option}`;
         items.push({
           key: itemKey,
           subCategoryLabel: option,
           categoryLabel: config.label,
           groupLabel,
-          serviceCategory: category,
+          serviceCategory: key,
           classificationField: classification.label,
           classificationValue: option,
           isCategoryLevel: false,
@@ -70,22 +68,6 @@ function buildIndex(): ServiceSearchItem[] {
 
   return items;
 }
-
-export const SERVICE_SEARCH_INDEX: ServiceSearchItem[] = buildIndex();
-
-/** Hand-picked popular service category keys shown when the input is empty. */
-export const POPULAR_SERVICES: ServiceCategory[] = [
-  'plumber_sewer',
-  'electrician',
-  'handyman',
-  'hvac',
-  'roofer',
-  'general_contractor',
-  'cleaning',
-  'pest_control',
-  'legal_eviction',
-  'property_management',
-];
 
 /**
  * Score a search item against tokenized user input.
@@ -133,10 +115,11 @@ function escapeRegex(s: string): string {
 }
 
 /**
- * Filter and score the search index against user input.
+ * Filter and score a search index against user input.
  * Returns at most `limit` results, sorted by descending score.
  */
-export function filterServiceOptions(
+export function filterSearchIndex(
+  index: ServiceSearchItem[],
   searchText: string,
   limit = 20,
 ): ServiceSearchItem[] {
@@ -148,7 +131,7 @@ export function filterServiceOptions(
 
   const scored: { item: ServiceSearchItem; score: number }[] = [];
 
-  for (const item of SERVICE_SEARCH_INDEX) {
+  for (const item of index) {
     const score = scoreItem(item, tokens);
     if (score > 0) {
       scored.push({ item, score });
@@ -159,3 +142,40 @@ export function filterServiceOptions(
 
   return scored.slice(0, limit).map((s) => s.item);
 }
+
+// ---------------------------------------------------------------------------
+// Backward-compatible exports (deprecated — use buildSearchIndex + filterSearchIndex)
+// ---------------------------------------------------------------------------
+
+import {
+  SERVICE_TAXONOMY,
+  SERVICE_CATEGORY_GROUP_LABELS,
+} from '@/types/database';
+
+/** @deprecated Use buildSearchIndex() with DB-driven data instead */
+export const SERVICE_SEARCH_INDEX: ServiceSearchItem[] = buildSearchIndex(
+  SERVICE_TAXONOMY,
+  SERVICE_CATEGORY_GROUP_LABELS,
+);
+
+/** @deprecated Use filterSearchIndex() with a dynamic index instead */
+export function filterServiceOptions(
+  searchText: string,
+  limit = 20,
+): ServiceSearchItem[] {
+  return filterSearchIndex(SERVICE_SEARCH_INDEX, searchText, limit);
+}
+
+/** @deprecated Move to DB or admin-configurable */
+export const POPULAR_SERVICES: string[] = [
+  'plumber_sewer',
+  'electrician',
+  'handyman',
+  'hvac',
+  'roofer',
+  'general_contractor',
+  'cleaning',
+  'pest_control',
+  'legal_eviction',
+  'property_management',
+];

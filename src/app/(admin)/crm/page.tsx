@@ -44,7 +44,6 @@ import {
   FilterOutlined,
 } from '@ant-design/icons';
 import {
-  SERVICE_TYPE_LABELS,
   URGENCY_LABELS,
   MatchStatus,
   PAYMENT_STATUS_LABELS,
@@ -52,6 +51,7 @@ import {
   JobOutcomeReason,
   PAYMENT_METHOD_OPTIONS,
 } from '@/types/database';
+import { useServiceTaxonomy } from '@/hooks/useServiceTaxonomy';
 import { objectsToCsv, downloadCsv, formatDateForCsv } from '@/lib/utils/csv-export';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
@@ -182,6 +182,7 @@ const stageFilters = [
 ];
 
 export default function CRMPage() {
+  const { labels: SERVICE_TYPE_LABELS } = useServiceTaxonomy();
   const [jobs, setJobs] = useState<CRMJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -423,7 +424,7 @@ export default function CRMPage() {
             const req = row.request as Record<string, unknown> | undefined;
             const st = req?.service_type as string;
             const fl = req?.finish_level as string | undefined;
-            const label = SERVICE_TYPE_LABELS[st as keyof typeof SERVICE_TYPE_LABELS] || st;
+            const label = SERVICE_TYPE_LABELS[st ] || st;
             return fl ? `${label} (${fl})` : label;
           },
         },
@@ -670,7 +671,7 @@ export default function CRMPage() {
           <Text strong>{record.vendor.business_name}</Text>
           <br />
           <Text type="secondary" style={{ fontSize: 12 }}>
-            {SERVICE_TYPE_LABELS[record.request.service_type as keyof typeof SERVICE_TYPE_LABELS] || record.request.service_type}
+            {SERVICE_TYPE_LABELS[record.request.service_type ] || record.request.service_type}
           </Text>
         </div>
       ),
@@ -962,7 +963,7 @@ export default function CRMPage() {
           <>
             <Descriptions column={1} size="small" bordered>
               <Descriptions.Item label="Service Type">
-                {SERVICE_TYPE_LABELS[selectedJob.request.service_type as keyof typeof SERVICE_TYPE_LABELS] || selectedJob.request.service_type}
+                {SERVICE_TYPE_LABELS[selectedJob.request.service_type ] || selectedJob.request.service_type}
               </Descriptions.Item>
               <Descriptions.Item label="Urgency">
                 <Tag color={selectedJob.request.urgency === 'emergency' ? 'red' : 'default'}>

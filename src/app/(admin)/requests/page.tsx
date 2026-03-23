@@ -43,7 +43,6 @@ import {
   ServiceRequest,
   RequestStatus,
   REQUEST_STATUS_LABELS,
-  SERVICE_TYPE_LABELS,
   URGENCY_LABELS,
   PROPERTY_TYPE_LABELS,
   UNIT_COUNT_LABELS,
@@ -52,6 +51,7 @@ import {
   BUDGET_RANGE_LABELS,
   FINISH_LEVEL_LABELS,
 } from '@/types/database';
+import { useServiceTaxonomy } from '@/hooks/useServiceTaxonomy';
 import type { ColumnsType } from 'antd/es/table';
 import VendorMatchingModal from '@/components/admin/VendorMatchingModal';
 import {
@@ -138,6 +138,7 @@ export default function RequestsPage() {
 }
 
 function RequestsPageContent() {
+  const { labels: SERVICE_TYPE_LABELS } = useServiceTaxonomy();
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -447,7 +448,7 @@ function RequestsPageContent() {
 
       const csv = objectsToCsv(data, [
         { key: 'id', header: 'ID' },
-        { key: 'service_type', header: 'Service Type', formatter: (v) => SERVICE_TYPE_LABELS[v as keyof typeof SERVICE_TYPE_LABELS] || String(v) },
+        { key: 'service_type', header: 'Service Type', formatter: (v) => SERVICE_TYPE_LABELS[String(v)] || String(v) },
         { key: 'landlord_name', header: 'Landlord Name' },
         { key: 'landlord_email', header: 'Landlord Email' },
         { key: 'landlord_phone', header: 'Landlord Phone' },
@@ -502,7 +503,7 @@ function RequestsPageContent() {
       title: 'Service',
       dataIndex: 'service_type',
       key: 'service_type',
-      render: (type) => SERVICE_TYPE_LABELS[type as keyof typeof SERVICE_TYPE_LABELS] || type,
+      render: (type) => SERVICE_TYPE_LABELS[type] || type,
       width: 150,
     },
     {

@@ -3,20 +3,28 @@
 import { useState, useMemo } from 'react';
 import { Select, Typography } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
+import type { ServiceCategory, ServiceCategoryConfig } from '@/types/database';
+import { useServiceTaxonomy } from '@/hooks/useServiceTaxonomy';
 import {
-  ServiceCategory,
-  SERVICE_TAXONOMY,
-  SERVICE_CATEGORY_GROUP_LABELS,
-  ServiceCategoryGroup,
-} from '@/types/database';
-import {
-  ServiceSearchItem,
-  filterServiceOptions,
-  POPULAR_SERVICES,
-  SERVICE_SEARCH_INDEX,
+  type ServiceSearchItem,
+  buildSearchIndex,
+  filterSearchIndex,
 } from '@/lib/serviceSearchIndex';
 
 const { Text } = Typography;
+
+const POPULAR_SERVICES = [
+  'plumber_sewer',
+  'electrician',
+  'handyman',
+  'hvac',
+  'roofer',
+  'general_contractor',
+  'cleaning',
+  'pest_control',
+  'legal_eviction',
+  'property_management',
+];
 
 interface ServiceSearchSelectProps {
   value?: ServiceCategory;
@@ -25,75 +33,72 @@ interface ServiceSearchSelectProps {
   size?: 'small' | 'middle' | 'large';
 }
 
-/** Build the default (empty-search) options: popular services, then all categories grouped. */
-function buildDefaultOptions(): ServiceSearchItem[] {
-  const items: ServiceSearchItem[] = [];
-
-  // Popular services first
-  for (const cat of POPULAR_SERVICES) {
-    const config = SERVICE_TAXONOMY[cat];
-    if (config) {
-      items.push({
-        key: `popular__${cat}`,
-        subCategoryLabel: config.label,
-        categoryLabel: config.label,
-        groupLabel: 'Popular Services',
-        serviceCategory: cat,
-        isCategoryLevel: true,
-        searchText: '',
-      });
-    }
-  }
-
-  // Then all categories grouped
-  const groupOrder: ServiceCategoryGroup[] = [
-    'trades_technical',
-    'property_care',
-    'compliance_testing',
-    'professional_financial',
-    'creative_knowledge',
-  ];
-
-  for (const group of groupOrder) {
-    const groupLabel = SERVICE_CATEGORY_GROUP_LABELS[group];
-    const categoriesInGroup = SERVICE_SEARCH_INDEX.filter(
-      (item) => item.isCategoryLevel && SERVICE_TAXONOMY[item.serviceCategory].group === group,
-    ).sort((a, b) => a.categoryLabel.localeCompare(b.categoryLabel));
-
-    for (const cat of categoriesInGroup) {
-      // Skip if already in popular
-      if (POPULAR_SERVICES.includes(cat.serviceCategory)) continue;
-      items.push({
-        ...cat,
-        key: `browse__${cat.serviceCategory}`,
-        groupLabel: groupLabel,
-      });
-    }
-  }
-
-  return items;
-}
-
 export default function ServiceSearchSelect({
   value,
   onChange,
   placeholder = 'Search for a service...',
   size = 'large',
 }: ServiceSearchSelectProps) {
+  const { taxonomyMap, groupLabels, loading } = useServiceTaxonomy();
   const [searchText, setSearchText] = useState('');
   const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
 
-  const defaultOptions = useMemo(() => buildDefaultOptions(), []);
+  // Build search index from DB-driven taxonomy
+  const searchIndex = useMemo(
+    () => buildSearchIndex(taxonomyMap, groupLabels),
+    [taxonomyMap, groupLabels],
+  );
+
+  // Build default (empty-search) options
+  const defaultOptions = useMemo(() => {
+    const items: ServiceSearchItem[] = [];
+
+    // Popular services first
+    for (const cat of POPULAR_SERVICES) {
+      const config = taxonomyMap[cat];
+      if (config) {
+        items.push({
+          key: `popular__${cat}`,
+          subCategoryLabel: config.label,
+          categoryLabel: config.label,
+          groupLabel: 'Popular Services',
+          serviceCategory: cat,
+          isCategoryLevel: true,
+          searchText: '',
+        });
+      }
+    }
+
+    // Then all categories grouped by their group
+    // Sort groups by the order they appear in groupLabels
+    const groupKeys = Object.keys(groupLabels);
+    for (const groupKey of groupKeys) {
+      const groupLabel = groupLabels[groupKey];
+      const categoriesInGroup = searchIndex.filter(
+        (item) => item.isCategoryLevel && taxonomyMap[item.serviceCategory]?.group === groupKey,
+      ).sort((a, b) => a.categoryLabel.localeCompare(b.categoryLabel));
+
+      for (const cat of categoriesInGroup) {
+        if (POPULAR_SERVICES.includes(cat.serviceCategory)) continue;
+        items.push({
+          ...cat,
+          key: `browse__${cat.serviceCategory}`,
+          groupLabel,
+        });
+      }
+    }
+
+    return items;
+  }, [taxonomyMap, groupLabels, searchIndex]);
 
   const displayItems = useMemo(() => {
     if (!searchText.trim()) return defaultOptions;
-    return filterServiceOptions(searchText);
-  }, [searchText, defaultOptions]);
+    return filterSearchIndex(searchIndex, searchText);
+  }, [searchText, defaultOptions, searchIndex]);
 
   const isSearching = searchText.trim().length > 0;
 
-  // Group items for display — only used when browsing (no search text).
-  // When searching, we render a flat list to preserve relevance order.
+  // Group items for display
   const groupedOptions = useMemo(() => {
     const groups: Record<string, ServiceSearchItem[]> = {};
     for (const item of displayItems) {
@@ -108,10 +113,10 @@ export default function ServiceSearchSelect({
     const item = option['data-item'];
     if (!item) return;
 
-    const categoryConfig = SERVICE_TAXONOMY[item.serviceCategory];
+    const categoryConfig = taxonomyMap[item.serviceCategory];
 
     // External link check
-    if (categoryConfig.externalLink && categoryConfig.externalUrl) {
+    if (categoryConfig?.externalLink && categoryConfig.externalUrl) {
       window.open(categoryConfig.externalUrl, '_blank');
       return;
     }
@@ -125,9 +130,9 @@ export default function ServiceSearchSelect({
     setSearchText('');
   };
 
-  // Display label: show what user selected, fall back to category name
+  // Display label
   const displayLabel = value
-    ? selectedLabel ?? SERVICE_TAXONOMY[value]?.label
+    ? selectedLabel ?? taxonomyMap[value]?.label
     : undefined;
 
   return (
@@ -140,7 +145,7 @@ export default function ServiceSearchSelect({
       onSearch={setSearchText}
       onSelect={handleSelect}
       suffixIcon={<SearchOutlined />}
-      notFoundContent={searchText ? 'No services found' : null}
+      notFoundContent={loading ? 'Loading...' : searchText ? 'No services found' : null}
       style={{ width: '100%' }}
       optionLabelProp="label"
       listHeight={350}

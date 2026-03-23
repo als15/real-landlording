@@ -8,7 +8,8 @@ import {
   UserOutlined,
   ClockCircleOutlined,
 } from '@ant-design/icons';
-import { ServiceRequest, REQUEST_STATUS_LABELS, SERVICE_TYPE_LABELS } from '@/types/database';
+import { ServiceRequest, REQUEST_STATUS_LABELS } from '@/types/database';
+import { useServiceTaxonomy } from '@/hooks/useServiceTaxonomy';
 import type { ColumnsType } from 'antd/es/table';
 import Link from 'next/link';
 
@@ -30,6 +31,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function AdminDashboard() {
+  const { labels: SERVICE_TYPE_LABELS } = useServiceTaxonomy();
   const [stats, setStats] = useState<DashboardStats>({
     totalRequests: 0,
     newRequests: 0,
@@ -71,7 +73,7 @@ export default function AdminDashboard() {
       title: 'Service',
       dataIndex: 'service_type',
       key: 'service_type',
-      render: (type) => SERVICE_TYPE_LABELS[type as keyof typeof SERVICE_TYPE_LABELS] || type,
+      render: (type) => SERVICE_TYPE_LABELS[type] || type,
     },
     {
       title: 'Landlord',

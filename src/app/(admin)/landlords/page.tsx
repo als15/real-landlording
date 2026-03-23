@@ -30,7 +30,8 @@ import {
   WarningOutlined,
   ExclamationCircleOutlined,
 } from '@ant-design/icons';
-import { Landlord, ServiceRequest, RequestVendorMatch, SERVICE_TYPE_LABELS, REQUEST_STATUS_LABELS, RequestStatus, URGENCY_LABELS, UrgencyLevel } from '@/types/database';
+import { Landlord, ServiceRequest, RequestVendorMatch, REQUEST_STATUS_LABELS, RequestStatus, URGENCY_LABELS, UrgencyLevel } from '@/types/database';
+import { useServiceTaxonomy } from '@/hooks/useServiceTaxonomy';
 import {
   objectsToCsv,
   downloadCsv,
@@ -79,6 +80,7 @@ function PropertyMap({ address }: { address: string }) {
 }
 
 export default function LandlordsPage() {
+  const { labels: SERVICE_TYPE_LABELS } = useServiceTaxonomy();
   const [landlords, setLandlords] = useState<Landlord[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -572,7 +574,7 @@ export default function LandlordsPage() {
                       title={
                         <Space>
                           <Tag color="blue">
-                            {SERVICE_TYPE_LABELS[request.service_type as keyof typeof SERVICE_TYPE_LABELS] || request.service_type}
+                            {SERVICE_TYPE_LABELS[request.service_type ] || request.service_type}
                           </Tag>
                           <Tag color={
                             request.status === 'completed' ? 'success' :

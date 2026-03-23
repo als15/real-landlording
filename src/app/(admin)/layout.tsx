@@ -17,6 +17,7 @@ import {
   MailOutlined,
   FundOutlined,
   DollarOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { brandColors } from '@/theme/config';
@@ -50,6 +51,11 @@ const menuItems: MenuProps['items'] = [
     key: '/landlords',
     icon: <UserOutlined />,
     label: 'Landlords',
+  },
+  {
+    key: '/service-categories',
+    icon: <AppstoreOutlined />,
+    label: 'Service Categories',
   },
   {
     type: 'divider',

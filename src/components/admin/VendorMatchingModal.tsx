@@ -29,9 +29,9 @@ import {
 import {
   Vendor,
   ServiceRequest,
-  SERVICE_TYPE_LABELS,
   URGENCY_LABELS,
 } from '@/types/database';
+import { useServiceTaxonomy } from '@/hooks/useServiceTaxonomy';
 import { getScoreTier, SCORE_TIERS, type ScoreTier } from '@/lib/scoring/config';
 import type { VendorWithMatchScore, SuggestionsResponse } from '@/lib/matching';
 import {
@@ -76,6 +76,7 @@ export default function VendorMatchingModal({
   onClose,
   onSuccess,
 }: VendorMatchingModalProps) {
+  const { labels: SERVICE_TYPE_LABELS } = useServiceTaxonomy();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [suggestions, setSuggestions] = useState<VendorWithMatchScore[]>([]);
   const [otherVendors, setOtherVendors] = useState<VendorWithMatchScore[]>([]);
@@ -305,7 +306,7 @@ export default function VendorMatchingModal({
         <Space wrap size="small">
           {services.slice(0, 2).map((s) => (
             <Tag key={s} color="blue">
-              {SERVICE_TYPE_LABELS[s as keyof typeof SERVICE_TYPE_LABELS] || s}
+              {SERVICE_TYPE_LABELS[s ] || s}
             </Tag>
           ))}
           {services.length > 2 && <Tag>+{services.length - 2}</Tag>}

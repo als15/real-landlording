@@ -34,7 +34,6 @@ import Image from 'next/image';
 import {
   ServiceRequest,
   RequestVendorMatch,
-  SERVICE_TYPE_LABELS,
   URGENCY_LABELS,
   PROPERTY_TYPE_LABELS,
   OCCUPANCY_STATUS_LABELS,
@@ -47,6 +46,7 @@ import {
   FinishLevel,
   ContactPreference,
 } from '@/types/database';
+import { useServiceTaxonomy } from '@/hooks/useServiceTaxonomy';
 import type { ColumnsType } from 'antd/es/table';
 
 const { Title, Text, Paragraph } = Typography;
@@ -71,6 +71,7 @@ const urgencyColors: Record<string, string> = {
 };
 
 export default function VendorDashboardPage() {
+  const { labels: SERVICE_TYPE_LABELS } = useServiceTaxonomy();
   const [jobs, setJobs] = useState<JobWithRequest[]>([]);
   const [stats, setStats] = useState<VendorStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -136,7 +137,7 @@ export default function VendorDashboardPage() {
       title: 'Service',
       key: 'service',
       render: (_, record) =>
-        SERVICE_TYPE_LABELS[record.request.service_type as keyof typeof SERVICE_TYPE_LABELS],
+        SERVICE_TYPE_LABELS[record.request.service_type ],
     },
     {
       title: 'Location',
@@ -294,7 +295,7 @@ export default function VendorDashboardPage() {
             {/* Service Information */}
             <Descriptions column={2} bordered size="small" title={<><HomeOutlined style={{ marginRight: 8 }} />Service Details</>}>
               <Descriptions.Item label="Service Type" span={2}>
-                {SERVICE_TYPE_LABELS[selectedJob.request.service_type as keyof typeof SERVICE_TYPE_LABELS]}
+                {SERVICE_TYPE_LABELS[selectedJob.request.service_type ]}
               </Descriptions.Item>
               <Descriptions.Item label="Urgency">
                 <Tag color={urgencyColors[selectedJob.request.urgency]}>

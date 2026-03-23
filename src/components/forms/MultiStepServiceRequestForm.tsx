@@ -24,7 +24,6 @@ import {
   OccupancyStatus,
   ContactPreference,
   SimpleUrgency,
-  SERVICE_TAXONOMY,
   PROPERTY_TYPE_LABELS,
   UNIT_COUNT_LABELS,
   OCCUPANCY_STATUS_LABELS,
@@ -32,6 +31,7 @@ import {
   SIMPLE_URGENCY_OPTIONS,
   ServiceRequestInput,
 } from '@/types/database';
+import { useServiceTaxonomy } from '@/hooks/useServiceTaxonomy';
 import AddressAutocomplete, { AddressData } from '@/components/AddressAutocomplete';
 import UrgencyToggle from '@/components/forms/UrgencyToggle';
 import MediaUpload from '@/components/MediaUpload';
@@ -47,6 +47,7 @@ interface MultiStepServiceRequestFormProps {
 }
 
 export default function MultiStepServiceRequestForm({ onSuccess, preSelectedCategory, preFilledDescription }: MultiStepServiceRequestFormProps) {
+  const { taxonomyMap: SERVICE_TAXONOMY } = useServiceTaxonomy();
   const [form] = Form.useForm();
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);

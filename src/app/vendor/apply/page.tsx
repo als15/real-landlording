@@ -5,9 +5,7 @@ import { Layout, Card, Form, Input, Select, Button, Checkbox, Typography, Space,
 import { useNotify } from '@/hooks/useNotify'
 import { CheckCircleOutlined, DollarOutlined, ThunderboltOutlined, SafetyCertificateOutlined, TeamOutlined, AppstoreOutlined, ArrowLeftOutlined, ArrowRightOutlined, InstagramOutlined, FacebookOutlined, LinkedinOutlined, SendOutlined } from '@ant-design/icons'
 import {
-  getGroupedServiceCategories,
   CONTACT_PREFERENCE_LABELS,
-  SERVICE_TAXONOMY,
   ServiceCategory,
   FINISH_LEVEL_LABELS,
   EMPLOYEE_COUNT_OPTIONS,
@@ -15,6 +13,7 @@ import {
   ACCEPTED_PAYMENTS_OPTIONS,
   REFERRAL_SOURCE_OPTIONS
 } from '@/types/database'
+import { useServiceTaxonomy } from '@/hooks/useServiceTaxonomy'
 import Link from 'next/link'
 import PublicHeader from '@/components/layout/PublicHeader'
 import PublicFooter from '@/components/layout/PublicFooter'
@@ -63,6 +62,7 @@ const STEPS = [
 ]
 
 export default function VendorApplyPage() {
+  const { taxonomyMap: SERVICE_TAXONOMY, categories: serviceCategoriesRaw, groups: serviceGroupsRaw } = useServiceTaxonomy()
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -74,7 +74,13 @@ export default function VendorApplyPage() {
   const [newsletterOptIn, setNewsletterOptIn] = useState(false)
   const { message } = useNotify()
 
-  const groupedCategories = getGroupedServiceCategories()
+  const groupedCategories = serviceGroupsRaw.map(g => ({
+    group: g.key,
+    label: g.label,
+    categories: serviceCategoriesRaw
+      .filter(c => c.group_key === g.key)
+      .map(c => ({ value: c.key, label: c.label })),
+  }))
 
   // Get classifications (equipment types) for selected services
   const getServiceClassifications = (services: ServiceCategory[]) => {
