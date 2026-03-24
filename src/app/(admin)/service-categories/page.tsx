@@ -103,7 +103,7 @@ export default function ServiceCategoriesPage() {
         setGroups(groupData.groups ?? []);
       }
     } catch {
-      notify.error('Failed to load service categories');
+      notify.error('Failed to load service taxonomy');
     } finally {
       setLoading(false);
     }
@@ -161,11 +161,11 @@ export default function ServiceCategoriesPage() {
 
       if (!res.ok) {
         const err = await res.json();
-        notify.error(err.message || 'Failed to save category');
+        notify.error(err.message || 'Failed to save sub category');
         return;
       }
 
-      notify.success(editingCategory ? 'Category updated' : 'Category created');
+      notify.success(editingCategory ? 'Sub category updated' : 'Sub category created');
       setModalOpen(false);
       fetchData();
     } catch {
@@ -178,7 +178,7 @@ export default function ServiceCategoriesPage() {
   const handleDeleteCategory = async (cat: CategoryWithCounts) => {
     const res = await fetch(`/api/admin/service-categories/${cat.id}`, { method: 'DELETE' });
     if (res.ok) {
-      notify.success('Category deactivated');
+      notify.success('Sub category deactivated');
       fetchData();
     } else {
       const err = await res.json();
@@ -271,7 +271,7 @@ export default function ServiceCategoriesPage() {
           notify.error(err.message);
           return;
         }
-        notify.success('Group updated');
+        notify.success('Category updated');
       } else {
         const res = await fetch('/api/admin/service-category-groups', {
           method: 'POST',
@@ -283,7 +283,7 @@ export default function ServiceCategoriesPage() {
           notify.error(err.message);
           return;
         }
-        notify.success('Group created');
+        notify.success('Category created');
       }
 
       setGroupModalOpen(false);
@@ -382,10 +382,10 @@ export default function ServiceCategoriesPage() {
             onClick={() => openEditModal(record)}
           />
           <Popconfirm
-            title="Deactivate this category?"
+            title="Deactivate this sub category?"
             description={
               record.vendor_count > 0 || record.request_count > 0
-                ? `${record.vendor_count} vendors and ${record.request_count} requests use this category.`
+                ? `${record.vendor_count} vendors and ${record.request_count} requests use this sub category.`
                 : undefined
             }
             onConfirm={() => handleDeleteCategory(record)}
@@ -418,7 +418,7 @@ export default function ServiceCategoriesPage() {
       label: (
         <Space>
           <Text strong>{group.label}</Text>
-          <Tag>{activeCats.length} categories</Tag>
+          <Tag>{activeCats.length} sub categories</Tag>
           <Tag>{totalVendors} vendors</Tag>
           <Button
             type="text"
@@ -478,23 +478,23 @@ export default function ServiceCategoriesPage() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <Title level={3} style={{ margin: 0 }}>Service Categories</Title>
+        <Title level={3} style={{ margin: 0 }}>Service Taxonomy</Title>
         <Space>
           <Button icon={<ReloadOutlined />} onClick={fetchData}>Refresh</Button>
-          <Button icon={<PlusOutlined />} onClick={() => openGroupModal()}>Add Group</Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>Add Category</Button>
+          <Button icon={<PlusOutlined />} onClick={() => openGroupModal()}>Add Category</Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>Add Sub Category</Button>
         </Space>
       </div>
 
       <Row gutter={16} style={{ marginBottom: 24 }}>
         <Col span={6}>
           <Card size="small">
-            <Statistic title="Groups" value={sortedGroups.length} />
+            <Statistic title="Categories" value={sortedGroups.length} />
           </Card>
         </Col>
         <Col span={6}>
           <Card size="small">
-            <Statistic title="Active Categories" value={activeCount} />
+            <Statistic title="Active Sub Categories" value={activeCount} />
           </Card>
         </Col>
         <Col span={6}>
@@ -521,7 +521,7 @@ export default function ServiceCategoriesPage() {
 
       {/* ---- Category Modal ---- */}
       <Modal
-        title={editingCategory ? `Edit: ${editingCategory.label}` : 'New Category'}
+        title={editingCategory ? `Edit: ${editingCategory.label}` : 'New Sub Category'}
         open={modalOpen}
         onOk={handleSaveCategory}
         onCancel={() => setModalOpen(false)}
@@ -540,7 +540,7 @@ export default function ServiceCategoriesPage() {
             </Form.Item>
           )}
 
-          <Form.Item name="group_key" label="Group" rules={[{ required: true }]}>
+          <Form.Item name="group_key" label="Category" rules={[{ required: true }]}>
             <Select
               options={sortedGroups.map((g) => ({ value: g.key, label: g.label }))}
             />
@@ -643,14 +643,14 @@ export default function ServiceCategoriesPage() {
 
       {/* ---- Group Modal ---- */}
       <Modal
-        title={editingGroup ? `Edit Group: ${editingGroup.label}` : 'New Group'}
+        title={editingGroup ? `Edit Category: ${editingGroup.label}` : 'New Category'}
         open={groupModalOpen}
         onOk={handleSaveGroup}
         onCancel={() => setGroupModalOpen(false)}
         confirmLoading={saving}
       >
         <Form form={groupForm} layout="vertical">
-          <Form.Item name="label" label="Group Label" rules={[{ required: true }]}>
+          <Form.Item name="label" label="Category Label" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
           {editingGroup && (
