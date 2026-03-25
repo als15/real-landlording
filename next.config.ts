@@ -24,11 +24,11 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.googleapis.com https://us.i.posthog.com",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.googleapis.com https://us.i.posthog.com https://us-assets.i.posthog.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: https://*.supabase.co blob:",
-              "connect-src 'self' https://*.supabase.co https://us.i.posthog.com wss://*.supabase.co https://maps.googleapis.com",
+              "connect-src 'self' https://*.supabase.co https://us.i.posthog.com https://us-assets.i.posthog.com wss://*.supabase.co https://maps.googleapis.com",
               "frame-ancestors 'none'",
             ].join('; '),
           },
