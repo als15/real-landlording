@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { rateLimit } from '@/lib/rate-limit';
 import { validateName } from '@/lib/validation';
 
@@ -84,7 +84,10 @@ export async function POST(request: NextRequest) {
     const needsEmailConfirmation = !authData.user.email_confirmed_at;
 
     // Update or create landlord profile with auth user id
-    const { error: landlordError } = await supabase
+    // Must use admin client because RLS UPDATE policy requires auth_user_id = auth.uid(),
+    // but the existing row has auth_user_id = NULL (created from public form submission)
+    const adminClient = createAdminClient();
+    const { error: landlordError } = await adminClient
       .from('landlords')
       .upsert(
         {
@@ -101,14 +104,14 @@ export async function POST(request: NextRequest) {
 
     // If there's a request ID, link it to the landlord
     if (requestId) {
-      const { data: landlord } = await supabase
+      const { data: landlord } = await adminClient
         .from('landlords')
         .select('id')
         .eq('email', email)
         .single();
 
       if (landlord) {
-        await supabase
+        await adminClient
           .from('service_requests')
           .update({ landlord_id: landlord.id })
           .eq('id', requestId);

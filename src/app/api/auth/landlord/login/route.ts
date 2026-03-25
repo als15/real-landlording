@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
@@ -45,7 +45,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Get or create landlord profile
-    let { data: landlord } = await supabase
+    // Must use admin client for lookups/updates on rows where auth_user_id is NULL,
+    // because RLS only allows SELECT/UPDATE where auth_user_id = auth.uid()
+    const adminClient = createAdminClient();
+    let { data: landlord } = await adminClient
       .from('landlords')
       .select('*')
       .eq('auth_user_id', authData.user.id)
@@ -53,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     // If no landlord profile linked, try to find by email
     if (!landlord) {
-      const { data: landlordByEmail } = await supabase
+      const { data: landlordByEmail } = await adminClient
         .from('landlords')
         .select('*')
         .eq('email', email)
@@ -61,14 +64,14 @@ export async function POST(request: NextRequest) {
 
       if (landlordByEmail) {
         // Link existing landlord profile to auth user
-        await supabase
+        await adminClient
           .from('landlords')
           .update({ auth_user_id: authData.user.id })
           .eq('id', landlordByEmail.id);
-        landlord = landlordByEmail;
+        landlord = { ...landlordByEmail, auth_user_id: authData.user.id };
       } else {
         // Create new landlord profile
-        const { data: newLandlord } = await supabase
+        const { data: newLandlord } = await adminClient
           .from('landlords')
           .insert({
             auth_user_id: authData.user.id,
