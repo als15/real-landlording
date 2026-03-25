@@ -34,6 +34,7 @@ export async function GET() {
       vendorMatchCountsResult,
       allRequestsResult,
       matchedRequestsWithTimesResult,
+      pendingVendorsResult,
     ] = await Promise.all([
       // Requests this week
       supabase
@@ -80,10 +81,17 @@ export async function GET() {
       // Matched requests with intro_sent_at for time-to-match calculation
       supabase
         .from('service_requests')
-        .select('id, created_at, matched_at')
+        .select('id, created_at, intro_sent_at')
         .in('status', ['matched', 'completed'])
-        .not('matched_at', 'is', null)
+        .not('intro_sent_at', 'is', null)
         .limit(100),
+
+      // Vendors pending review (for approval wait time)
+      supabase
+        .from('vendors')
+        .select('created_at')
+        .eq('status', 'pending_review'),
+
     ]);
 
     // Calculate requests by service type
@@ -214,10 +222,10 @@ export async function GET() {
     let avgTimeToMatch = 0;
     if (matchedRequestsWithTimesResult.data && matchedRequestsWithTimesResult.data.length > 0) {
       const matchTimes = matchedRequestsWithTimesResult.data
-        .filter(r => r.matched_at && r.created_at)
+        .filter(r => r.intro_sent_at && r.created_at)
         .map(r => {
           const created = new Date(r.created_at).getTime();
-          const matched = new Date(r.matched_at).getTime();
+          const matched = new Date(r.intro_sent_at).getTime();
           return (matched - created) / (1000 * 60 * 60); // Convert to hours
         })
         .filter(hours => hours > 0 && hours < 720); // Filter out outliers (> 30 days)
@@ -266,6 +274,16 @@ export async function GET() {
       count,
     }));
 
+    // Calculate vendor approval wait times
+    const pendingVendorCount = pendingVendorsResult.data?.length || 0;
+    let avgPendingWaitDays = 0;
+    if (pendingVendorsResult.data && pendingVendorsResult.data.length > 0) {
+      const waitDays = pendingVendorsResult.data.map((v) => {
+        return (now.getTime() - new Date(v.created_at).getTime()) / (1000 * 60 * 60 * 24);
+      });
+      avgPendingWaitDays = Math.round(waitDays.reduce((a, b) => a + b, 0) / waitDays.length);
+    }
+
     return NextResponse.json({
       requestsThisWeek: weeklyRequestsResult.count || 0,
       requestsThisMonth: monthlyRequestsResult.count || 0,
@@ -276,6 +294,10 @@ export async function GET() {
       weeklyTrend,
       statusDistribution,
       urgencyDistribution,
+      vendorApprovalWait: {
+        pendingCount: pendingVendorCount,
+        avgPendingWaitDays,
+      },
     });
   } catch (error) {
     console.error('Analytics API error:', error);

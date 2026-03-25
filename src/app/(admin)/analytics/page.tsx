@@ -15,6 +15,7 @@ import {
   FunnelPlotOutlined,
   DollarOutlined,
   StarOutlined,
+  AimOutlined,
 } from '@ant-design/icons';
 import {
   LineChart,
@@ -67,6 +68,11 @@ interface VendorLeaderboardItem {
   trend: 'up' | 'down' | 'stable';
 }
 
+interface VendorApprovalWait {
+  pendingCount: number;
+  avgPendingWaitDays: number;
+}
+
 interface AnalyticsData {
   requestsThisWeek: number;
   requestsThisMonth: number;
@@ -77,6 +83,7 @@ interface AnalyticsData {
   weeklyTrend: WeeklyTrendItem[];
   statusDistribution: StatusDistributionItem[];
   urgencyDistribution: UrgencyDistributionItem[];
+  vendorApprovalWait: VendorApprovalWait;
 }
 
 interface ConversionFunnel {
@@ -120,6 +127,17 @@ interface ConversionData {
   serviceTypeConversions: ServiceTypeConversion[];
   vendorConversions: VendorConversion[];
   lossReasons: Record<string, number>;
+}
+
+interface KpiData {
+  requestsPerMonth: number;
+  activeVendors: number;
+  matchSuccessRate: number;
+  avgTimeToMatch: number;
+  revenuePerMonth: number;
+  paymentCollectionRate: number;
+  signupConversion: number;
+  repeatUsage: number;
 }
 
 // Color palette
@@ -168,6 +186,8 @@ export default function AnalyticsPage() {
   const [conversionData, setConversionData] = useState<ConversionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [conversionLoading, setConversionLoading] = useState(false);
+  const [kpiData, setKpiData] = useState<KpiData | null>(null);
+  const [kpiLoading, setKpiLoading] = useState(false);
   const [trendView, setTrendView] = useState<'requests' | 'matched' | 'emergency'>('requests');
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -205,11 +225,30 @@ export default function AnalyticsPage() {
     }
   }, [conversionData]);
 
+  const fetchKpis = useCallback(async () => {
+    if (kpiData) return;
+    setKpiLoading(true);
+    try {
+      const res = await fetch('/api/admin/analytics/kpis');
+      if (res.ok) {
+        const data = await res.json();
+        setKpiData(data);
+      }
+    } catch (error) {
+      console.error('Error fetching KPIs:', error);
+    } finally {
+      setKpiLoading(false);
+    }
+  }, [kpiData]);
+
   useEffect(() => {
     if (activeTab === 'conversions') {
       fetchConversions();
     }
-  }, [activeTab, fetchConversions]);
+    if (activeTab === 'kpis') {
+      fetchKpis();
+    }
+  }, [activeTab, fetchConversions, fetchKpis]);
 
   const serviceTypeColumns: ColumnsType<{ service_type: string; count: number }> = [
     {
@@ -544,7 +583,7 @@ export default function AnalyticsPage() {
                   percent={funnel.matched_rate}
                   success={{ percent: (funnel.won / funnel.total_requests) * 100 }}
                   strokeColor={COLORS.cyan}
-                  trailColor="#f0f0f0"
+                  railColor="#f0f0f0"
                   showInfo={false}
                   style={{ marginBottom: 8 }}
                 />
@@ -632,11 +671,209 @@ export default function AnalyticsPage() {
     );
   };
 
+  const renderKpiTab = () => {
+    if (kpiLoading) {
+      return (
+        <div style={{ textAlign: 'center', padding: '100px 0' }}>
+          <Spin size="large" />
+        </div>
+      );
+    }
+
+    if (!kpiData) {
+      return <Empty description="Unable to load KPI data" />;
+    }
+
+    interface KpiRow {
+      key: string;
+      metric: string;
+      actual: number;
+      format: 'number' | 'percent' | 'hours' | 'currency';
+      q2Target: number;
+      q3Target: number;
+      q4Target: number;
+    }
+
+    const rows: KpiRow[] = [
+      {
+        key: 'requests',
+        metric: 'Requests / month',
+        actual: kpiData.requestsPerMonth,
+        format: 'number',
+        q2Target: Math.max(Math.round(kpiData.requestsPerMonth * 1.2), 1),
+        q3Target: Math.max(Math.round(kpiData.requestsPerMonth * 1.3), 1),
+        q4Target: Math.max(Math.round(kpiData.requestsPerMonth * 1.5), 1),
+      },
+      {
+        key: 'vendors',
+        metric: 'Active vendors',
+        actual: kpiData.activeVendors,
+        format: 'number',
+        q2Target: kpiData.activeVendors + 10,
+        q3Target: kpiData.activeVendors + 20,
+        q4Target: kpiData.activeVendors + 25,
+      },
+      {
+        key: 'matchSuccess',
+        metric: 'Match success rate',
+        actual: kpiData.matchSuccessRate,
+        format: 'percent',
+        q2Target: 50,
+        q3Target: 60,
+        q4Target: 70,
+      },
+      {
+        key: 'timeToMatch',
+        metric: 'Avg time to match',
+        actual: kpiData.avgTimeToMatch,
+        format: 'hours',
+        q2Target: 48,
+        q3Target: 36,
+        q4Target: 24,
+      },
+      {
+        key: 'revenue',
+        metric: 'Referral revenue / month',
+        actual: kpiData.revenuePerMonth,
+        format: 'currency',
+        q2Target: 1,
+        q3Target: 500,
+        q4Target: 2000,
+      },
+      {
+        key: 'collection',
+        metric: 'Payment collection rate',
+        actual: kpiData.paymentCollectionRate,
+        format: 'percent',
+        q2Target: 50,
+        q3Target: 70,
+        q4Target: 85,
+      },
+      {
+        key: 'signup',
+        metric: 'Signup conversion',
+        actual: kpiData.signupConversion,
+        format: 'percent',
+        q2Target: 20,
+        q3Target: 30,
+        q4Target: 40,
+      },
+      {
+        key: 'repeat',
+        metric: 'Landlord repeat usage',
+        actual: kpiData.repeatUsage,
+        format: 'percent',
+        q2Target: 15,
+        q3Target: 25,
+        q4Target: 35,
+      },
+    ];
+
+    const formatValue = (value: number, format: KpiRow['format']) => {
+      switch (format) {
+        case 'percent': return `${value}%`;
+        case 'hours': return `${value}h`;
+        case 'currency': return `$${value.toLocaleString()}`;
+        default: return value.toLocaleString();
+      }
+    };
+
+    const getStatus = (row: KpiRow): { label: string; color: string } => {
+      // For time-to-match, lower is better
+      if (row.key === 'timeToMatch') {
+        if (row.actual <= row.q2Target) return { label: 'On Track', color: 'green' };
+        if (row.actual <= row.q2Target * 1.5) return { label: 'Close', color: 'orange' };
+        return { label: 'Behind', color: 'red' };
+      }
+      // For revenue Q2 target of $1 — any revenue means met
+      if (row.key === 'revenue') {
+        if (row.actual >= row.q2Target) return { label: 'On Track', color: 'green' };
+        return { label: 'Behind', color: 'red' };
+      }
+      // Standard: higher is better
+      if (row.actual >= row.q2Target) return { label: 'On Track', color: 'green' };
+      if (row.actual >= row.q2Target * 0.7) return { label: 'Close', color: 'orange' };
+      return { label: 'Behind', color: 'red' };
+    };
+
+    const getProgress = (row: KpiRow): number => {
+      if (row.q2Target === 0) return 100;
+      // For time-to-match, invert: being under target is good
+      if (row.key === 'timeToMatch') {
+        if (row.actual <= row.q2Target) return 100;
+        // Scale: at 2x target = 0%, at target = 100%
+        return Math.max(0, Math.round((1 - (row.actual - row.q2Target) / row.q2Target) * 100));
+      }
+      return Math.min(100, Math.round((row.actual / row.q2Target) * 100));
+    };
+
+    const kpiColumns: ColumnsType<KpiRow> = [
+      {
+        title: 'Metric',
+        dataIndex: 'metric',
+        key: 'metric',
+        width: 200,
+        render: (text: string) => <Text strong>{text}</Text>,
+      },
+      {
+        title: <span>Q1 Baseline<br /><Text type="secondary" style={{ fontSize: 11, fontWeight: 'normal' }}>Jan – Mar</Text></span>,
+        key: 'actual',
+        width: 140,
+        render: (_, row) => (
+          <Text strong style={{ fontSize: 16 }}>{formatValue(row.actual, row.format)}</Text>
+        ),
+      },
+      {
+        title: <span>Q2 Target<br /><Text type="secondary" style={{ fontSize: 11, fontWeight: 'normal' }}>Apr – Jun</Text></span>,
+        key: 'q2',
+        width: 110,
+        render: (_, row) => (
+          row.key === 'revenue' && row.q2Target === 1
+            ? <Text type="secondary">{'>$0'}</Text>
+            : <Text type="secondary">{formatValue(row.q2Target, row.format)}</Text>
+        ),
+      },
+      {
+        title: <span>Q3 Target<br /><Text type="secondary" style={{ fontSize: 11, fontWeight: 'normal' }}>Jul – Sep</Text></span>,
+        key: 'q3',
+        width: 100,
+        render: (_, row) => <Text type="secondary">{formatValue(row.q3Target, row.format)}</Text>,
+      },
+      {
+        title: <span>Q4 Target<br /><Text type="secondary" style={{ fontSize: 11, fontWeight: 'normal' }}>Oct – Dec</Text></span>,
+        key: 'q4',
+        width: 100,
+        render: (_, row) => <Text type="secondary">{formatValue(row.q4Target, row.format)}</Text>,
+      },
+      {
+        title: 'Status',
+        key: 'status',
+        width: 100,
+        render: (_, row) => {
+          const status = getStatus(row);
+          return <Tag color={status.color}>{status.label}</Tag>;
+        },
+      },
+    ];
+
+    return (
+      <Card title={<><AimOutlined style={{ marginRight: 8 }} />Quarterly KPI Targets — 2026</>}>
+        <Table
+          columns={kpiColumns}
+          dataSource={rows}
+          rowKey="key"
+          pagination={false}
+          size="middle"
+        />
+      </Card>
+    );
+  };
+
   const renderOverviewTab = () => (
     <div>
       {/* KPI Cards */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} sm={12} lg={4}>
           <Card>
             <Statistic
               title="Requests This Week"
@@ -658,7 +895,7 @@ export default function AnalyticsPage() {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} sm={12} lg={4}>
           <Card>
             <Statistic
               title="Requests This Month"
@@ -667,7 +904,7 @@ export default function AnalyticsPage() {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} sm={12} lg={4}>
           <Card>
             <Statistic
               title="Match Success Rate"
@@ -678,7 +915,7 @@ export default function AnalyticsPage() {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} sm={12} lg={4}>
           <Card>
             <Statistic
               title="Avg. Time to Match"
@@ -686,6 +923,27 @@ export default function AnalyticsPage() {
               suffix="hours"
               prefix={<ClockCircleOutlined />}
               valueStyle={{ color: data.avgTimeToMatch <= 24 ? COLORS.success : data.avgTimeToMatch <= 48 ? COLORS.warning : COLORS.danger }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={4}>
+          <Card>
+            <Statistic
+              title="Pending Vendors"
+              value={data.vendorApprovalWait.pendingCount}
+              prefix={<ClockCircleOutlined />}
+              valueStyle={{ color: data.vendorApprovalWait.pendingCount > 0 ? COLORS.warning : COLORS.success }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={4}>
+          <Card>
+            <Statistic
+              title="Avg. Approval Wait"
+              value={data.vendorApprovalWait.avgPendingWaitDays}
+              suffix="days"
+              prefix={<ClockCircleOutlined />}
+              valueStyle={{ color: data.vendorApprovalWait.avgPendingWaitDays <= 3 ? COLORS.success : data.vendorApprovalWait.avgPendingWaitDays <= 7 ? COLORS.warning : COLORS.danger }}
             />
           </Card>
         </Col>
@@ -888,6 +1146,16 @@ export default function AnalyticsPage() {
               </span>
             ),
             children: renderConversionTab(),
+          },
+          {
+            key: 'kpis',
+            label: (
+              <span>
+                <AimOutlined />
+                KPIs
+              </span>
+            ),
+            children: renderKpiTab(),
           },
         ]}
       />
