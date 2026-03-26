@@ -13,7 +13,8 @@ This document captures recurring patterns, common issues, and their solutions to
 5. [API Route Patterns](#api-route-patterns)
 6. [Security Patterns](#security-patterns)
 7. [Service Taxonomy (DB-Driven)](#service-taxonomy-db-driven)
-8. [Common Issues & Solutions](#common-issues--solutions)
+8. [Vendor Referral Terms](#vendor-referral-terms)
+9. [Common Issues & Solutions](#common-issues--solutions)
 
 ---
 
@@ -474,6 +475,62 @@ The following exports in `src/types/database.ts` are deprecated and will be remo
 - `getGroupedServiceCategories()` → use hook data
 
 Server-side files (email templates, SMS templates, notification service, matching logic) still import from `database.ts` during transition.
+
+---
+
+## Vendor Referral Terms
+
+**Migration:** `022_vendor_referral_terms.sql` — 15 `referral_*` columns on the `vendors` table.
+
+### Column Reference
+
+| Column | Type | Default | Purpose |
+|--------|------|---------|---------|
+| `referral_fee_type` | VARCHAR(30) | `'percentage'` | `percentage`, `flat_fee`, `percentage_plus_flat` |
+| `referral_fee_percentage` | DECIMAL(5,2) | `5.00` | Fee percentage (0–100) |
+| `referral_fee_flat_amount` | DECIMAL(10,2) | NULL | Flat fee dollar amount |
+| `referral_calculation_basis` | VARCHAR(30) | `'gross_invoice'` | `gross_invoice`, `net_invoice`, `per_referral`, `matched_only` |
+| `referral_fee_trigger` | VARCHAR(30) | `'upon_vendor_paid'` | `upon_vendor_paid`, `upon_match`, `upon_invoice_issued`, `custom` |
+| `referral_payment_due_days` | INTEGER | `7` | Days after trigger |
+| `referral_late_fee_enabled` | BOOLEAN | `true` | Toggle late fees |
+| `referral_late_fee_rate_type` | VARCHAR(30) | `'percentage_per_month'` | `percentage_per_month`, `flat_amount`, `none` |
+| `referral_late_fee_rate_value` | DECIMAL(10,2) | `1.50` | Rate value |
+| `referral_late_fee_grace_period_days` | INTEGER | `0` | Grace period days |
+| `referral_repeat_fee_modifier` | DECIMAL(5,2) | `50.00` | % of original fee for repeats |
+| `referral_repeat_fee_window_months` | INTEGER | `24` | Window for repeat classification |
+| `referral_terms_effective_date` | DATE | `CURRENT_DATE` | When terms take effect |
+| `referral_terms_version` | VARCHAR(20) | `'v1.0'` | Version label |
+| `referral_custom_terms_notes` | TEXT | NULL | Required when trigger = custom |
+
+### Relationship to Legacy `default_fee_*` Columns
+
+The legacy `default_fee_type`, `default_fee_amount`, and `default_fee_percentage` columns (migration 013) are used by the CRM for individual match/payment tracking. They remain untouched. The new `referral_*` columns define the **per-vendor referral agreement terms** and are managed via the **Referral Terms tab** on the vendor detail page (`/vendors/[id]`).
+
+### Conditional UI Logic
+
+- **Fee Type → value fields**: `percentage` shows only %, `flat_fee` shows only $, `percentage_plus_flat` shows both. On save, irrelevant fields are nulled/zeroed.
+- **Late Fee toggle**: When `referral_late_fee_enabled` is false, the rate type/value/grace fields are hidden and saved as `none`/`0`/`0`.
+- **Fee Trigger = custom**: Makes `referral_custom_terms_notes` required. When trigger is not custom, notes are optional.
+
+### TypeScript
+
+- `Vendor` interface: 15 fields after the legacy `default_fee_*` section
+- `VendorInput` interface: 15 optional fields
+- Label maps: `REFERRAL_FEE_TYPE_LABELS`, `REFERRAL_CALCULATION_BASIS_LABELS`, `REFERRAL_FEE_TRIGGER_LABELS`, `REFERRAL_LATE_FEE_RATE_TYPE_LABELS` in `src/types/database.ts`
+
+### Vendor Detail Page Architecture
+
+The vendor detail/edit UI lives on a dedicated page at `/vendors/[id]` with tabbed sections. The vendor list page (`/vendors`) only shows the table — clicking a row navigates to the detail page.
+
+**Components** (in `src/components/admin/vendors/`):
+- `constants.ts` — shared color maps (`statusColors`, `slaStatusColors`, `matchStatusColors`, `matchStatusLabels`)
+- `VendorOverviewTab` — status, contact info, qualifications, vetting score, performance
+- `VendorServicesTab` — services, specialties, service areas (uses `useServiceTaxonomy()`)
+- `VendorReferralTermsTab` — all 15 referral fields with conditional logic
+- `VendorSlaComplianceTab` — SLA status/actions, admin notes
+- `VendorHistoryTab` — read-only referral match card list
+
+Each editable tab follows the pattern: view-first with `<Descriptions>`, "Edit" button toggles an inline `<Form>`, `onUpdate(partialData)` calls the parent's PATCH handler.
 
 ---
 

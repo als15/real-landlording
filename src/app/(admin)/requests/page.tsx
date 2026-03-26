@@ -979,7 +979,7 @@ function RequestsPageContent() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div>
                           <Link
-                            href={`/vendors?view=${match.vendor_id}`}
+                            href={`/vendors/${match.vendor_id}`}
                             target="_blank"
                             strong
                           >

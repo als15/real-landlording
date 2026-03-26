@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Layout, Menu, Typography, Button, Space, Dropdown, Avatar } from 'antd';
 import {
@@ -98,8 +98,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const router = useRouter();
 
+  // Compute selected menu key — match nested routes to their parent
+  const topLevelRoutes = ['/', '/requests', '/vendors', '/applications', '/landlords', '/service-categories'];
+  const selectedMenuKey = useMemo(() => {
+    const allRoutes = [...topLevelRoutes, ...operationsRoutes];
+    if (allRoutes.includes(pathname)) return pathname;
+    for (const route of allRoutes) {
+      if (route !== '/' && pathname.startsWith(route + '/')) return route;
+    }
+    return pathname;
+  }, [pathname]);
+
   // Determine which submenu should be open based on current path
-  const defaultOpenKeys = operationsRoutes.includes(pathname) ? ['operations'] : [];
+  const defaultOpenKeys = operationsRoutes.includes(selectedMenuKey) ? ['operations'] : [];
 
   const handleMenuClick: MenuProps['onClick'] = (e) => {
     router.push(e.key);
@@ -183,7 +194,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Navigation Menu */}
         <Menu
           mode="inline"
-          selectedKeys={[pathname]}
+          selectedKeys={[selectedMenuKey]}
           defaultOpenKeys={defaultOpenKeys}
           items={menuItems}
           onClick={handleMenuClick}

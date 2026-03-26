@@ -320,12 +320,12 @@ test.describe('Admin Vendor Management (Authenticated)', () => {
     }
   });
 
-  test('should open vendor directly via URL param', async ({ page }) => {
+  test('should navigate to vendor detail page', async ({ page }) => {
     // This test requires having a vendor ID - we'll just verify the mechanism works
-    await page.goto('/vendors?view=fake-id');
+    await page.goto('/vendors/fake-id');
 
-    // Should still show vendors page (error handled gracefully)
-    await page.waitForSelector('.ant-table, table', { timeout: 10000 });
+    // Should redirect to vendors list (vendor not found handled gracefully)
+    await page.waitForURL('**/vendors', { timeout: 10000 });
   });
 });
 
