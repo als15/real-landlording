@@ -767,6 +767,33 @@ export const JOB_OUTCOME_REASON_LABELS: Record<JobOutcomeReason, string> = {
   other: 'Other',
 };
 
+// Referral terms label maps (migration 022)
+export const REFERRAL_FEE_TYPE_LABELS: Record<string, string> = {
+  percentage: 'Percentage',
+  flat_fee: 'Flat Fee',
+  percentage_plus_flat: 'Percentage + Flat Fee',
+};
+
+export const REFERRAL_CALCULATION_BASIS_LABELS: Record<string, string> = {
+  gross_invoice: 'Gross Invoice',
+  net_invoice: 'Net Invoice',
+  per_referral: 'Per Referral',
+  matched_only: 'Matched Only',
+};
+
+export const REFERRAL_FEE_TRIGGER_LABELS: Record<string, string> = {
+  upon_vendor_paid: 'Upon Vendor Paid',
+  upon_match: 'Upon Match',
+  upon_invoice_issued: 'Upon Invoice Issued',
+  custom: 'Custom',
+};
+
+export const REFERRAL_LATE_FEE_RATE_TYPE_LABELS: Record<string, string> = {
+  percentage_per_month: '% Per Month',
+  flat_amount: 'Flat Amount',
+  none: 'None',
+};
+
 // CRM: Payment method options
 export const PAYMENT_METHOD_OPTIONS = [
   { value: 'check', label: 'Check' },
@@ -920,6 +947,22 @@ export interface Vendor {
   default_fee_type: 'fixed' | 'percentage' | null;
   default_fee_amount: number | null;
   default_fee_percentage: number | null;
+  // Referral terms (migration 022)
+  referral_fee_type: string;
+  referral_fee_percentage: number;
+  referral_fee_flat_amount: number | null;
+  referral_calculation_basis: string;
+  referral_fee_trigger: string;
+  referral_payment_due_days: number;
+  referral_late_fee_enabled: boolean;
+  referral_late_fee_rate_type: string;
+  referral_late_fee_rate_value: number;
+  referral_late_fee_grace_period_days: number;
+  referral_repeat_fee_modifier: number;
+  referral_repeat_fee_window_months: number;
+  referral_terms_effective_date: string;
+  referral_terms_version: string;
+  referral_custom_terms_notes: string | null;
 }
 
 export interface ServiceRequest {
@@ -1169,6 +1212,22 @@ export interface VendorInput {
   accepted_payments?: string[];
   referral_source?: string;
   referral_source_name?: string;
+  // Referral terms (migration 022)
+  referral_fee_type?: string;
+  referral_fee_percentage?: number;
+  referral_fee_flat_amount?: number | null;
+  referral_calculation_basis?: string;
+  referral_fee_trigger?: string;
+  referral_payment_due_days?: number;
+  referral_late_fee_enabled?: boolean;
+  referral_late_fee_rate_type?: string;
+  referral_late_fee_rate_value?: number;
+  referral_late_fee_grace_period_days?: number;
+  referral_repeat_fee_modifier?: number;
+  referral_repeat_fee_window_months?: number;
+  referral_terms_effective_date?: string;
+  referral_terms_version?: string;
+  referral_custom_terms_notes?: string | null;
 }
 
 export interface LandlordSignupInput {
