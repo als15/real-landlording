@@ -1,6 +1,6 @@
 'use client';
 
-import { List, Progress, Tag, Space, Typography, Tooltip } from 'antd';
+import { Progress, Tag, Space, Typography, Tooltip } from 'antd';
 import {
   CheckCircleOutlined,
   WarningOutlined,
@@ -102,38 +102,34 @@ export default function MatchFactorsList({
       )}
 
       {/* Factors list */}
-      <List
-        size="small"
-        dataSource={factors}
-        renderItem={(factor) => (
-          <List.Item style={{ padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}>
-            <div style={{ width: '100%' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                <Space size="small">
-                  {getFactorIcon(factor.icon)}
-                  <Text strong style={{ fontSize: 13 }}>{factor.name}</Text>
-                  <Text type="secondary" style={{ fontSize: 11 }}>
-                    ({Math.round(factor.weight * 100)}%)
-                  </Text>
-                </Space>
-                <Text style={{ fontSize: 13, fontWeight: 500 }}>
-                  {factor.score.toFixed(0)}/100
+      <div>
+        {factors.map((factor, index) => (
+          <div key={index} style={{ padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <Space size="small">
+                {getFactorIcon(factor.icon)}
+                <Text strong style={{ fontSize: 13 }}>{factor.name}</Text>
+                <Text type="secondary" style={{ fontSize: 11 }}>
+                  ({Math.round(factor.weight * 100)}%)
                 </Text>
-              </div>
-              <Progress
-                percent={factor.score}
-                size="small"
-                strokeColor={getScoreColor(factor.score)}
-                showInfo={false}
-                style={{ marginBottom: 4 }}
-              />
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                {factor.reason}
+              </Space>
+              <Text style={{ fontSize: 13, fontWeight: 500 }}>
+                {factor.score.toFixed(0)}/100
               </Text>
             </div>
-          </List.Item>
-        )}
-      />
+            <Progress
+              percent={factor.score}
+              size="small"
+              strokeColor={getScoreColor(factor.score)}
+              showInfo={false}
+              style={{ marginBottom: 4 }}
+            />
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {factor.reason}
+            </Text>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -14,9 +14,7 @@ import {
   Tooltip,
   Input,
   Switch,
-  Tabs,
   Spin,
-  Empty,
 } from 'antd';
 import { useNotify } from '@/hooks/useNotify';
 import {
@@ -25,6 +23,7 @@ import {
   SearchOutlined,
   ThunderboltOutlined,
   CheckCircleOutlined,
+  StarFilled,
 } from '@ant-design/icons';
 import {
   Vendor,
@@ -34,10 +33,7 @@ import {
 import { useServiceTaxonomy } from '@/hooks/useServiceTaxonomy';
 import { getScoreTier, SCORE_TIERS, type ScoreTier } from '@/lib/scoring/config';
 import type { VendorWithMatchScore, SuggestionsResponse } from '@/lib/matching';
-import {
-  VendorSuggestionCard,
-  MatchScoreBadge,
-} from './matching';
+import { MatchScoreBadge } from './matching';
 import type { ColumnsType } from 'antd/es/table';
 
 const { Text } = Typography;
@@ -87,7 +83,6 @@ export default function VendorMatchingModal({
   const [showAllVendors, setShowAllVendors] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [activeTab, setActiveTab] = useState('suggestions');
   const [meta, setMeta] = useState<SuggestionsResponse['meta'] | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const { message } = useNotify();
@@ -121,11 +116,11 @@ export default function VendorMatchingModal({
         setMeta(data.meta);
       } else {
         console.error('Failed to fetch suggestions');
-        message.error('Failed to load smart suggestions');
+        message.error('Failed to load vendor scores');
       }
     } catch (error) {
       console.error('Error fetching suggestions:', error);
-      message.error('Failed to load smart suggestions');
+      message.error('Failed to load vendor scores');
     } finally {
       setSuggestionsLoading(false);
     }
@@ -192,7 +187,6 @@ export default function VendorMatchingModal({
       setSearchTerm('');
       setDebouncedSearch('');
       setSelectedVendors([]);
-      setActiveTab('suggestions');
       setSuggestions([]);
       setOtherVendors([]);
       setMeta(null);
@@ -211,10 +205,15 @@ export default function VendorMatchingModal({
     }
   };
 
+  // All scored vendors merged and sorted by score descending
+  const allScoredVendors = [...suggestions, ...otherVendors].sort(
+    (a, b) => b.matchScore.totalScore - a.matchScore.totalScore
+  );
+
   const handleSelectTopSuggestions = () => {
-    const topIds = suggestions.slice(0, 3).map(v => v.id);
+    const topIds = allScoredVendors.slice(0, 3).map(v => v.id);
     setSelectedVendors(topIds);
-    message.success(`Selected top ${topIds.length} recommended vendors`);
+    message.success(`Selected top ${topIds.length} vendors`);
   };
 
   const handleSubmit = async () => {
@@ -248,7 +247,11 @@ export default function VendorMatchingModal({
     }
   };
 
-  // Columns for the manual vendor table
+  // Determine which data source to show
+  const isSearchingOrShowAll = showAllVendors || debouncedSearch.length > 0;
+  const tableDataSource = isSearchingOrShowAll ? vendors : allScoredVendors;
+
+  // Columns for the vendor table
   const columns: ColumnsType<Vendor | VendorWithMatchScore> = [
     {
       title: '',
@@ -264,17 +267,25 @@ export default function VendorMatchingModal({
     {
       title: 'Match',
       key: 'matchScore',
-      width: 80,
+      width: 90,
       render: (_, record) => {
         const vendorWithScore = record as VendorWithMatchScore;
         if (vendorWithScore.matchScore) {
           return (
-            <MatchScoreBadge
-              score={vendorWithScore.matchScore.totalScore}
-              confidence={vendorWithScore.matchScore.confidence}
-              size="small"
-              showLabel={false}
-            />
+            <Space size={4} align="center">
+              {vendorWithScore.matchScore.recommended && (
+                <Tooltip title="Recommended match">
+                  <StarFilled style={{ color: '#faad14', fontSize: 14 }} />
+                </Tooltip>
+              )}
+              <MatchScoreBadge
+                score={vendorWithScore.matchScore.totalScore}
+                confidence={vendorWithScore.matchScore.confidence}
+                matchScore={vendorWithScore.matchScore}
+                size="small"
+                showLabel={false}
+              />
+            </Space>
           );
         }
         return <Text type="secondary">-</Text>;
@@ -359,136 +370,12 @@ export default function VendorMatchingModal({
     },
   ];
 
-  // Render suggestions tab content
-  const renderSuggestionsTab = () => {
-    if (suggestionsLoading) {
-      return (
-        <div style={{ textAlign: 'center', padding: 40 }}>
-          <Spin size="large" />
-          <div style={{ marginTop: 16 }}>
-            <Text type="secondary">Analyzing vendors...</Text>
-          </div>
-        </div>
-      );
-    }
-
-    if (suggestions.length === 0) {
-      return (
-        <Empty
-          description="No vendors match this request criteria"
-          style={{ padding: 40 }}
-        >
-          <Button onClick={() => setActiveTab('all')}>
-            Browse All Vendors
-          </Button>
-        </Empty>
-      );
-    }
-
-    return (
-      <div>
-        {/* Quick action bar */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <Space>
-            <ThunderboltOutlined style={{ color: '#faad14' }} />
-            <Text strong>Top {suggestions.length} Recommended</Text>
-            {meta && (
-              <Text type="secondary">
-                (from {meta.totalEligible} vendors, avg score: {meta.averageScore})
-              </Text>
-            )}
-          </Space>
-          <Button
-            type="primary"
-            icon={<CheckCircleOutlined />}
-            onClick={handleSelectTopSuggestions}
-            disabled={suggestions.length === 0}
-          >
-            Select Top {Math.min(3, suggestions.length)}
-          </Button>
-        </div>
-
-        {/* Suggestion cards */}
-        {suggestions.map((vendor, index) => (
-          <VendorSuggestionCard
-            key={vendor.id}
-            vendor={vendor}
-            selected={selectedVendors.includes(vendor.id)}
-            onSelect={(selected) => handleSelectVendor(vendor.id, selected)}
-            showDetails={true}
-            rank={index + 1}
-          />
-        ))}
-
-        {/* Link to all vendors if user wants more options */}
-        {otherVendors.length > 0 && (
-          <div style={{ textAlign: 'center', marginTop: 16 }}>
-            <Text type="secondary">
-              {otherVendors.length} other vendors available.{' '}
-              <Button type="link" size="small" onClick={() => setActiveTab('all')}>
-                Browse all vendors
-              </Button>
-            </Text>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // Render all vendors tab content
-  const renderAllVendorsTab = () => {
-    // Combine suggestions and other vendors for the table
-    const allScoredVendors = [...suggestions, ...otherVendors];
-
-    return (
-      <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <Space>
-            <Input
-              placeholder="Search vendors..."
-              prefix={<SearchOutlined />}
-              allowClear
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ width: 200 }}
-            />
-            <Tooltip title="Enable to search all active vendors, not just those matching the service type">
-              <Space>
-                <Text type="secondary">Show all vendors</Text>
-                <Switch
-                  checked={showAllVendors}
-                  onChange={setShowAllVendors}
-                />
-              </Space>
-            </Tooltip>
-          </Space>
-          <Text type="secondary">
-            {showAllVendors || debouncedSearch ? vendors.length : allScoredVendors.length} vendors
-          </Text>
-        </div>
-
-        <Table
-          columns={columns}
-          dataSource={showAllVendors || debouncedSearch ? vendors : allScoredVendors}
-          rowKey="id"
-          loading={loading}
-          pagination={false}
-          scroll={{ y: 400 }}
-          size="small"
-          rowClassName={(record) =>
-            selectedVendors.includes(record.id) ? 'ant-table-row-selected' : ''
-          }
-        />
-      </div>
-    );
-  };
-
   return (
     <Modal
       title={
         <Space>
           <ThunderboltOutlined style={{ color: '#faad14' }} />
-          <span>Smart Match Vendors</span>
+          <span>Match Vendors</span>
         </Space>
       }
       open={open}
@@ -543,36 +430,68 @@ export default function VendorMatchingModal({
             />
           )}
 
-          {/* Tabs for suggestions vs all vendors */}
-          <Tabs
-            activeKey={activeTab}
-            onChange={setActiveTab}
-            items={[
-              {
-                key: 'suggestions',
-                label: (
-                  <Space>
-                    <ThunderboltOutlined />
-                    Smart Suggestions
-                    {suggestions.length > 0 && (
-                      <Tag color="success">{suggestions.length}</Tag>
-                    )}
-                  </Space>
-                ),
-                children: renderSuggestionsTab(),
-              },
-              {
-                key: 'all',
-                label: (
-                  <Space>
-                    <SearchOutlined />
-                    All Vendors
-                  </Space>
-                ),
-                children: renderAllVendorsTab(),
-              },
-            ]}
-          />
+          {/* Toolbar: search, show-all toggle, Select Top 3 */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <Space>
+              <Input
+                placeholder="Search vendors..."
+                prefix={<SearchOutlined />}
+                allowClear
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{ width: 200 }}
+              />
+              <Tooltip title="Enable to search all active vendors, not just those matching the service type">
+                <Space>
+                  <Text type="secondary">Show all vendors</Text>
+                  <Switch
+                    checked={showAllVendors}
+                    onChange={setShowAllVendors}
+                  />
+                </Space>
+              </Tooltip>
+            </Space>
+            <Space>
+              {meta && (
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {meta.totalEligible} scored, avg {meta.averageScore}
+                </Text>
+              )}
+              <Button
+                icon={<CheckCircleOutlined />}
+                onClick={handleSelectTopSuggestions}
+                disabled={allScoredVendors.length === 0 || isSearchingOrShowAll}
+              >
+                Select Top 3
+              </Button>
+              <Text type="secondary">
+                {tableDataSource.length} vendors
+              </Text>
+            </Space>
+          </div>
+
+          {/* Loading state for initial score calculation */}
+          {suggestionsLoading && !isSearchingOrShowAll ? (
+            <div style={{ textAlign: 'center', padding: 40 }}>
+              <Spin size="large" />
+              <div style={{ marginTop: 16 }}>
+                <Text type="secondary">Scoring vendors...</Text>
+              </div>
+            </div>
+          ) : (
+            <Table
+              columns={columns}
+              dataSource={tableDataSource}
+              rowKey="id"
+              loading={isSearchingOrShowAll ? loading : false}
+              pagination={false}
+              scroll={{ y: 400 }}
+              size="small"
+              rowClassName={(record) =>
+                selectedVendors.includes(record.id) ? 'ant-table-row-selected' : ''
+              }
+            />
+          )}
         </>
       )}
     </Modal>
