@@ -14,7 +14,8 @@ This document captures recurring patterns, common issues, and their solutions to
 6. [Security Patterns](#security-patterns)
 7. [Service Taxonomy (DB-Driven)](#service-taxonomy-db-driven)
 8. [Vendor Referral Terms](#vendor-referral-terms)
-9. [Common Issues & Solutions](#common-issues--solutions)
+9. [Request Status Lifecycle](#request-status-lifecycle)
+10. [Common Issues & Solutions](#common-issues--solutions)
 
 ---
 
@@ -531,6 +532,31 @@ The vendor detail/edit UI lives on a dedicated page at `/vendors/[id]` with tabb
 - `VendorHistoryTab` — read-only referral match card list
 
 Each editable tab follows the pattern: view-first with `<Descriptions>`, "Edit" button toggles an inline `<Form>`, `onUpdate(partialData)` calls the parent's PATCH handler.
+
+---
+
+## Request Status Lifecycle
+
+**Migration:** `023_add_failed_request_status.sql`
+
+| Status | Meaning |
+|--------|---------|
+| `new` | Request submitted, awaiting admin review |
+| `matching` | Admin is finding vendors |
+| `matched` | Vendors assigned, intro sent |
+| `completed` | Job finished successfully |
+| `cancelled` | Landlord withdrew the request |
+| `failed` | Match attempted but unsuccessful (vendor unresponsive, job fell through, etc.) |
+
+### `failed` vs `cancelled`
+- **`cancelled`** — landlord-initiated withdrawal before or during matching
+- **`failed`** — match was attempted but didn't work out (vendor didn't respond, job fell through, price disagreement, etc.)
+
+### UI behavior for `failed`
+- Color: `volcano` (orange-red) across all status tags
+- Match Vendors button is disabled (same as `matched`/`completed`)
+- Matched vendors section still displays for reference
+- Analytics: excluded from success metrics (same as `cancelled`)
 
 ---
 

@@ -28,6 +28,7 @@ const statusColors: Record<string, string> = {
   matched: 'green',
   completed: 'default',
   cancelled: 'red',
+  failed: 'volcano',
 };
 
 export default function AdminDashboard() {

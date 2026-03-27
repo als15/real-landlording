@@ -83,6 +83,7 @@ const statusColors: Record<RequestStatus, string> = {
   matched: 'green',
   completed: 'default',
   cancelled: 'red',
+  failed: 'volcano',
 };
 
 const urgencyColors: Record<string, string> = {
@@ -761,7 +762,7 @@ function RequestsPageContent() {
                   setDrawerOpen(false);
                   handleMatchVendors(selectedRequest);
                 }}
-                disabled={selectedRequest.status === 'matched' || selectedRequest.status === 'completed'}
+                disabled={selectedRequest.status === 'matched' || selectedRequest.status === 'completed' || selectedRequest.status === 'failed'}
               >
                 Match Vendors
               </Button>
@@ -1022,7 +1023,7 @@ function RequestsPageContent() {
                   ))}
                 </div>
               </>
-            ) : (selectedRequest.status === 'matched' || selectedRequest.status === 'completed') ? (
+            ) : (selectedRequest.status === 'matched' || selectedRequest.status === 'completed' || selectedRequest.status === 'failed') ? (
               <>
                 <Divider style={{ marginTop: 16, marginBottom: 16 }}>Matched Vendors</Divider>
                 <Text type="secondary">No match records found</Text>

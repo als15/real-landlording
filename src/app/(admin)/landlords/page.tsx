@@ -579,7 +579,8 @@ export default function LandlordsPage() {
                           <Tag color={
                             request.status === 'completed' ? 'success' :
                             request.status === 'matched' ? 'processing' :
-                            request.status === 'cancelled' ? 'error' : 'default'
+                            request.status === 'cancelled' ? 'error' :
+                            request.status === 'failed' ? 'volcano' : 'default'
                           }>
                             {REQUEST_STATUS_LABELS[request.status as RequestStatus]}
                           </Tag>

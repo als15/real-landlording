@@ -1,7 +1,7 @@
 // Database types for Real Landlording Platform
 
 export type VendorStatus = 'active' | 'inactive' | 'pending_review' | 'rejected';
-export type RequestStatus = 'new' | 'matching' | 'matched' | 'completed' | 'cancelled';
+export type RequestStatus = 'new' | 'matching' | 'matched' | 'completed' | 'cancelled' | 'failed';
 export type UrgencyLevel = 'low' | 'medium' | 'high' | 'emergency';
 export type SlaStatus = 'not_sent' | 'sent' | 'delivered' | 'viewed' | 'signed' | 'declined' | 'voided';
 
@@ -682,6 +682,7 @@ export const REQUEST_STATUS_LABELS: Record<RequestStatus, string> = {
   matched: 'Matched',
   completed: 'Completed',
   cancelled: 'Cancelled',
+  failed: 'Failed',
 };
 
 export const PROPERTY_TYPE_LABELS: Record<PropertyType, string> = {

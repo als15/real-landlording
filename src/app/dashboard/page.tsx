@@ -45,6 +45,7 @@ const statusColors: Record<string, string> = {
   matched: 'green',
   completed: 'default',
   cancelled: 'red',
+  failed: 'volcano',
 };
 
 interface RequestWithMatches extends ServiceRequest {
