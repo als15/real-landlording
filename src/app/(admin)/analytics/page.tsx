@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Row, Col, Card, Statistic, Typography, Table, Spin, Empty, Segmented, Tag, Tabs, Progress } from 'antd';
+import { Row, Col, Card, Statistic, Typography, Table, Spin, Empty, Segmented, Tag, Tabs, Progress, Tooltip as AntTooltip } from 'antd';
 import {
   FileTextOutlined,
   CheckCircleOutlined,
@@ -16,6 +16,7 @@ import {
   DollarOutlined,
   StarOutlined,
   AimOutlined,
+  QuestionCircleOutlined,
 } from '@ant-design/icons';
 import {
   LineChart,
@@ -23,7 +24,7 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   ResponsiveContainer,
   BarChart,
   Bar,
@@ -39,6 +40,15 @@ import { useServiceTaxonomy } from '@/hooks/useServiceTaxonomy';
 import type { ColumnsType } from 'antd/es/table';
 
 const { Title, Text } = Typography;
+
+const MetricTitle = ({ label, tip }: { label: string; tip: string }) => (
+  <span>
+    {label}{' '}
+    <AntTooltip title={tip}>
+      <QuestionCircleOutlined style={{ color: '#bfbfbf', fontSize: 12, cursor: 'help' }} />
+    </AntTooltip>
+  </span>
+);
 
 interface WeeklyTrendItem {
   week: string;
@@ -540,7 +550,7 @@ export default function AnalyticsPage() {
               <Row gutter={16} align="middle">
                 <Col span={6}>
                   <Statistic
-                    title="Total Requests"
+                    title={<MetricTitle label="Total Requests" tip="All service requests submitted" />}
                     value={funnel.total_requests}
                     prefix={<FileTextOutlined />}
                   />
@@ -550,7 +560,7 @@ export default function AnalyticsPage() {
                 </Col>
                 <Col span={5}>
                   <Statistic
-                    title="Matched"
+                    title={<MetricTitle label="Matched" tip="Requests assigned to at least one vendor" />}
                     value={funnel.matched}
                     suffix={<Text type="secondary" style={{ fontSize: 14 }}>({funnel.matched_rate}%)</Text>}
                   />
@@ -560,7 +570,7 @@ export default function AnalyticsPage() {
                 </Col>
                 <Col span={5}>
                   <Statistic
-                    title="Won"
+                    title={<MetricTitle label="Won" tip="Matches where a vendor was chosen by the landlord" />}
                     value={funnel.won}
                     suffix={<Text type="secondary" style={{ fontSize: 14 }}>({funnel.won_rate}%)</Text>}
                     valueStyle={{ color: COLORS.purple }}
@@ -571,7 +581,7 @@ export default function AnalyticsPage() {
                 </Col>
                 <Col span={5}>
                   <Statistic
-                    title="Completed"
+                    title={<MetricTitle label="Completed" tip="Jobs confirmed finished by the landlord" />}
                     value={funnel.completed}
                     suffix={<Text type="secondary" style={{ fontSize: 14 }}>({funnel.completed_rate}%)</Text>}
                     valueStyle={{ color: COLORS.success }}
@@ -631,7 +641,7 @@ export default function AnalyticsPage() {
                         <Cell key={`cell-${index}`} fill={LOSS_COLORS[index % LOSS_COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value) => [value ?? 0, 'Jobs']} />
+                    <RechartsTooltip formatter={(value) => [value ?? 0, 'Jobs']} />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
@@ -687,6 +697,7 @@ export default function AnalyticsPage() {
     interface KpiRow {
       key: string;
       metric: string;
+      tip: string;
       actual: number;
       format: 'number' | 'percent' | 'hours' | 'currency';
       q2Target: number;
@@ -698,6 +709,7 @@ export default function AnalyticsPage() {
       {
         key: 'requests',
         metric: 'Requests / month',
+        tip: 'Average monthly request volume',
         actual: kpiData.requestsPerMonth,
         format: 'number',
         q2Target: Math.max(Math.round(kpiData.requestsPerMonth * 1.2), 1),
@@ -707,6 +719,7 @@ export default function AnalyticsPage() {
       {
         key: 'vendors',
         metric: 'Active vendors',
+        tip: 'Vendors with active status available for matching',
         actual: kpiData.activeVendors,
         format: 'number',
         q2Target: kpiData.activeVendors + 10,
@@ -716,6 +729,7 @@ export default function AnalyticsPage() {
       {
         key: 'matchSuccess',
         metric: 'Match success rate',
+        tip: 'Percentage of matched requests reaching completion',
         actual: kpiData.matchSuccessRate,
         format: 'percent',
         q2Target: 50,
@@ -725,6 +739,7 @@ export default function AnalyticsPage() {
       {
         key: 'timeToMatch',
         metric: 'Avg time to match',
+        tip: 'Hours from request submission to first vendor assignment',
         actual: kpiData.avgTimeToMatch,
         format: 'hours',
         q2Target: 48,
@@ -734,6 +749,7 @@ export default function AnalyticsPage() {
       {
         key: 'revenue',
         metric: 'Referral revenue / month',
+        tip: 'Monthly income from vendor referral fees',
         actual: kpiData.revenuePerMonth,
         format: 'currency',
         q2Target: 1,
@@ -743,6 +759,7 @@ export default function AnalyticsPage() {
       {
         key: 'collection',
         metric: 'Payment collection rate',
+        tip: 'Percentage of invoiced referral fees collected',
         actual: kpiData.paymentCollectionRate,
         format: 'percent',
         q2Target: 50,
@@ -752,6 +769,7 @@ export default function AnalyticsPage() {
       {
         key: 'signup',
         metric: 'Signup conversion',
+        tip: 'Percentage of request submitters who create accounts',
         actual: kpiData.signupConversion,
         format: 'percent',
         q2Target: 20,
@@ -761,6 +779,7 @@ export default function AnalyticsPage() {
       {
         key: 'repeat',
         metric: 'Landlord repeat usage',
+        tip: 'Percentage of landlords who submit more than one request',
         actual: kpiData.repeatUsage,
         format: 'percent',
         q2Target: 15,
@@ -813,7 +832,14 @@ export default function AnalyticsPage() {
         dataIndex: 'metric',
         key: 'metric',
         width: 200,
-        render: (text: string) => <Text strong>{text}</Text>,
+        render: (_text: string, row: KpiRow) => (
+          <Text strong>
+            {row.metric}{' '}
+            <AntTooltip title={row.tip}>
+              <QuestionCircleOutlined style={{ color: '#bfbfbf', fontSize: 12, cursor: 'help' }} />
+            </AntTooltip>
+          </Text>
+        ),
       },
       {
         title: <span>Q1 Baseline<br /><Text type="secondary" style={{ fontSize: 11, fontWeight: 'normal' }}>Jan – Mar</Text></span>,
@@ -876,7 +902,7 @@ export default function AnalyticsPage() {
         <Col xs={24} sm={12} lg={4}>
           <Card>
             <Statistic
-              title="Requests This Week"
+              title={<MetricTitle label="Requests This Week" tip="New service requests submitted in the current week" />}
               value={data.requestsThisWeek}
               prefix={<FileTextOutlined />}
               suffix={
@@ -898,7 +924,7 @@ export default function AnalyticsPage() {
         <Col xs={24} sm={12} lg={4}>
           <Card>
             <Statistic
-              title="Requests This Month"
+              title={<MetricTitle label="Requests This Month" tip="Total service requests submitted this calendar month" />}
               value={data.requestsThisMonth}
               prefix={<RiseOutlined />}
             />
@@ -907,7 +933,7 @@ export default function AnalyticsPage() {
         <Col xs={24} sm={12} lg={4}>
           <Card>
             <Statistic
-              title="Match Success Rate"
+              title={<MetricTitle label="Match Success Rate" tip="Percentage of matched requests that reached completion" />}
               value={data.matchSuccessRate}
               suffix="%"
               prefix={<CheckCircleOutlined />}
@@ -918,7 +944,7 @@ export default function AnalyticsPage() {
         <Col xs={24} sm={12} lg={4}>
           <Card>
             <Statistic
-              title="Avg. Time to Match"
+              title={<MetricTitle label="Avg. Time to Match" tip="Average hours from request submission to vendor match" />}
               value={data.avgTimeToMatch}
               suffix="hours"
               prefix={<ClockCircleOutlined />}
@@ -929,7 +955,7 @@ export default function AnalyticsPage() {
         <Col xs={24} sm={12} lg={4}>
           <Card>
             <Statistic
-              title="Pending Vendors"
+              title={<MetricTitle label="Pending Vendors" tip="Vendor applications awaiting admin review" />}
               value={data.vendorApprovalWait.pendingCount}
               prefix={<ClockCircleOutlined />}
               valueStyle={{ color: data.vendorApprovalWait.pendingCount > 0 ? COLORS.warning : COLORS.success }}
@@ -939,7 +965,7 @@ export default function AnalyticsPage() {
         <Col xs={24} sm={12} lg={4}>
           <Card>
             <Statistic
-              title="Avg. Approval Wait"
+              title={<MetricTitle label="Avg. Approval Wait" tip="Average days vendors wait for application approval" />}
               value={data.vendorApprovalWait.avgPendingWaitDays}
               suffix="days"
               prefix={<ClockCircleOutlined />}
@@ -972,7 +998,7 @@ export default function AnalyticsPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="week" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
-                  <Tooltip
+                  <RechartsTooltip
                     contentStyle={{ borderRadius: 8 }}
                     formatter={(value) => [value ?? 0, trendView === 'requests' ? 'Requests' : trendView === 'matched' ? 'Matched' : 'Emergency']}
                   />
@@ -1015,7 +1041,7 @@ export default function AnalyticsPage() {
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => [value ?? 0, 'Requests']} />
+                  <RechartsTooltip formatter={(value) => [value ?? 0, 'Requests']} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
@@ -1050,7 +1076,7 @@ export default function AnalyticsPage() {
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => [value ?? 0, 'Requests']} />
+                  <RechartsTooltip formatter={(value) => [value ?? 0, 'Requests']} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
@@ -1066,7 +1092,7 @@ export default function AnalyticsPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis type="number" tick={{ fontSize: 11 }} />
                   <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={80} />
-                  <Tooltip
+                  <RechartsTooltip
                     formatter={(value, _name, props) => [value ?? 0, (props?.payload as { fullName?: string })?.fullName ?? '']}
                     contentStyle={{ borderRadius: 8 }}
                   />
