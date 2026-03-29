@@ -6,6 +6,7 @@ import {
   applyStageFilter,
   applyPostQueryFilters,
   fetchPaymentsByMatchIds,
+  fetchFollowupStagesByMatchIds,
   attachPaymentsAndFilter,
 } from '@/lib/crm/job-query';
 
@@ -56,14 +57,23 @@ export async function GET(request: NextRequest) {
 
     const filteredData = applyPostQueryFilters(data || [], { serviceType, search });
     const matchIds = filteredData.map((job) => job.id as string);
-    const payments = await fetchPaymentsByMatchIds(adminClient, matchIds);
+    const [payments, followupStages] = await Promise.all([
+      fetchPaymentsByMatchIds(adminClient, matchIds),
+      fetchFollowupStagesByMatchIds(adminClient, matchIds),
+    ]);
     const jobsWithPayments = attachPaymentsAndFilter(filteredData, payments, stage);
+
+    // Attach followup_stage to each job
+    const jobsWithFollowups = jobsWithPayments.map((job) => ({
+      ...job,
+      followup_stage: followupStages[(job as Record<string, unknown>).id as string] || null,
+    }));
 
     const from = (page - 1) * pageSize;
 
     return NextResponse.json({
-      jobs: jobsWithPayments.slice(from, from + pageSize),
-      total: jobsWithPayments.length,
+      jobs: jobsWithFollowups.slice(from, from + pageSize),
+      total: jobsWithFollowups.length,
       page,
       pageSize,
     });

@@ -136,6 +136,30 @@ export function applyPostQueryFilters(
 }
 
 /**
+ * Fetch follow-up stages for a set of match IDs and return them indexed by match_id.
+ */
+export async function fetchFollowupStagesByMatchIds(
+  adminClient: SupabaseClient,
+  matchIds: string[]
+): Promise<Record<string, string>> {
+  if (matchIds.length === 0) return {};
+
+  const { data } = await adminClient
+    .from('match_followups')
+    .select('match_id, stage')
+    .in('match_id', matchIds);
+
+  if (!data) return {};
+
+  return data.reduce((acc, row) => {
+    if (row.match_id) {
+      acc[row.match_id] = row.stage;
+    }
+    return acc;
+  }, {} as Record<string, string>);
+}
+
+/**
  * Fetch referral payments for a set of match IDs and return them indexed by match_id.
  */
 export async function fetchPaymentsByMatchIds(

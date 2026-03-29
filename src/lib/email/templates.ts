@@ -5,8 +5,8 @@ import { getServiceDisplayLabel } from '@/lib/utils/serviceLabel';
 // Shorthand for escapeHtml in templates
 const e = escapeHtml;
 
-// Base email wrapper
-function emailWrapper(content: string): string {
+// Base email wrapper (exported for use by follow-up templates)
+export function emailWrapper(content: string): string {
   return `
 <!DOCTYPE html>
 <html>
@@ -351,6 +351,45 @@ export function vendorRejectedEmail(vendor: Vendor): { subject: string; html: st
       </ul>
 
       <p>We appreciate your interest and wish you success with your business.</p>
+    `),
+  };
+}
+
+// Email to vendor with Calendly interview scheduling link
+export function vendorInterviewScheduleEmail(
+  vendor: { contact_name: string; business_name: string },
+  calendlyUrl: string
+): { subject: string; html: string } {
+  return {
+    subject: 'Schedule Your Interview - Real Landlording Vendor Network',
+    html: emailWrapper(`
+      <h2>Let's Schedule a Quick Call!</h2>
+      <p>Hi ${e(vendor.contact_name)},</p>
+      <p>Thanks for applying to join the Real Landlording Vendor Network with <strong>${e(vendor.business_name)}</strong>.</p>
+      <p>As part of our review process, we'd like to schedule a brief interview to learn more about your business and how we can work together.</p>
+
+      <p style="text-align: center; margin: 32px 0;">
+        <a href="${e(calendlyUrl)}" class="button" style="font-size: 16px; padding: 14px 32px;">
+          Schedule Your Interview
+        </a>
+      </p>
+
+      <div class="info-box">
+        <h3 style="margin-top: 0;">What to Expect</h3>
+        <ul style="margin-bottom: 0;">
+          <li>A quick conversation about your services and experience</li>
+          <li>An overview of how referrals work on our platform</li>
+          <li>A chance to ask any questions you have</li>
+        </ul>
+      </div>
+
+      <p>If the link above doesn't work, copy and paste this URL into your browser:</p>
+      <p style="word-break: break-all; color: #666; font-size: 13px;">${e(calendlyUrl)}</p>
+
+      <p style="margin-top: 24px;">
+        Looking forward to speaking with you!<br>
+        <strong>Real Landlording</strong>
+      </p>
     `),
   };
 }

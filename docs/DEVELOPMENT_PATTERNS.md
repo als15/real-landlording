@@ -15,7 +15,8 @@ This document captures recurring patterns, common issues, and their solutions to
 7. [Service Taxonomy (DB-Driven)](#service-taxonomy-db-driven)
 8. [Vendor Referral Terms](#vendor-referral-terms)
 9. [Request Status Lifecycle](#request-status-lifecycle)
-10. [Common Issues & Solutions](#common-issues--solutions)
+10. [Follow-Up Messaging System](#follow-up-messaging-system)
+11. [Common Issues & Solutions](#common-issues--solutions)
 
 ---
 
@@ -557,6 +558,156 @@ Each editable tab follows the pattern: view-first with `<Descriptions>`, "Edit" 
 - Match Vendors button is disabled (same as `matched`/`completed`)
 - Matched vendors section still displays for reference
 - Analytics: excluded from success metrics (same as `cancelled`)
+
+---
+
+## OpenAI Client Pattern
+
+### Architecture
+
+The OpenAI integration uses raw `fetch` (no npm package), following the same pattern as PandaDoc (`src/lib/pandadoc/client.ts`).
+
+| File | Purpose |
+|------|---------|
+| `src/lib/openai/client.ts` | Thin fetch wrapper for OpenAI Responses API |
+| `src/lib/openai/due-diligence.ts` | Vendor analysis logic, prompt, JSON schema |
+| `src/lib/openai/index.ts` | Barrel exports |
+| `src/lib/serper/client.ts` | Serper.dev Google Search API client |
+| `src/lib/serper/search.ts` | 8 parallel search orchestrator |
+| `src/lib/serper/index.ts` | Barrel exports |
+
+### Hybrid Due Diligence (Serper + OpenAI)
+
+Due diligence uses a hybrid approach for speed and reliability:
+
+```
+SERPER_API_KEY present → Serper (8 parallel searches) → OpenAI (text analysis, no tools)
+SERPER_API_KEY absent  → OpenAI (web_search_preview fallback)
+```
+
+Both paths return the same `DueDiligenceResults` type — the API route and frontend are unaware of which path runs.
+
+**Why hybrid?** OpenAI's `web_search_preview` returns empty results for businesses with many Google reviews (200+). Serper gives us raw search data we control, and parallel execution is ~4x faster (7-17s vs 40-80s).
+
+The Serper search orchestrator (`gatherVendorSearchData`) runs 8 `Promise.allSettled` searches:
+1. Google Places (rating, review count)
+2. Yelp (`site:yelp.com`)
+3. BBB (`site:bbb.org`)
+4. Facebook (`site:facebook.com`)
+5. Angi/HomeAdvisor (`site:angi.com OR site:homeadvisor.com`)
+6. General reviews
+7. Legal/complaints
+8. Community (Reddit/Nextdoor)
+
+### Usage
+
+```typescript
+import { isOpenAIConfigured, runDueDiligenceAnalysis } from '@/lib/openai';
+
+// Check configuration before calling
+if (!isOpenAIConfigured()) {
+  return NextResponse.json({ message: 'OpenAI not configured' }, { status: 503 });
+}
+
+// Run analysis (returns structured result)
+const result = await runDueDiligenceAnalysis(vendor);
+if (result.success) {
+  // result.results: DueDiligenceResults (structured JSON)
+  // result.rawResponse, result.model, result.tokensUsed
+}
+```
+
+### Vendor Application Flow
+
+The vendor application review process includes these admin-triggered actions:
+
+1. **Due Diligence** — AI-powered background research (`/api/admin/applications/[id]/due-diligence`)
+2. **Schedule Interview** — Send Calendly link via email + SMS (`/api/admin/applications/[id]/schedule-interview`)
+3. **Approve** — Create auth account, send welcome email, send SLA (`/api/admin/applications/[id]/approve`)
+4. **Reject** — Send rejection email (`/api/admin/applications/[id]/reject`)
+
+Interview scheduling tracks `interview_scheduled_at` and `interview_scheduled_count` on the vendors table (migration 025). Requires `CALENDLY_URL` env var.
+
+### Long-Running Routes (`maxDuration`)
+
+For API routes that may take longer than the default Vercel timeout (10s), export `maxDuration`:
+
+```typescript
+export const maxDuration = 60; // Vercel Pro plan: up to 60 seconds
+```
+
+Used in: `src/app/api/admin/applications/[id]/due-diligence/route.ts`
+
+### Database Table: `vendor_due_diligence`
+
+Migration: `024_vendor_due_diligence.sql`
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | UUID | Primary key |
+| `vendor_id` | UUID | FK → vendors (CASCADE delete) |
+| `status` | VARCHAR(20) | pending, running, completed, failed |
+| `results` | JSONB | Structured analysis results |
+| `raw_response` | TEXT | Full OpenAI response for debugging |
+| `model_used` | VARCHAR(50) | e.g., gpt-4.1 |
+| `tokens_used` | INTEGER | Total tokens consumed |
+| `search_queries_used` | INTEGER | Number of web searches |
+| `error_message` | TEXT | Error details if failed |
+| `triggered_by` | UUID | FK → admin_users |
+| `created_at` | TIMESTAMPTZ | When analysis was requested |
+| `completed_at` | TIMESTAMPTZ | When analysis finished |
+
+RLS: Admin-only access (same pattern as other admin tables).
+
+---
+
+## Follow-Up Messaging System
+
+### Overview
+Multi-stage follow-up workflow that tracks each vendor-landlord match from intro through completion/payment/feedback. Implemented as a state machine on each match.
+
+### Feature Flag
+**Disabled by default.** Set `FOLLOW_UP_SYSTEM_ENABLED=true` in env to activate. When disabled:
+- Cron endpoint returns immediately with a "disabled" message
+- Response links redirect to the invalid page
+- DB trigger still creates `match_followups` rows (so data is ready when enabled)
+
+### Key Files
+- `supabase/migrations/026_follow_up_system.sql` — DB tables + trigger
+- `src/lib/followup/config.ts` — feature flag
+- `src/lib/followup/tokens.ts` — HMAC-SHA256 signed response tokens (30-day expiry)
+- `src/lib/followup/handler.ts` — state machine (all stage transitions)
+- `src/lib/followup/processor.ts` — cron logic (sends emails/SMS based on stage)
+- `src/lib/email/followup-templates.ts` — email templates (5 templates)
+- `src/lib/sms/followup-templates.ts` — SMS companion messages
+- `src/app/api/follow-up/respond/route.ts` — public token-based response endpoint
+- `src/app/api/admin/followups/[matchId]/route.ts` — admin GET/PATCH
+- `src/app/api/cron/follow-up-system/route.ts` — cron (every 6 hours)
+- `src/components/admin/FollowUpBadge.tsx` — stage badge for CRM
+
+### Database Tables
+- `match_followups` — one per match, tracks current stage + next action time
+- `followup_events` — audit trail of all transitions, emails, responses
+
+### Stage Flow
+```
+pending → vendor_check_sent → vendor_booked/vendor_discussing/vendor_cant_reach/vendor_no_deal
+vendor_discussing → day7_recheck_sent → booked/closed
+vendor_cant_reach → landlord_check_sent → landlord_contact_ok/closed
+awaiting_completion → completion_check_sent → job_completed/job_in_progress/job_cancelled
+```
+
+### Token System
+Response links use HMAC-SHA256 signed tokens: `{followupId}.{type}.{timestamp}.{hmac}`
+- Secret: `FOLLOWUP_TOKEN_SECRET` env var
+- Expiry: 30 days
+- Tokens are stored in `match_followups` and cleared after use (one-time use)
+
+### Environment Variables
+```
+FOLLOW_UP_SYSTEM_ENABLED=false   # Feature flag (must be 'true' to activate)
+FOLLOWUP_TOKEN_SECRET=<32+ chars>  # HMAC signing secret
+```
 
 ---
 

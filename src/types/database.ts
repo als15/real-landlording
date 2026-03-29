@@ -8,6 +8,28 @@ export type SlaStatus = 'not_sent' | 'sent' | 'delivered' | 'viewed' | 'signed' 
 // Payment status for referral fee tracking
 export type PaymentStatus = 'pending' | 'invoiced' | 'paid' | 'overdue' | 'waived' | 'refunded';
 
+// Due diligence analysis status
+export type DueDiligenceStatus = 'pending' | 'running' | 'completed' | 'failed';
+
+// Follow-up system stages
+export type FollowupStage =
+  | 'pending'
+  | 'vendor_check_sent'
+  | 'vendor_booked'
+  | 'vendor_discussing'
+  | 'vendor_cant_reach'
+  | 'vendor_no_deal'
+  | 'day7_recheck_sent'
+  | 'landlord_check_sent'
+  | 'landlord_contact_ok'
+  | 'needs_rematch'
+  | 'awaiting_completion'
+  | 'completion_check_sent'
+  | 'job_completed'
+  | 'job_in_progress'
+  | 'job_cancelled'
+  | 'closed';
+
 // Job outcome reasons for CRM tracking
 export type JobOutcomeReason =
   | 'price_too_high'
@@ -964,6 +986,9 @@ export interface Vendor {
   referral_terms_effective_date: string;
   referral_terms_version: string;
   referral_custom_terms_notes: string | null;
+  // Interview scheduling (migration 025)
+  interview_scheduled_at: string | null;
+  interview_scheduled_count: number;
 }
 
 export interface ServiceRequest {
@@ -1056,6 +1081,22 @@ export interface AdminUser {
   created_at: string;
 }
 
+export interface VendorDueDiligence {
+  id: string;
+  vendor_id: string;
+  status: DueDiligenceStatus;
+  results: import('@/lib/openai/due-diligence').DueDiligenceResults | null;
+  raw_response: string | null;
+  model_used: string | null;
+  tokens_used: number | null;
+  search_queries_used: number | null;
+  error_message: string | null;
+  triggered_by: string | null;
+  created_at: string;
+  completed_at: string | null;
+  updated_at: string;
+}
+
 // CRM: Referral payment tracking
 export interface ReferralPayment {
   id: string;
@@ -1083,6 +1124,54 @@ export interface ReferralPayment {
   created_at: string;
   updated_at: string;
 }
+
+// Follow-up system: tracks multi-stage vendor/landlord follow-ups per match
+export interface MatchFollowup {
+  id: string;
+  match_id: string;
+  request_id: string;
+  stage: FollowupStage;
+  next_action_at: string | null;
+  vendor_response_token: string | null;
+  landlord_response_token: string | null;
+  expected_completion_date: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Follow-up system: audit trail for all follow-up events
+export interface FollowupEvent {
+  id: string;
+  followup_id: string;
+  event_type: 'email_sent' | 'sms_sent' | 'response_received' | 'admin_override' | 'stage_changed';
+  from_stage: FollowupStage | null;
+  to_stage: FollowupStage | null;
+  channel: 'email' | 'sms' | 'admin' | 'system' | null;
+  response_value: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+// Follow-up stage display labels
+export const FOLLOWUP_STAGE_LABELS: Record<FollowupStage, string> = {
+  pending: 'Pending',
+  vendor_check_sent: 'Vendor Check Sent',
+  vendor_booked: 'Vendor Booked',
+  vendor_discussing: 'Discussing',
+  vendor_cant_reach: "Can't Reach",
+  vendor_no_deal: 'No Deal',
+  day7_recheck_sent: 'Day 7 Recheck Sent',
+  landlord_check_sent: 'Landlord Check Sent',
+  landlord_contact_ok: 'Contact OK',
+  needs_rematch: 'Needs Rematch',
+  awaiting_completion: 'Awaiting Completion',
+  completion_check_sent: 'Completion Check Sent',
+  job_completed: 'Completed',
+  job_in_progress: 'In Progress',
+  job_cancelled: 'Cancelled',
+  closed: 'Closed',
+};
 
 // Extended types with relations
 export interface ServiceRequestWithMatches extends ServiceRequest {
@@ -1260,7 +1349,8 @@ export type AdminNotificationType =
   | 'payment_overdue'       // A10: Payment past due
   | 'sla_signed'            // A11: Vendor signed SLA
   | 'job_completed'         // A12: Job marked completed
-  | 'multiple_declines';    // A13: Same request declined 2+ times
+  | 'multiple_declines'     // A13: Same request declined 2+ times
+  | 'follow_up_rematch';   // A14: Follow-up resulted in needs_rematch
 
 // Vendor notification types
 export type VendorNotificationType =
@@ -1324,6 +1414,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   sla_signed: 'SLA Signed',
   job_completed: 'Job Completed',
   multiple_declines: 'Multiple Declines',
+  follow_up_rematch: 'Follow-Up Rematch',
   // Vendor
   new_job_lead: 'New Job Lead',
   job_lead_reminder: 'Lead Reminder',

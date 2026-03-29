@@ -50,7 +50,9 @@ import {
   JOB_OUTCOME_REASON_LABELS,
   JobOutcomeReason,
   PAYMENT_METHOD_OPTIONS,
+  FollowupStage,
 } from '@/types/database';
+import FollowUpBadge from '@/components/admin/FollowUpBadge';
 import { useServiceTaxonomy } from '@/hooks/useServiceTaxonomy';
 import { objectsToCsv, downloadCsv, formatDateForCsv } from '@/lib/utils/csv-export';
 import type { ColumnsType } from 'antd/es/table';
@@ -110,6 +112,7 @@ interface CRMJob {
     status: string;
     paid_date: string | null;
   } | null;
+  followup_stage: FollowupStage | null;
 }
 
 interface PipelineData {
@@ -704,6 +707,17 @@ export default function CRMPage() {
           popupMatchSelectWidth={false}
         />
       ),
+    },
+    {
+      title: 'Follow-Up',
+      key: 'followup',
+      width: 120,
+      render: (_, record) =>
+        record.followup_stage ? (
+          <FollowUpBadge stage={record.followup_stage} />
+        ) : (
+          <span style={{ color: '#ccc', fontSize: 12 }}>-</span>
+        ),
     },
     {
       title: 'Referred',
