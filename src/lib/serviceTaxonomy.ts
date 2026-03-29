@@ -42,10 +42,10 @@ export interface ServiceCategoryGroupRow {
 }
 
 // ---------------------------------------------------------------------------
-// In-memory cache (5-minute TTL)
+// In-memory cache (30-second TTL)
 // ---------------------------------------------------------------------------
 
-const CACHE_TTL_MS = 5 * 60 * 1000;
+const CACHE_TTL_MS = 30 * 1000;
 
 interface CacheEntry<T> {
   data: T;

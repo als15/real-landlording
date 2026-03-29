@@ -457,7 +457,19 @@ const labels = await getServiceTypeLabels();
 const taxonomy = await getServiceTaxonomyMap();
 ```
 
-Data is cached in-memory for 5 minutes. Call `invalidateServiceTaxonomyCache()` after admin writes.
+Data is cached in-memory for 30 seconds. Call `invalidateServiceTaxonomyCache()` after admin writes.
+
+### Caching Strategy
+
+Three cache layers ensure fast reads while keeping data reasonably fresh after admin edits:
+
+| Layer | TTL | Details |
+|-------|-----|---------|
+| CDN (`s-maxage`) | 60s | Vercel edge cache; `stale-while-revalidate=60` for background refresh |
+| Browser (`max-age`) | 0 | Browser always revalidates; client fetch uses `cache: 'no-store'` |
+| Server in-memory | 30s | Per-instance cache; cleared by `invalidateServiceTaxonomyCache()` |
+
+The client hook also refreshes automatically when the browser tab becomes visible (`visibilitychange` event), so switching from the admin tab to a form tab triggers a fresh fetch.
 
 ### Database Schema
 

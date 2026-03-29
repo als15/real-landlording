@@ -42,7 +42,7 @@ let fetchError: string | null = null;
 function doFetch(): Promise<void> {
   if (fetchPromise) return fetchPromise;
 
-  fetchPromise = fetch('/api/service-categories')
+  fetchPromise = fetch('/api/service-categories', { cache: 'no-store' })
     .then(async (res) => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
@@ -135,6 +135,22 @@ export function useServiceTaxonomy(): UseServiceTaxonomyResult {
     });
 
     return () => { cancelled = true; };
+  }, []);
+
+  // Refresh data when tab becomes visible (covers admin-edit-then-switch workflow)
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible') {
+        refreshServiceTaxonomy().then(() => {
+          setTick((t) => t + 1);
+        });
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const loading = !cachedCategories || !cachedGroups;

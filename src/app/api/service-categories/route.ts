@@ -12,7 +12,7 @@ export async function GET() {
       { categories, groups },
       {
         headers: {
-          'Cache-Control': 'public, max-age=300, s-maxage=300',
+          'Cache-Control': 'public, max-age=0, s-maxage=60, stale-while-revalidate=60',
         },
       }
     );
