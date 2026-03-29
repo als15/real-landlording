@@ -5,6 +5,7 @@ import { ServiceRequestInput } from '@/types/database';
 import { sendRequestReceivedEmail } from '@/lib/email/send';
 import { sendRequestReceivedSms } from '@/lib/sms/send';
 import { notifyNewRequest, notifyEmergencyRequest } from '@/lib/notifications';
+import { addSubscriber } from '@/lib/mailchimp';
 
 export async function POST(request: NextRequest) {
   try {
@@ -155,6 +156,20 @@ export async function POST(request: NextRequest) {
     } catch (smsError) {
       console.error('[Request API] SMS send failed:', smsError);
       // Don't fail the request if SMS fails
+    }
+
+    // Sync to Mailchimp newsletter if opted in
+    if (newsletter_opt_in) {
+      try {
+        await addSubscriber({
+          email: body.landlord_email,
+          firstName: body.first_name,
+          lastName: body.last_name,
+          tag: 'landlord',
+        });
+      } catch (mcError) {
+        console.error('[Request API] Mailchimp sync failed:', mcError);
+      }
     }
 
     // Create admin notification (A1 or A2)

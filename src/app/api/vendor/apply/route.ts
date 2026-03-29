@@ -4,6 +4,7 @@ import { calculateVettingScore } from '@/lib/scoring/vetting';
 import { sendVendorApplicationReceivedEmail } from '@/lib/email/send';
 import { sendVendorApplicationReceivedSms } from '@/lib/sms/send';
 import { notifyNewApplication } from '@/lib/notifications';
+import { addSubscriber } from '@/lib/mailchimp';
 
 export async function POST(request: NextRequest) {
   try {
@@ -163,6 +164,21 @@ export async function POST(request: NextRequest) {
     } catch (smsError) {
       console.error('[Vendor Apply API] SMS send failed:', smsError);
       // Don't fail the application if SMS fails
+    }
+
+    // Sync to Mailchimp newsletter if opted in
+    if (body.newsletter_opt_in) {
+      try {
+        const nameParts = body.contact_name.trim().split(' ');
+        await addSubscriber({
+          email: body.email,
+          firstName: nameParts[0],
+          lastName: nameParts.slice(1).join(' '),
+          tag: 'vendor',
+        });
+      } catch (mcError) {
+        console.error('[Vendor Apply API] Mailchimp sync failed:', mcError);
+      }
     }
 
     // Create admin notification (A4)

@@ -8,6 +8,7 @@ import {
   vendorRejectedEmail,
   noVendorMatchedEmail,
   vendorApplicationReceivedEmail,
+  vendorInterviewScheduleEmail,
 } from './templates';
 import { ServiceRequest, Vendor } from '@/types/database';
 
@@ -118,6 +119,15 @@ export async function sendVendorApplicationReceivedEmail(vendor: {
   email: string;
 }): Promise<boolean> {
   const { subject, html } = vendorApplicationReceivedEmail(vendor);
+  return sendEmail(vendor.email, subject, html, VENDOR_WELCOME_FROM_EMAIL);
+}
+
+// Send interview scheduling email to vendor
+export async function sendVendorInterviewScheduleEmail(
+  vendor: { contact_name: string; business_name: string; email: string },
+  calendlyUrl: string
+): Promise<boolean> {
+  const { subject, html } = vendorInterviewScheduleEmail(vendor, calendlyUrl);
   return sendEmail(vendor.email, subject, html, VENDOR_WELCOME_FROM_EMAIL);
 }
 

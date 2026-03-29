@@ -49,6 +49,14 @@ export function noVendorMatchedSms(request: ServiceRequest): string {
   return `Real Landlording: Update on your ${serviceLabel} request - we're working to find the right vendor. Check your email for details.`;
 }
 
+// SMS to vendor with Calendly interview scheduling link
+export function vendorInterviewScheduleSms(
+  vendor: { contact_name: string },
+  calendlyUrl: string
+): string {
+  return `Real Landlording: Hi ${vendor.contact_name}! We'd love to schedule a quick interview about your application. Book a time here: ${calendlyUrl}`;
+}
+
 // SMS when vendor submits application
 export function vendorApplicationReceivedSms(vendor: { contact_name: string; phone?: string }): string {
   // TODO: Replace with actual message text

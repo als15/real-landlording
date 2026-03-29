@@ -8,6 +8,7 @@ import {
   vendorRejectedSms,
   noVendorMatchedSms,
   vendorApplicationReceivedSms,
+  vendorInterviewScheduleSms,
 } from './templates';
 import { ServiceRequest, Vendor } from '@/types/database';
 
@@ -156,6 +157,19 @@ export async function sendNoVendorMatchedSms(request: ServiceRequest): Promise<b
   }
   const message = noVendorMatchedSms(request);
   return sendSms(request.landlord_phone, message);
+}
+
+// Send interview scheduling SMS to vendor
+export async function sendVendorInterviewScheduleSms(
+  vendor: { contact_name: string; phone?: string | null },
+  calendlyUrl: string
+): Promise<boolean> {
+  if (!vendor.phone) {
+    console.log(`[SMS] SKIPPED - No phone number for vendor`);
+    return false;
+  }
+  const message = vendorInterviewScheduleSms(vendor, calendlyUrl);
+  return sendSms(vendor.phone, message);
 }
 
 // Send confirmation SMS when vendor submits an application

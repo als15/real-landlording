@@ -1,6 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdmin } from '@/lib/api/admin';
 
+// GET - Fetch a single application by ID
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const adminResult = await verifyAdmin();
+    if (!adminResult.success) {
+      return adminResult.response;
+    }
+    const { adminClient: supabase } = adminResult.context;
+
+    const { id } = await params;
+
+    const { data, error } = await supabase
+      .from('vendors')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('Error fetching application:', error);
+      return NextResponse.json(
+        { message: 'Application not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error('API error:', error);
+    return NextResponse.json(
+      { message: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
 // PATCH - Update application fields (social links, admin notes, etc.)
 export async function PATCH(
   request: NextRequest,
