@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
     if (tokenError) {
       console.error('Error storing reset token:', tokenError);
       return NextResponse.json(
-        { message: 'Failed to process request' },
+        { message: `Failed to store reset token: ${tokenError.message}` },
         { status: 500 }
       );
     }
@@ -133,14 +133,22 @@ export async function POST(request: NextRequest) {
     const userName = user[nameField as keyof typeof user] as string | undefined;
 
     if (isEmailEnabled) {
-      const { subject, html } = passwordResetEmail(resetUrl, userName);
-      await resend.emails.send({
-        from: FROM_EMAIL,
-        to: email,
-        subject,
-        html,
-      });
-      console.log(`Password reset email sent to ${email}`);
+      try {
+        const { subject, html } = passwordResetEmail(resetUrl, userName);
+        await resend.emails.send({
+          from: FROM_EMAIL,
+          to: email,
+          subject,
+          html,
+        });
+        console.log(`Password reset email sent to ${email}`);
+      } catch (emailError) {
+        console.error('Error sending reset email:', emailError);
+        return NextResponse.json(
+          { message: `Failed to send reset email: ${emailError instanceof Error ? emailError.message : 'unknown error'}` },
+          { status: 500 }
+        );
+      }
     } else {
       console.log(`[Email Skipped] Password reset email would be sent to ${email}`);
     }
@@ -151,7 +159,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Forgot password error:', error);
     return NextResponse.json(
-      { message: 'Failed to process request' },
+      { message: `Failed to process request: ${error instanceof Error ? error.message : 'unknown error'}` },
       { status: 500 }
     );
   }
