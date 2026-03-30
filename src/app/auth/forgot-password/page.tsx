@@ -39,8 +39,8 @@ function ForgotPasswordForm() {
     }
   };
 
-  const loginUrl = userType === 'vendor' ? '/vendor/login' : '/auth/login';
-  const portalName = userType === 'vendor' ? 'Vendor Portal' : 'Landlord Account';
+  const loginUrl = userType === 'admin' ? '/login' : userType === 'vendor' ? '/vendor/login' : '/auth/login';
+  const portalName = userType === 'admin' ? 'Admin' : userType === 'vendor' ? 'Vendor Portal' : 'Landlord Account';
 
   if (submitted) {
     return (

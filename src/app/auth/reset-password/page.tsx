@@ -18,7 +18,7 @@ function ResetPasswordForm() {
 
   const token = searchParams.get('token');
   const userType = searchParams.get('type') || 'landlord';
-  const loginUrl = userType === 'vendor' ? '/vendor/login' : '/auth/login';
+  const loginUrl = userType === 'admin' ? '/login' : userType === 'vendor' ? '/vendor/login' : '/auth/login';
 
   const onFinish = async (values: { password: string; confirmPassword: string }) => {
     if (values.password !== values.confirmPassword) {

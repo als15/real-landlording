@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the user's auth_user_id from the appropriate table
-    const table = userType === 'vendor' ? 'vendors' : 'landlords';
+    const table = userType === 'admin' ? 'admin_users' : userType === 'vendor' ? 'vendors' : 'landlords';
     const { data: userData, error: userError } = await supabase
       .from(table)
       .select('auth_user_id')

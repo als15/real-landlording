@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
     const supabase = createAdminClient();
 
     // Determine which table to check
-    const table = userType === 'vendor' ? 'vendors' : 'landlords';
+    const table = userType === 'admin' ? 'admin_users' : userType === 'vendor' ? 'vendors' : 'landlords';
     const nameField = userType === 'vendor' ? 'contact_name' : 'name';
 
     // Check if user exists

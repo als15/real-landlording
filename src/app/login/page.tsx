@@ -95,6 +95,12 @@ export default function LoginPage() {
             </Button>
           </Form.Item>
         </Form>
+
+        <div style={{ textAlign: 'center', marginTop: 16 }}>
+          <a href="/auth/forgot-password?type=admin" style={{ color: '#1890ff' }}>
+            Forgot Password?
+          </a>
+        </div>
       </Card>
     </div>
   );
