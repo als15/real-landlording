@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { generateFollowupToken, verifyFollowupToken } from '@/lib/followup/tokens';
 
 // Set up test secret
@@ -89,7 +90,6 @@ describe('Follow-up Token System', () => {
     it('detects expired token', () => {
       // Generate a token, then mock it with an old timestamp
       const oldTimestamp = Math.floor(Date.now() / 1000) - (31 * 24 * 60 * 60); // 31 days ago
-      const crypto = require('crypto');
       const payload = `${testFollowupId}.vendor.${oldTimestamp}`;
       const hmac = crypto
         .createHmac('sha256', process.env.FOLLOWUP_TOKEN_SECRET!)
@@ -105,7 +105,6 @@ describe('Follow-up Token System', () => {
 
     it('accepts token just within expiry window', () => {
       // Generate a token with timestamp 29 days ago (within 30-day window)
-      const crypto = require('crypto');
       const recentTimestamp = Math.floor(Date.now() / 1000) - (29 * 24 * 60 * 60);
       const payload = `${testFollowupId}.vendor.${recentTimestamp}`;
       const hmac = crypto
