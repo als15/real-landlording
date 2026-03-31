@@ -3,41 +3,40 @@
 import { useEffect, useState } from 'react';
 import {
   Card,
+  Row,
+  Col,
+  Statistic,
   Table,
   Tag,
   Typography,
-  Space,
   Button,
+  Skeleton,
   Empty,
-  Spin,
-  Modal,
-  Descriptions,
-  Divider,
-  Rate,
-  Input,
-  Badge,
+  Space,
 } from 'antd';
-import { useNotify } from '@/hooks/useNotify';
 import {
-  EyeOutlined,
-  PlusOutlined,
+  ThunderboltOutlined,
+  CheckCircleOutlined,
   StarOutlined,
+  ClockCircleOutlined,
+  PlusOutlined,
+  ArrowRightOutlined,
 } from '@ant-design/icons';
-import {
-  ServiceRequest,
-  RequestVendorMatch,
-  Vendor,
-  REQUEST_STATUS_LABELS,
-  URGENCY_LABELS,
-  PROPERTY_TYPE_LABELS,
-  FINISH_LEVEL_LABELS,
-} from '@/types/database';
+import { REQUEST_STATUS_LABELS } from '@/types/database';
 import { useServiceTaxonomy } from '@/hooks/useServiceTaxonomy';
 import type { ColumnsType } from 'antd/es/table';
 import Link from 'next/link';
+import { brandColors } from '@/theme/config';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+  Legend,
+} from 'recharts';
 
-const { Title, Text, Paragraph } = Typography;
-const { TextArea } = Input;
+const { Title, Text } = Typography;
 
 const statusColors: Record<string, string> = {
   new: 'blue',
@@ -48,381 +47,275 @@ const statusColors: Record<string, string> = {
   failed: 'volcano',
 };
 
-interface RequestWithMatches extends ServiceRequest {
-  matches?: (RequestVendorMatch & { vendor: Vendor })[];
+const chartColors: Record<string, string> = {
+  new: '#1890ff',
+  matching: '#fa8c16',
+  matched: '#52c41a',
+  completed: '#8c8c8c',
+  cancelled: '#ff4d4f',
+  failed: '#fa541c',
+};
+
+interface RecentRequest {
+  id: string;
+  status: string;
+  service_type: string;
+  property_location: string;
+  created_at: string;
+  urgency: string;
+  match_count: number;
+}
+
+interface DashboardData {
+  activeRequests: number;
+  completedRequests: number;
+  totalRequests: number;
+  pendingReviews: number;
+  avgRating: number | null;
+  recentRequests: RecentRequest[];
+  statusBreakdown: { status: string; count: number }[];
 }
 
 export default function DashboardPage() {
   const { labels: SERVICE_TYPE_LABELS } = useServiceTaxonomy();
-  const [requests, setRequests] = useState<RequestWithMatches[]>([]);
+  const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedRequest, setSelectedRequest] = useState<RequestWithMatches | null>(null);
-  const [detailModalOpen, setDetailModalOpen] = useState(false);
-  const [reviewModalOpen, setReviewModalOpen] = useState(false);
-  const [selectedMatch, setSelectedMatch] = useState<(RequestVendorMatch & { vendor: Vendor }) | null>(null);
-  const [reviewRating, setReviewRating] = useState(0);
-  const [reviewQuality, setReviewQuality] = useState(0);
-  const [reviewPrice, setReviewPrice] = useState(0);
-  const [reviewTimeline, setReviewTimeline] = useState(0);
-  const [reviewTreatment, setReviewTreatment] = useState(0);
-  const [reviewText, setReviewText] = useState('');
-  const [submittingReview, setSubmittingReview] = useState(false);
-  const { message } = useNotify();
 
   useEffect(() => {
-    fetchRequests();
+    const fetchDashboard = async () => {
+      try {
+        const response = await fetch('/api/landlord/dashboard');
+        if (response.ok) {
+          const json = await response.json();
+          setData(json);
+        } else if (response.status === 401) {
+          window.location.href = '/auth/login?redirectTo=/dashboard';
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboard();
   }, []);
 
-  const fetchRequests = async () => {
-    try {
-      const response = await fetch('/api/landlord/requests');
-      if (response.ok) {
-        const { data } = await response.json();
-        setRequests(data || []);
-      } else if (response.status === 401) {
-        window.location.href = '/auth/login?redirectTo=/dashboard';
-      }
-    } catch (error) {
-      console.error('Error fetching requests:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Empty state: no requests at all
+  if (!loading && data && data.totalRequests === 0) {
+    return (
+      <div style={{ textAlign: 'center', padding: '80px 0' }}>
+        <Empty
+          description={
+            <Space direction="vertical" size="large">
+              <Title level={3} style={{ margin: 0 }}>Welcome to Real Landlording</Title>
+              <Text type="secondary" style={{ fontSize: 16 }}>
+                Submit your first service request and we&apos;ll match you with vetted Philadelphia vendors.
+              </Text>
+              <Link href="/request">
+                <Button type="primary" size="large" icon={<PlusOutlined />}>
+                  Submit Your First Request
+                </Button>
+              </Link>
+            </Space>
+          }
+        />
+      </div>
+    );
+  }
 
-  const handleViewRequest = async (request: ServiceRequest) => {
-    // Fetch full request with matches
-    try {
-      const response = await fetch(`/api/landlord/requests/${request.id}`);
-      if (response.ok) {
-        const data = await response.json();
-        setSelectedRequest(data);
-        setDetailModalOpen(true);
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Error fetching request details:', response.status, errorData);
-        message.error(errorData.message || 'Failed to load request details');
-      }
-    } catch (error) {
-      console.error('Error fetching request details:', error);
-      message.error('Failed to load request details');
-    }
-  };
-
-  const handleOpenReview = (match: RequestVendorMatch & { vendor: Vendor }) => {
-    setSelectedMatch(match);
-    setReviewRating(match.review_rating || 0);
-    setReviewQuality(match.review_quality || 0);
-    setReviewPrice(match.review_price || 0);
-    setReviewTimeline(match.review_timeline || 0);
-    setReviewTreatment(match.review_treatment || 0);
-    setReviewText(match.review_text || '');
-    setReviewModalOpen(true);
-  };
-
-  const handleSubmitReview = async () => {
-    if (!selectedMatch || !reviewRating) {
-      message.error('Please select an overall rating');
-      return;
-    }
-
-    setSubmittingReview(true);
-    try {
-      const response = await fetch(`/api/landlord/reviews`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          match_id: selectedMatch.id,
-          rating: reviewRating,
-          quality: reviewQuality || null,
-          price: reviewPrice || null,
-          timeline: reviewTimeline || null,
-          treatment: reviewTreatment || null,
-          review_text: reviewText,
-        }),
-      });
-
-      if (response.ok) {
-        message.success('Review submitted successfully!');
-        setReviewModalOpen(false);
-        fetchRequests();
-        // Refresh the detail modal if open
-        if (selectedRequest) {
-          handleViewRequest(selectedRequest);
-        }
-      } else {
-        throw new Error('Failed to submit review');
-      }
-    } catch {
-      message.error('Failed to submit review');
-    } finally {
-      setSubmittingReview(false);
-    }
-  };
-
-  const columns: ColumnsType<ServiceRequest> = [
+  const recentColumns: ColumnsType<RecentRequest> = [
     {
       title: 'Service',
       dataIndex: 'service_type',
       key: 'service_type',
-      render: (type: string, record: ServiceRequest) => {
-        if (type === 'other') {
-          const customDesc = (record.service_details as Record<string, string> | undefined)?.custom_service_description;
-          return customDesc || 'Other Service';
-        }
-        return SERVICE_TYPE_LABELS[type] || type;
-      },
+      render: (type: string) => SERVICE_TYPE_LABELS[type] || type,
     },
     {
       title: 'Location',
       dataIndex: 'property_location',
       key: 'property_location',
+      ellipsis: true,
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: (status) => (
+      render: (status: string) => (
         <Tag color={statusColors[status]}>
           {REQUEST_STATUS_LABELS[status as keyof typeof REQUEST_STATUS_LABELS]}
         </Tag>
       ),
     },
     {
-      title: 'Submitted',
-      dataIndex: 'created_at',
-      key: 'created_at',
-      render: (date) => new Date(date).toLocaleDateString(),
+      title: 'Vendors',
+      dataIndex: 'match_count',
+      key: 'match_count',
+      render: (count: number) => count > 0 ? <Tag color="green">{count}</Tag> : <Text type="secondary">-</Text>,
     },
     {
-      title: 'Actions',
-      key: 'actions',
-      render: (_, record) => (
-        <Button
-          size="small"
-          icon={<EyeOutlined />}
-          onClick={() => handleViewRequest(record)}
-        >
-          View Details
-        </Button>
-      ),
+      title: 'Date',
+      dataIndex: 'created_at',
+      key: 'created_at',
+      render: (date: string) => new Date(date).toLocaleDateString(),
     },
   ];
 
-  if (loading) {
-    return (
-      <div style={{ textAlign: 'center', padding: '100px 0' }}>
-        <Spin size="large" />
-      </div>
-    );
-  }
+  const chartData = data?.statusBreakdown.map((item) => ({
+    name: REQUEST_STATUS_LABELS[item.status as keyof typeof REQUEST_STATUS_LABELS] || item.status,
+    value: item.count,
+    color: chartColors[item.status] || '#8c8c8c',
+  })) || [];
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <div>
-          <Title level={2} style={{ margin: 0 }}>My Service Requests</Title>
-          <Text type="secondary">Track your requests and leave reviews for vendors</Text>
-        </div>
-        <Link href="/request">
-          <Button type="primary" icon={<PlusOutlined />} size="large">
-            New Request
-          </Button>
-        </Link>
+      <div style={{ marginBottom: 24 }}>
+        <Title level={2} style={{ margin: 0 }}>Dashboard</Title>
+        <Text type="secondary">Overview of your service requests and vendor matches</Text>
       </div>
 
-      {requests.length === 0 ? (
-        <Card>
-          <Empty
-            description={
-              <Space orientation="vertical">
-                <Text>You haven&apos;t submitted any service requests yet.</Text>
-                <Link href="/request">
-                  <Button type="primary" icon={<PlusOutlined />}>
-                    Submit Your First Request
+      {/* Stat Cards */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24} sm={12} lg={6}>
+          <Card>
+            {loading ? (
+              <Skeleton.Button active block style={{ height: 60 }} />
+            ) : (
+              <Statistic
+                title="Active Requests"
+                value={data?.activeRequests || 0}
+                prefix={<ThunderboltOutlined style={{ color: brandColors.secondary }} />}
+                valueStyle={{ color: brandColors.secondary }}
+              />
+            )}
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card>
+            {loading ? (
+              <Skeleton.Button active block style={{ height: 60 }} />
+            ) : (
+              <Statistic
+                title="Completed Jobs"
+                value={data?.completedRequests || 0}
+                prefix={<CheckCircleOutlined style={{ color: brandColors.primary }} />}
+                valueStyle={{ color: brandColors.primary }}
+              />
+            )}
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card>
+            {loading ? (
+              <Skeleton.Button active block style={{ height: 60 }} />
+            ) : (
+              <Link href="/dashboard/requests?status=matched">
+                <Statistic
+                  title="Pending Reviews"
+                  value={data?.pendingReviews || 0}
+                  prefix={<ClockCircleOutlined style={{ color: brandColors.accent }} />}
+                  valueStyle={{ color: brandColors.accent, cursor: 'pointer' }}
+                />
+              </Link>
+            )}
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card>
+            {loading ? (
+              <Skeleton.Button active block style={{ height: 60 }} />
+            ) : (
+              <Statistic
+                title="Avg Vendor Rating"
+                value={data?.avgRating || '-'}
+                prefix={<StarOutlined style={{ color: brandColors.accent }} />}
+                valueStyle={{ color: brandColors.accent }}
+                suffix={data?.avgRating ? '/ 5' : ''}
+              />
+            )}
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Main Content Row */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        {/* Recent Requests */}
+        <Col xs={24} lg={16}>
+          <Card
+            title="Recent Requests"
+            extra={
+              <Link href="/dashboard/requests">
+                <Button type="link" icon={<ArrowRightOutlined />}>View All</Button>
+              </Link>
+            }
+          >
+            {loading ? (
+              <Skeleton active paragraph={{ rows: 5 }} />
+            ) : (
+              <Table
+                columns={recentColumns}
+                dataSource={data?.recentRequests || []}
+                rowKey="id"
+                pagination={false}
+                size="small"
+                scroll={{ x: 500 }}
+              />
+            )}
+          </Card>
+        </Col>
+
+        {/* Status Chart */}
+        <Col xs={24} lg={8}>
+          <Card title="Request Status">
+            {loading ? (
+              <Skeleton active paragraph={{ rows: 5 }} />
+            ) : chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={80}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <Empty description="No data yet" />
+            )}
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Quick Actions */}
+      <Row gutter={[16, 16]}>
+        <Col span={24}>
+          <Card>
+            <Space>
+              <Link href="/request">
+                <Button type="primary" icon={<PlusOutlined />} size="large">
+                  Submit New Request
+                </Button>
+              </Link>
+              {data && data.pendingReviews > 0 && (
+                <Link href="/dashboard/requests?status=matched">
+                  <Button icon={<StarOutlined />} size="large">
+                    Review Pending Vendors ({data.pendingReviews})
                   </Button>
                 </Link>
-              </Space>
-            }
-          />
-        </Card>
-      ) : (
-        <Card>
-          <Table
-            columns={columns}
-            dataSource={requests}
-            rowKey="id"
-            pagination={{ pageSize: 10 }}
-          />
-        </Card>
-      )}
-
-      {/* Request Detail Modal */}
-      <Modal
-        title="Request Details"
-        open={detailModalOpen}
-        onCancel={() => setDetailModalOpen(false)}
-        footer={null}
-        width={700}
-      >
-        {selectedRequest && (
-          <>
-            <Descriptions column={2} bordered size="small">
-              <Descriptions.Item label="Service" span={2}>
-                {selectedRequest.service_type === 'other'
-                  ? (selectedRequest.service_details as Record<string, string> | undefined)?.custom_service_description || 'Other Service'
-                  : SERVICE_TYPE_LABELS[selectedRequest.service_type]}
-              </Descriptions.Item>
-              <Descriptions.Item label="Location">
-                {selectedRequest.property_address || selectedRequest.zip_code || selectedRequest.property_location}
-              </Descriptions.Item>
-              <Descriptions.Item label="Urgency">
-                {URGENCY_LABELS[selectedRequest.urgency]}
-              </Descriptions.Item>
-              {selectedRequest.property_type && (
-                <Descriptions.Item label="Property Type">
-                  {PROPERTY_TYPE_LABELS[selectedRequest.property_type]}
-                </Descriptions.Item>
               )}
-              {selectedRequest.finish_level && (
-                <Descriptions.Item label="Finish Level">
-                  {FINISH_LEVEL_LABELS[selectedRequest.finish_level]}
-                </Descriptions.Item>
-              )}
-              <Descriptions.Item label="Status" span={2}>
-                <Tag color={statusColors[selectedRequest.status]}>
-                  {REQUEST_STATUS_LABELS[selectedRequest.status as keyof typeof REQUEST_STATUS_LABELS]}
-                </Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="Submitted" span={2}>
-                {new Date(selectedRequest.created_at).toLocaleString()}
-              </Descriptions.Item>
-            </Descriptions>
-
-            {/* Service Details (Sub-categories) */}
-            {selectedRequest.service_details && Object.keys(selectedRequest.service_details).length > 0 && (
-              <>
-                <Divider>Service Details</Divider>
-                <Descriptions column={1} bordered size="small">
-                  {Object.entries(selectedRequest.service_details).map(([key, value]) => (
-                    <Descriptions.Item key={key} label={key}>
-                      {value}
-                    </Descriptions.Item>
-                  ))}
-                </Descriptions>
-              </>
-            )}
-
-            <Divider>Job Description</Divider>
-            <Paragraph>{selectedRequest.job_description}</Paragraph>
-
-            {selectedRequest.matches && selectedRequest.matches.length > 0 && (
-              <>
-                <Divider>Matched Vendors</Divider>
-                <Space orientation="vertical" style={{ width: '100%' }}>
-                  {selectedRequest.matches.map((match) => (
-                    <Card key={match.id} size="small">
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <Text strong>{match.vendor.business_name}</Text>
-                          <br />
-                          <Text type="secondary">{match.vendor.contact_name}</Text>
-                          <br />
-                          <Text type="secondary">{match.vendor.phone || match.vendor.email}</Text>
-                        </div>
-                        <Space orientation="vertical" align="end">
-                          {match.review_rating ? (
-                            <Space>
-                              <Rate disabled defaultValue={match.review_rating} style={{ fontSize: 14 }} />
-                              <Badge status="success" text="Reviewed" />
-                            </Space>
-                          ) : (
-                            <Button
-                              type="primary"
-                              icon={<StarOutlined />}
-                              onClick={() => handleOpenReview(match)}
-                            >
-                              Leave Review
-                            </Button>
-                          )}
-                        </Space>
-                      </div>
-                    </Card>
-                  ))}
-                </Space>
-              </>
-            )}
-
-            {selectedRequest.status === 'new' && (
-              <div style={{ marginTop: 24, padding: 16, background: '#f5f5f5', borderRadius: 8 }}>
-                <Text type="secondary">
-                  We&apos;re currently matching you with the best vendors for this job.
-                  You&apos;ll receive an email once we&apos;ve found matches!
-                </Text>
-              </div>
-            )}
-          </>
-        )}
-      </Modal>
-
-      {/* Review Modal */}
-      <Modal
-        title={`Review ${selectedMatch?.vendor.business_name}`}
-        open={reviewModalOpen}
-        onCancel={() => setReviewModalOpen(false)}
-        onOk={handleSubmitReview}
-        confirmLoading={submittingReview}
-        okText="Submit Review"
-        width={500}
-      >
-        <Space orientation="vertical" style={{ width: '100%' }} size="middle">
-          <div>
-            <Text strong>Overall Rating *</Text>
-            <div style={{ marginTop: 8 }}>
-              <Rate value={reviewRating} onChange={setReviewRating} style={{ fontSize: 28 }} />
-            </div>
-          </div>
-
-          <Divider style={{ margin: '12px 0' }}>Rate Specific Areas (Optional)</Divider>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <div>
-              <Text type="secondary" style={{ fontSize: 13 }}>Quality of Work</Text>
-              <div style={{ marginTop: 4 }}>
-                <Rate value={reviewQuality} onChange={setReviewQuality} style={{ fontSize: 18 }} />
-              </div>
-            </div>
-            <div>
-              <Text type="secondary" style={{ fontSize: 13 }}>Price / Value</Text>
-              <div style={{ marginTop: 4 }}>
-                <Rate value={reviewPrice} onChange={setReviewPrice} style={{ fontSize: 18 }} />
-              </div>
-            </div>
-            <div>
-              <Text type="secondary" style={{ fontSize: 13 }}>Timeliness</Text>
-              <div style={{ marginTop: 4 }}>
-                <Rate value={reviewTimeline} onChange={setReviewTimeline} style={{ fontSize: 18 }} />
-              </div>
-            </div>
-            <div>
-              <Text type="secondary" style={{ fontSize: 13 }}>Professionalism</Text>
-              <div style={{ marginTop: 4 }}>
-                <Rate value={reviewTreatment} onChange={setReviewTreatment} style={{ fontSize: 18 }} />
-              </div>
-            </div>
-          </div>
-
-          <div style={{ marginTop: 8 }}>
-            <Text type="secondary" style={{ fontSize: 13 }}>Additional Comments (optional)</Text>
-            <TextArea
-              rows={3}
-              value={reviewText}
-              onChange={(e) => setReviewText(e.target.value)}
-              placeholder="Share any additional feedback about your experience..."
-              style={{ marginTop: 8 }}
-            />
-          </div>
-        </Space>
-      </Modal>
+            </Space>
+          </Card>
+        </Col>
+      </Row>
     </div>
   );
 }

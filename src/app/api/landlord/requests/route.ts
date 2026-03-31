@@ -1,36 +1,43 @@
-import { NextResponse } from 'next/server';
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { verifyLandlord } from '@/lib/api/landlord';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const result = await verifyLandlord();
+    if (!result.success) return result.response;
+    const { adminClient, userEmail } = result.context;
 
-    // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const searchParams = request.nextUrl.searchParams;
+    const status = searchParams.get('status');
+    const serviceType = searchParams.get('service_type');
+    const urgency = searchParams.get('urgency');
 
-    if (userError || !user) {
-      return NextResponse.json(
-        { message: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    // Use admin client to bypass RLS for fetching user's own requests
-    const adminClient = createAdminClient();
-
-    // Get requests by email (most reliable - works for pre-signup and post-signup requests)
-    const { data: requests, error } = await adminClient
+    let query = adminClient
       .from('service_requests')
-      .select('*')
-      .eq('landlord_email', user.email)
+      .select('*, match_count:request_vendor_matches(count)')
+      .eq('landlord_email', userEmail)
       .order('created_at', { ascending: false });
+
+    if (status) query = query.eq('status', status);
+    if (serviceType) query = query.eq('service_type', serviceType);
+    if (urgency) query = query.eq('urgency', urgency);
+
+    const { data: requests, error } = await query;
 
     if (error) {
       console.error('Error fetching requests:', error);
       return NextResponse.json({ data: [] });
     }
 
-    return NextResponse.json({ data: requests });
+    // Flatten match count from Supabase relation count format
+    const formatted = (requests || []).map((r) => ({
+      ...r,
+      match_count: Array.isArray(r.match_count) && r.match_count[0]
+        ? r.match_count[0].count
+        : 0,
+    }));
+
+    return NextResponse.json({ data: formatted });
   } catch (error) {
     console.error('API error:', error);
     return NextResponse.json(

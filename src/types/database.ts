@@ -1153,6 +1153,16 @@ export interface FollowupEvent {
   created_at: string;
 }
 
+// Landlord saved vendors
+export interface LandlordSavedVendor {
+  id: string;
+  landlord_id: string;
+  vendor_id: string;
+  notes: string | null;
+  source_request_id: string | null;
+  created_at: string;
+}
+
 // Follow-up stage display labels
 export const FOLLOWUP_STAGE_LABELS: Record<FollowupStage, string> = {
   pending: 'Pending',

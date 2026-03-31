@@ -1,52 +1,49 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { NextRequest, NextResponse } from 'next/server';
+import { verifyVendor } from '@/lib/api/vendor';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const adminClient = createAdminClient();
+    const result = await verifyVendor();
+    if (!result.success) return result.response;
+    const { adminClient, vendorId } = result.context;
 
-    // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      return NextResponse.json(
-        { message: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    // Get vendor profile (bypass RLS)
-    const { data: vendor } = await adminClient
-      .from('vendors')
-      .select('id')
-      .eq('email', user.email)
-      .single();
-
-    if (!vendor) {
-      return NextResponse.json(
-        { message: 'Vendor not found' },
-        { status: 404 }
-      );
-    }
+    const searchParams = request.nextUrl.searchParams;
+    const status = searchParams.get('status');
+    const serviceType = searchParams.get('service_type');
+    const urgency = searchParams.get('urgency');
 
     // Get jobs assigned to this vendor
-    const { data: jobs, error } = await adminClient
+    let query = adminClient
       .from('request_vendor_matches')
       .select(`
         *,
         request:service_requests(*)
       `)
-      .eq('vendor_id', vendor.id)
+      .eq('vendor_id', vendorId)
       .order('created_at', { ascending: false });
+
+    // Apply filters
+    if (status) {
+      query = query.eq('status', status);
+    }
+    if (serviceType) {
+      query = query.eq('request.service_type', serviceType);
+    }
+    if (urgency) {
+      query = query.eq('request.urgency', urgency);
+    }
+
+    const { data: jobs, error } = await query;
 
     if (error) {
       console.error('Error fetching jobs:', error);
       return NextResponse.json({ data: [] });
     }
 
-    return NextResponse.json({ data: jobs });
+    // Filter out null requests (from service_type/urgency filter mismatches on joined table)
+    const filtered = (jobs || []).filter((j: Record<string, unknown>) => j.request !== null);
+
+    return NextResponse.json({ data: filtered });
   } catch (error) {
     console.error('API error:', error);
     return NextResponse.json(

@@ -3,445 +3,388 @@
 import { useEffect, useState } from 'react';
 import {
   Card,
+  Row,
+  Col,
+  Statistic,
   Table,
   Tag,
   Typography,
-  Space,
   Button,
-  Spin,
-  Modal,
-  Descriptions,
-  Divider,
-  Statistic,
-  Row,
-  Col,
-  Rate,
+  Skeleton,
   Empty,
+  Space,
+  Alert,
 } from 'antd';
-import { useNotify } from '@/hooks/useNotify';
 import {
-  EyeOutlined,
   CheckCircleOutlined,
-  ClockCircleOutlined,
   StarOutlined,
-  PhoneOutlined,
-  MailOutlined,
-  HomeOutlined,
-  EnvironmentOutlined,
-  PictureOutlined,
+  ClockCircleOutlined,
+  ArrowRightOutlined,
+  PlayCircleOutlined,
+  ThunderboltOutlined,
+  FileTextOutlined,
 } from '@ant-design/icons';
-import Image from 'next/image';
-import {
-  ServiceRequest,
-  RequestVendorMatch,
-  URGENCY_LABELS,
-  PROPERTY_TYPE_LABELS,
-  OCCUPANCY_STATUS_LABELS,
-  BUDGET_RANGE_LABELS,
-  FINISH_LEVEL_LABELS,
-  CONTACT_PREFERENCE_LABELS,
-  PropertyType,
-  OccupancyStatus,
-  BudgetRange,
-  FinishLevel,
-  ContactPreference,
-} from '@/types/database';
 import { useServiceTaxonomy } from '@/hooks/useServiceTaxonomy';
 import type { ColumnsType } from 'antd/es/table';
+import Link from 'next/link';
+import { brandColors } from '@/theme/config';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+  Legend,
+} from 'recharts';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
-interface JobWithRequest extends RequestVendorMatch {
-  request: ServiceRequest;
+const MATCH_STATUS_LABELS: Record<string, string> = {
+  pending: 'Pending',
+  intro_sent: 'Intro Sent',
+  estimate_sent: 'Estimate Sent',
+  vendor_accepted: 'Accepted',
+  vendor_declined: 'Declined',
+  no_response: 'No Response',
+  in_progress: 'In Progress',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+  no_show: 'No Show',
+};
+
+const MATCH_STATUS_COLORS: Record<string, string> = {
+  pending: 'orange',
+  intro_sent: 'blue',
+  estimate_sent: 'cyan',
+  vendor_accepted: 'green',
+  vendor_declined: 'red',
+  no_response: 'default',
+  in_progress: 'geekblue',
+  completed: 'success',
+  cancelled: 'default',
+  no_show: 'volcano',
+};
+
+const chartColors: Record<string, string> = {
+  pending: '#fa8c16',
+  intro_sent: '#1890ff',
+  estimate_sent: '#13c2c2',
+  vendor_accepted: '#52c41a',
+  vendor_declined: '#ff4d4f',
+  no_response: '#8c8c8c',
+  in_progress: '#2f54eb',
+  completed: '#4b7557',
+  cancelled: '#d9d9d9',
+  no_show: '#fa541c',
+};
+
+interface RecentJob {
+  id: string;
+  status: string;
+  service_type: string;
+  property_location: string;
+  created_at: string;
 }
 
-interface VendorStats {
+interface VendorDashboardData {
   totalJobs: number;
   pendingJobs: number;
+  acceptedJobs: number;
+  inProgressJobs: number;
   completedJobs: number;
   averageRating: number;
   totalReviews: number;
+  statusBreakdown: { status: string; count: number }[];
+  recentJobs: RecentJob[];
 }
-
-const urgencyColors: Record<string, string> = {
-  low: 'default',
-  medium: 'blue',
-  high: 'orange',
-  emergency: 'red',
-};
 
 export default function VendorDashboardPage() {
   const { labels: SERVICE_TYPE_LABELS } = useServiceTaxonomy();
-  const [jobs, setJobs] = useState<JobWithRequest[]>([]);
-  const [stats, setStats] = useState<VendorStats | null>(null);
+  const [data, setData] = useState<VendorDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedJob, setSelectedJob] = useState<JobWithRequest | null>(null);
-  const [detailModalOpen, setDetailModalOpen] = useState(false);
-  const { message } = useNotify();
 
   useEffect(() => {
-    fetchData();
+    const fetchDashboard = async () => {
+      try {
+        const response = await fetch('/api/vendor/stats');
+        if (response.ok) {
+          const json = await response.json();
+          setData(json);
+        } else if (response.status === 401) {
+          window.location.href = '/vendor/login?redirectTo=/vendor/dashboard';
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboard();
   }, []);
 
-  const fetchData = async () => {
-    try {
-      const [jobsRes, statsRes] = await Promise.all([
-        fetch('/api/vendor/jobs'),
-        fetch('/api/vendor/stats'),
-      ]);
-
-      if (jobsRes.ok) {
-        const { data } = await jobsRes.json();
-        setJobs(data || []);
-      } else if (jobsRes.status === 401) {
-        window.location.href = '/vendor/login?redirectTo=/vendor/dashboard';
-        return;
-      }
-
-      if (statsRes.ok) {
-        const data = await statsRes.json();
-        setStats(data);
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleViewJob = (job: JobWithRequest) => {
-    setSelectedJob(job);
-    setDetailModalOpen(true);
-  };
-
-  const handleAcceptJob = async (jobId: string) => {
-    try {
-      const response = await fetch(`/api/vendor/jobs/${jobId}/accept`, {
-        method: 'POST',
-      });
-
-      if (response.ok) {
-        message.success('Job accepted! Contact the landlord to schedule.');
-        fetchData();
-        setDetailModalOpen(false);
-      } else {
-        throw new Error('Failed to accept job');
-      }
-    } catch {
-      message.error('Failed to accept job');
-    }
-  };
-
-  const columns: ColumnsType<JobWithRequest> = [
-    {
-      title: 'Service',
-      key: 'service',
-      render: (_, record) => {
-        if (record.request.service_type === 'other') {
-          const customDesc = (record.request.service_details as Record<string, string> | undefined)?.custom_service_description;
-          return customDesc || 'Other Service';
-        }
-        return SERVICE_TYPE_LABELS[record.request.service_type];
-      },
-    },
-    {
-      title: 'Location',
-      key: 'location',
-      render: (_, record) => record.request.property_location,
-    },
-    {
-      title: 'Urgency',
-      key: 'urgency',
-      render: (_, record) => (
-        <Tag color={urgencyColors[record.request.urgency]}>
-          {URGENCY_LABELS[record.request.urgency]?.split(' - ')[0]}
-        </Tag>
-      ),
-    },
-    {
-      title: 'Status',
-      key: 'status',
-      render: (_, record) => {
-        if (record.job_completed) {
-          return <Tag color="green">Completed</Tag>;
-        }
-        if (record.vendor_accepted) {
-          return <Tag color="blue">Accepted</Tag>;
-        }
-        return <Tag color="orange">Pending</Tag>;
-      },
-    },
-    {
-      title: 'Rating',
-      key: 'rating',
-      render: (_, record) =>
-        record.review_rating ? (
-          <Rate disabled defaultValue={record.review_rating} style={{ fontSize: 14 }} />
-        ) : (
-          <Text type="secondary">-</Text>
-        ),
-    },
-    {
-      title: 'Received',
-      key: 'created',
-      render: (_, record) => new Date(record.created_at).toLocaleDateString(),
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_, record) => (
-        <Button
-          size="small"
-          icon={<EyeOutlined />}
-          onClick={() => handleViewJob(record)}
-        >
-          View
-        </Button>
-      ),
-    },
-  ];
-
-  if (loading) {
+  // Empty state: no jobs at all
+  if (!loading && data && data.totalJobs === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '100px 0' }}>
-        <Spin size="large" />
+      <div style={{ textAlign: 'center', padding: '80px 0' }}>
+        <Empty
+          description={
+            <Space direction="vertical" size="large">
+              <Title level={3} style={{ margin: 0 }}>Welcome to Real Landlording</Title>
+              <Text type="secondary" style={{ fontSize: 16 }}>
+                No jobs assigned yet. You&apos;ll see referrals here when landlords need your services.
+              </Text>
+              <Text type="secondary">
+                Make sure your profile is complete to increase your chances of being matched.
+              </Text>
+              <Link href="/vendor/dashboard/profile">
+                <Button type="primary" size="large">
+                  Complete My Profile
+                </Button>
+              </Link>
+            </Space>
+          }
+        />
       </div>
     );
   }
 
+  const recentColumns: ColumnsType<RecentJob> = [
+    {
+      title: 'Service',
+      dataIndex: 'service_type',
+      key: 'service_type',
+      render: (type: string) => SERVICE_TYPE_LABELS[type] || type,
+    },
+    {
+      title: 'Location',
+      dataIndex: 'property_location',
+      key: 'property_location',
+      ellipsis: true,
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => (
+        <Tag color={MATCH_STATUS_COLORS[status]}>
+          {MATCH_STATUS_LABELS[status] || status}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Date',
+      dataIndex: 'created_at',
+      key: 'created_at',
+      render: (date: string) => new Date(date).toLocaleDateString(),
+    },
+  ];
+
+  const chartData = data?.statusBreakdown.map((item) => ({
+    name: MATCH_STATUS_LABELS[item.status] || item.status,
+    value: item.count,
+    color: chartColors[item.status] || '#8c8c8c',
+  })) || [];
+
   return (
     <div>
-      <Title level={2}>Vendor Dashboard</Title>
+      <div style={{ marginBottom: 24 }}>
+        <Title level={2} style={{ margin: 0 }}>Vendor Dashboard</Title>
+        <Text type="secondary">Overview of your job referrals and performance</Text>
+      </div>
 
-      {/* Stats Cards */}
-      {stats && (
-        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
+      {/* Stat Cards - 6 across */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24} sm={12} lg={4}>
+          <Card>
+            {loading ? (
+              <Skeleton.Button active block style={{ height: 60 }} />
+            ) : (
               <Statistic
                 title="Total Jobs"
-                value={stats.totalJobs}
-                prefix={<ClockCircleOutlined />}
+                value={data?.totalJobs || 0}
+                prefix={<FileTextOutlined style={{ color: brandColors.secondary }} />}
+                valueStyle={{ color: brandColors.secondary }}
               />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
+            )}
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={4}>
+          <Card>
+            {loading ? (
+              <Skeleton.Button active block style={{ height: 60 }} />
+            ) : (
+              <Link href="/vendor/dashboard/jobs?status=pending">
+                <Statistic
+                  title="Pending"
+                  value={data?.pendingJobs || 0}
+                  prefix={<ClockCircleOutlined style={{ color: '#faad14' }} />}
+                  valueStyle={{ color: '#faad14', cursor: 'pointer' }}
+                />
+              </Link>
+            )}
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={4}>
+          <Card>
+            {loading ? (
+              <Skeleton.Button active block style={{ height: 60 }} />
+            ) : (
               <Statistic
-                title="Pending"
-                value={stats.pendingJobs}
-                styles={{ content: { color: '#faad14' } }}
+                title="Accepted"
+                value={data?.acceptedJobs || 0}
+                prefix={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
+                valueStyle={{ color: '#52c41a' }}
               />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
+            )}
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={4}>
+          <Card>
+            {loading ? (
+              <Skeleton.Button active block style={{ height: 60 }} />
+            ) : (
+              <Statistic
+                title="In Progress"
+                value={data?.inProgressJobs || 0}
+                prefix={<PlayCircleOutlined style={{ color: '#2f54eb' }} />}
+                valueStyle={{ color: '#2f54eb' }}
+              />
+            )}
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={4}>
+          <Card>
+            {loading ? (
+              <Skeleton.Button active block style={{ height: 60 }} />
+            ) : (
               <Statistic
                 title="Completed"
-                value={stats.completedJobs}
-                prefix={<CheckCircleOutlined />}
-                styles={{ content: { color: '#52c41a' } }}
+                value={data?.completedJobs || 0}
+                prefix={<CheckCircleOutlined style={{ color: brandColors.primary }} />}
+                valueStyle={{ color: brandColors.primary }}
               />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
+            )}
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={4}>
+          <Card>
+            {loading ? (
+              <Skeleton.Button active block style={{ height: 60 }} />
+            ) : (
               <Statistic
-                title="Average Rating"
-                value={stats.averageRating.toFixed(1)}
-                prefix={<StarOutlined />}
-                suffix={`/ 5 (${stats.totalReviews})`}
+                title="Avg Rating"
+                value={data?.averageRating ? data.averageRating.toFixed(1) : '-'}
+                prefix={<StarOutlined style={{ color: brandColors.accent }} />}
+                valueStyle={{ color: brandColors.accent }}
+                suffix={data?.averageRating ? `/ 5 (${data.totalReviews})` : ''}
               />
-            </Card>
-          </Col>
-        </Row>
+            )}
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Main Content Row */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        {/* Recent Jobs */}
+        <Col xs={24} lg={16}>
+          <Card
+            title="Recent Jobs"
+            extra={
+              <Link href="/vendor/dashboard/jobs">
+                <Button type="link" icon={<ArrowRightOutlined />}>View All</Button>
+              </Link>
+            }
+          >
+            {loading ? (
+              <Skeleton active paragraph={{ rows: 5 }} />
+            ) : data?.recentJobs && data.recentJobs.length > 0 ? (
+              <Table
+                columns={recentColumns}
+                dataSource={data.recentJobs}
+                rowKey="id"
+                pagination={false}
+                size="small"
+                scroll={{ x: 500 }}
+              />
+            ) : (
+              <Empty description="No recent jobs" />
+            )}
+          </Card>
+        </Col>
+
+        {/* Status Chart */}
+        <Col xs={24} lg={8}>
+          <Card title="Job Status">
+            {loading ? (
+              <Skeleton active paragraph={{ rows: 5 }} />
+            ) : chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={80}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <Empty description="No data yet" />
+            )}
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Quick Actions */}
+      <Row gutter={[16, 16]}>
+        <Col span={24}>
+          <Card>
+            <Space wrap>
+              {data && data.pendingJobs > 0 && (
+                <Link href="/vendor/dashboard/jobs?status=pending">
+                  <Button type="primary" icon={<ThunderboltOutlined />} size="large">
+                    {data.pendingJobs} Job{data.pendingJobs !== 1 ? 's' : ''} Need Your Response
+                  </Button>
+                </Link>
+              )}
+              <Link href="/vendor/dashboard/jobs">
+                <Button icon={<FileTextOutlined />} size="large">
+                  View All Jobs
+                </Button>
+              </Link>
+              <Link href="/vendor/dashboard/profile">
+                <Button size="large">
+                  My Profile
+                </Button>
+              </Link>
+            </Space>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Pending jobs alert */}
+      {data && data.pendingJobs > 0 && (
+        <Alert
+          message={`You have ${data.pendingJobs} pending job${data.pendingJobs !== 1 ? 's' : ''} awaiting your response`}
+          type="info"
+          showIcon
+          style={{ marginTop: 16 }}
+          action={
+            <Link href="/vendor/dashboard/jobs?status=pending">
+              <Button size="small" type="link">Respond Now</Button>
+            </Link>
+          }
+        />
       )}
-
-      {/* Jobs Table */}
-      <Card title="My Job Referrals">
-        {jobs.length === 0 ? (
-          <Empty description="No jobs assigned yet. You'll see referrals here when landlords need your services." />
-        ) : (
-          <Table
-            columns={columns}
-            dataSource={jobs}
-            rowKey="id"
-            pagination={{ pageSize: 10 }}
-          />
-        )}
-      </Card>
-
-      {/* Job Detail Modal */}
-      <Modal
-        title="Job Details"
-        open={detailModalOpen}
-        onCancel={() => setDetailModalOpen(false)}
-        footer={
-          selectedJob && !selectedJob.vendor_accepted
-            ? [
-                <Button key="close" onClick={() => setDetailModalOpen(false)}>
-                  Close
-                </Button>,
-                <Button
-                  key="accept"
-                  type="primary"
-                  icon={<CheckCircleOutlined />}
-                  onClick={() => handleAcceptJob(selectedJob.id)}
-                >
-                  Accept Job
-                </Button>,
-              ]
-            : null
-        }
-        width={700}
-      >
-        {selectedJob && (
-          <>
-            {/* Service Information */}
-            <Descriptions column={2} bordered size="small" title={<><HomeOutlined style={{ marginRight: 8 }} />Service Details</>}>
-              <Descriptions.Item label="Service Type" span={2}>
-                {selectedJob.request.service_type === 'other'
-                  ? (selectedJob.request.service_details as Record<string, string> | undefined)?.custom_service_description || 'Other Service'
-                  : SERVICE_TYPE_LABELS[selectedJob.request.service_type]}
-              </Descriptions.Item>
-              <Descriptions.Item label="Urgency">
-                <Tag color={urgencyColors[selectedJob.request.urgency]}>
-                  {URGENCY_LABELS[selectedJob.request.urgency]}
-                </Tag>
-              </Descriptions.Item>
-              {selectedJob.request.budget_range && (
-                <Descriptions.Item label="Budget">
-                  {BUDGET_RANGE_LABELS[selectedJob.request.budget_range as BudgetRange] || selectedJob.request.budget_range}
-                </Descriptions.Item>
-              )}
-              {selectedJob.request.finish_level && (
-                <Descriptions.Item label="Finish Level" span={2}>
-                  {FINISH_LEVEL_LABELS[selectedJob.request.finish_level as FinishLevel]}
-                </Descriptions.Item>
-              )}
-            </Descriptions>
-
-            {/* Service Details (sub-categories) */}
-            {selectedJob.request.service_details && Object.keys(selectedJob.request.service_details).length > 0 && (
-              <>
-                <Divider style={{ marginTop: 24 }}>Service Specifications</Divider>
-                <Descriptions column={1} bordered size="small">
-                  {Object.entries(selectedJob.request.service_details).map(([key, value]) => (
-                    <Descriptions.Item key={key} label={key}>
-                      {value}
-                    </Descriptions.Item>
-                  ))}
-                </Descriptions>
-              </>
-            )}
-
-            {/* Property Information */}
-            <Divider><EnvironmentOutlined style={{ marginRight: 8 }} />Property Information</Divider>
-            <Descriptions column={2} bordered size="small">
-              <Descriptions.Item label="Address" span={2}>
-                {selectedJob.request.property_address || selectedJob.request.property_location}
-              </Descriptions.Item>
-              {selectedJob.request.zip_code && (
-                <Descriptions.Item label="Zip Code">
-                  {selectedJob.request.zip_code}
-                </Descriptions.Item>
-              )}
-              {selectedJob.request.property_type && (
-                <Descriptions.Item label="Property Type">
-                  {PROPERTY_TYPE_LABELS[selectedJob.request.property_type as PropertyType]}
-                </Descriptions.Item>
-              )}
-              {selectedJob.request.occupancy_status && (
-                <Descriptions.Item label="Occupancy">
-                  {OCCUPANCY_STATUS_LABELS[selectedJob.request.occupancy_status as OccupancyStatus]}
-                </Descriptions.Item>
-              )}
-            </Descriptions>
-
-            {/* Job Description */}
-            <Divider>Job Description</Divider>
-            <Paragraph style={{ whiteSpace: 'pre-wrap', background: '#fafafa', padding: 16, borderRadius: 8 }}>
-              {selectedJob.request.job_description}
-            </Paragraph>
-
-            {/* Photos/Media */}
-            {selectedJob.request.media_urls && selectedJob.request.media_urls.length > 0 && (
-              <>
-                <Divider><PictureOutlined style={{ marginRight: 8 }} />Photos ({selectedJob.request.media_urls.length})</Divider>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 12 }}>
-                  {selectedJob.request.media_urls.map((url, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        position: 'relative',
-                        paddingBottom: '100%',
-                        borderRadius: 8,
-                        overflow: 'hidden',
-                        border: '1px solid #d9d9d9',
-                        cursor: 'pointer',
-                      }}
-                      onClick={() => window.open(url, '_blank')}
-                    >
-                      <Image
-                        src={url}
-                        alt={`Job photo ${index + 1}`}
-                        fill
-                        style={{ objectFit: 'cover' }}
-                        sizes="150px"
-                      />
-                    </div>
-                  ))}
-                </div>
-                <Text type="secondary" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>
-                  Click on a photo to view full size
-                </Text>
-              </>
-            )}
-
-            {/* Landlord Contact */}
-            <Divider><MailOutlined style={{ marginRight: 8 }} />Landlord Contact</Divider>
-            <Descriptions column={1} bordered size="small">
-              <Descriptions.Item label="Name">
-                {selectedJob.request.first_name && selectedJob.request.last_name
-                  ? `${selectedJob.request.first_name} ${selectedJob.request.last_name}`
-                  : selectedJob.request.landlord_name || 'Not provided'}
-              </Descriptions.Item>
-              <Descriptions.Item label="Email">
-                <a href={`mailto:${selectedJob.request.landlord_email}`}>
-                  {selectedJob.request.landlord_email}
-                </a>
-              </Descriptions.Item>
-              {selectedJob.request.landlord_phone && (
-                <Descriptions.Item label="Phone">
-                  <a href={`tel:${selectedJob.request.landlord_phone}`}>
-                    {selectedJob.request.landlord_phone}
-                  </a>
-                </Descriptions.Item>
-              )}
-              {selectedJob.request.contact_preference && (
-                <Descriptions.Item label="Preferred Contact">
-                  {CONTACT_PREFERENCE_LABELS[selectedJob.request.contact_preference as ContactPreference]}
-                </Descriptions.Item>
-              )}
-            </Descriptions>
-
-            {/* Review (if exists) */}
-            {selectedJob.review_rating && (
-              <>
-                <Divider><StarOutlined style={{ marginRight: 8 }} />Landlord Review</Divider>
-                <Space orientation="vertical" style={{ width: '100%' }}>
-                  <Rate disabled defaultValue={selectedJob.review_rating} />
-                  {selectedJob.review_text && (
-                    <Paragraph style={{ background: '#f6ffed', padding: 12, borderRadius: 8, border: '1px solid #b7eb8f' }}>
-                      {selectedJob.review_text}
-                    </Paragraph>
-                  )}
-                </Space>
-              </>
-            )}
-          </>
-        )}
-      </Modal>
     </div>
   );
 }

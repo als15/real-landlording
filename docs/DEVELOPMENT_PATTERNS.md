@@ -16,7 +16,9 @@ This document captures recurring patterns, common issues, and their solutions to
 8. [Vendor Referral Terms](#vendor-referral-terms)
 9. [Request Status Lifecycle](#request-status-lifecycle)
 10. [Follow-Up Messaging System](#follow-up-messaging-system)
-11. [Common Issues & Solutions](#common-issues--solutions)
+11. [Landlord Dashboard](#landlord-dashboard)
+12. [Vendor Dashboard](#vendor-dashboard)
+13. [Common Issues & Solutions](#common-issues--solutions)
 
 ---
 
@@ -236,6 +238,8 @@ All main tables have RLS enabled:
 | `request_vendor_matches` | Admin | ✅ | ✅ | ✅ | ✅ |
 | `request_vendor_matches` | Vendor (own) | ✅ | ❌ | ❌ | ❌ |
 | `request_vendor_matches` | Landlord (own) | ✅ | ❌ | ✅ | ❌ |
+| `landlord_saved_vendors` | Landlord (own) | ✅ | ✅ | ✅ | ✅ |
+| `landlord_saved_vendors` | Service role | ✅ | ✅ | ✅ | ✅ |
 
 ### Common RLS Issue: "Not Found" When Record Exists
 
@@ -843,7 +847,7 @@ When showing request details, always check for and display `service_details`:
 ```
 
 **Files displaying request details:**
-- `src/app/dashboard/page.tsx` - Landlord dashboard (modal)
+- `src/components/dashboard/RequestDetailDrawer.tsx` - Landlord dashboard (drawer)
 - `src/app/(admin)/requests/page.tsx` - Admin requests page (drawer)
 
 ---
@@ -1205,6 +1209,77 @@ if (!result.valid) {
 - Server returns fake success if honeypot is filled (doesn't reveal detection)
 - Uses `position: absolute; left: -9999px` (not `display:none` — bots detect that)
 
+### Landlord Route Authorization
+
+**All landlord dashboard API routes MUST use `verifyLandlord()`** from `src/lib/api/landlord.ts`. This mirrors the admin pattern:
+
+```typescript
+import { verifyLandlord } from '@/lib/api/landlord';
+
+export async function GET() {
+  const result = await verifyLandlord();
+  if (!result.success) return result.response;
+  const { adminClient, userId, userEmail, landlordId } = result.context;
+  // ... use adminClient for queries
+}
+```
+
+`verifyLandlord()` looks up the landlord by `auth_user_id` first, then by `email` (handles pre-signup requests). Returns `{ adminClient, userId, userEmail, landlordId }`.
+
+---
+
+## Landlord Dashboard
+
+### Architecture
+
+The landlord dashboard (`/dashboard`) provides a rich, self-service experience:
+
+| Route | Purpose |
+|-------|---------|
+| `/dashboard` | Stats cards, status chart, recent requests, quick actions |
+| `/dashboard/requests` | Filterable requests table with detail drawer |
+| `/dashboard/vendors` | Saved/favorited vendors card grid |
+| `/dashboard/profile` | User profile |
+| `/dashboard/settings` | Account settings |
+
+### API Routes
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/landlord/dashboard` | GET | Dashboard stats (counts, chart data, recent requests) |
+| `/api/landlord/requests` | GET | Requests list with filter params (`status`, `service_type`, `urgency`) + match count |
+| `/api/landlord/requests/[id]` | GET | Request detail with matches + follow-up stages |
+| `/api/landlord/notifications` | GET/PATCH | List notifications / mark-all-read |
+| `/api/landlord/notifications/unread-count` | GET | Unread count for badge |
+| `/api/landlord/notifications/[id]` | PATCH | Mark individual notification as read |
+| `/api/landlord/saved-vendors` | GET/POST | List saved vendors / save a vendor |
+| `/api/landlord/saved-vendors/[id]` | DELETE/PATCH | Remove / update notes |
+
+### Components
+
+| File | Description |
+|------|-------------|
+| `src/components/dashboard/NotificationBell.tsx` | Bell icon + popover dropdown, polls every 30s |
+| `src/components/dashboard/RequestDetailDrawer.tsx` | Side drawer with steps, vendor cards, timeline |
+| `src/components/dashboard/ReviewModal.tsx` | Extracted vendor review modal |
+
+### Database: `landlord_saved_vendors`
+
+Migration `028_landlord_saved_vendors.sql`:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | UUID | Primary key |
+| `landlord_id` | UUID | FK → landlords (CASCADE) |
+| `vendor_id` | UUID | FK → vendors (CASCADE) |
+| `notes` | TEXT | Landlord's personal notes |
+| `source_request_id` | UUID | FK → service_requests (nullable) |
+| `created_at` | TIMESTAMPTZ | When saved |
+
+UNIQUE constraint on `(landlord_id, vendor_id)`. RLS enabled with landlord-own + service_role policies.
+
+---
+
 ### Admin Landlord Deletion
 
 **Single delete:** `DELETE /api/admin/landlords/[id]`
@@ -1216,3 +1291,78 @@ if (!result.valid) {
 - Accepts `{ ids: string[] }` (max 100 per request)
 - Same cleanup logic as single delete, batched
 - Returns `{ deletedCount, authUsersDeleted }`
+
+---
+
+## Vendor Dashboard
+
+### Architecture
+
+The vendor dashboard (`/vendor/dashboard`) provides a full-featured vendor portal:
+
+| Route | Purpose |
+|-------|---------|
+| `/vendor/dashboard` | Stats (6 cards), donut chart, recent jobs, quick actions |
+| `/vendor/dashboard/jobs` | Filterable jobs table with detail drawer + lifecycle actions |
+| `/vendor/dashboard/profile` | Editable profile with per-section edit toggles |
+
+### Auth Helper: `verifyVendor()`
+
+**File:** `src/lib/api/vendor.ts`
+
+Mirrors `verifyLandlord()` pattern. All vendor API routes use this:
+
+```typescript
+const result = await verifyVendor();
+if (!result.success) return result.response;
+const { adminClient, vendorId, vendorStatus } = result.context;
+```
+
+Returns `VendorContext`: `{ adminClient, userId, userEmail, vendorId, vendorStatus }`
+
+### API Routes
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/vendor/stats` | GET | Dashboard stats (counts, statusBreakdown, recentJobs) |
+| `/api/vendor/jobs` | GET | Jobs list with filter params (`status`, `service_type`, `urgency`) |
+| `/api/vendor/jobs/[id]/accept` | POST | Accept a job (guards: only from pending/intro_sent/estimate_sent) |
+| `/api/vendor/jobs/[id]/decline` | POST | Decline a job (guards: only from pending/intro_sent/estimate_sent) |
+| `/api/vendor/jobs/[id]/status` | PATCH | Update status (`in_progress`, `completed`) with transition guards |
+| `/api/vendor/profile` | GET | Full vendor profile |
+| `/api/vendor/profile` | PATCH | Update allowlisted fields, auto-recalculates vetting score |
+| `/api/vendor/notifications` | GET/PATCH | List notifications / mark-all-read |
+| `/api/vendor/notifications/unread-count` | GET | Unread count for badge |
+| `/api/vendor/notifications/[id]` | PATCH | Mark individual notification as read |
+
+### Job Lifecycle Status Transitions
+
+```
+pending/intro_sent/estimate_sent → vendor_accepted (Accept)
+pending/intro_sent/estimate_sent → vendor_declined (Decline)
+vendor_accepted → in_progress (Mark In Progress)
+vendor_accepted → completed (Mark Complete)
+in_progress → completed (Mark Complete)
+```
+
+Guards are enforced server-side in the accept, decline, and status routes.
+
+### Components
+
+| File | Description |
+|------|-------------|
+| `src/components/vendor/JobDetailDrawer.tsx` | Side drawer with Steps, service/property details, lifecycle actions, timeline |
+| `src/components/vendor/VendorNotificationBell.tsx` | Bell icon + popover dropdown, polls every 30s |
+
+### Profile Editing
+
+The profile PATCH endpoint uses an allowlist — vendors can only edit:
+- **Contact:** `contact_name`, `phone`, `website`, `location`, `call_preferences`
+- **Social:** `social_instagram`, `social_facebook`, `social_linkedin`
+- **Services:** `services`, `service_specialties`, `service_areas`, `licensed_areas`
+- **Qualifications:** `qualifications`, `licensed`, `insured`, `rental_experience`, `license_not_required`, `not_currently_licensed`, `years_in_business`
+- **Business:** `employee_count`, `job_size_range`, `accepted_payments`, `service_hours_weekdays`, `service_hours_weekends`, `emergency_services`
+
+Vendors cannot edit: `email`, `business_name`, `status`, `performance_score`, `admin_notes`, SLA fields, referral terms.
+
+If `licensed`, `insured`, or `years_in_business` change, `vetting_score` is auto-recalculated via `calculateVettingScore()` from `src/lib/scoring/vetting.ts`.

@@ -26,33 +26,32 @@ export async function POST(
       );
     }
 
-    // Guard: can only accept from pending or intro_sent
+    // Guard: can only decline from pending/intro_sent/estimate_sent
     if (!['pending', 'intro_sent', 'estimate_sent'].includes(match.status)) {
       return NextResponse.json(
-        { message: `Cannot accept job with status "${match.status}"` },
+        { message: `Cannot decline job with status "${match.status}"` },
         { status: 400 }
       );
     }
 
-    // Update the match to accepted
     const { error: updateError } = await adminClient
       .from('request_vendor_matches')
       .update({
-        vendor_accepted: true,
+        vendor_accepted: false,
         vendor_responded_at: new Date().toISOString(),
-        status: 'vendor_accepted',
+        status: 'vendor_declined',
       })
       .eq('id', id);
 
     if (updateError) {
-      console.error('Error accepting job:', updateError);
+      console.error('Error declining job:', updateError);
       return NextResponse.json(
-        { message: 'Failed to accept job' },
+        { message: 'Failed to decline job' },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ message: 'Job accepted successfully' });
+    return NextResponse.json({ message: 'Job declined' });
   } catch (error) {
     console.error('API error:', error);
     return NextResponse.json(

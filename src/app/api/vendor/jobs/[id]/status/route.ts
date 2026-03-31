@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyVendor } from '@/lib/api/vendor';
 
-export async function POST(
+// Valid status transitions
+const VALID_TRANSITIONS: Record<string, string[]> = {
+  vendor_accepted: ['in_progress', 'completed'],
+  in_progress: ['completed'],
+};
+
+export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -11,6 +17,15 @@ export async function POST(
     const { adminClient, vendorId } = result.context;
 
     const { id } = await params;
+    const body = await request.json();
+    const { status: newStatus } = body;
+
+    if (!newStatus || !['in_progress', 'completed'].includes(newStatus)) {
+      return NextResponse.json(
+        { message: 'Invalid status. Must be "in_progress" or "completed".' },
+        { status: 400 }
+      );
+    }
 
     // Verify this job belongs to this vendor
     const { data: match } = await adminClient
@@ -26,33 +41,36 @@ export async function POST(
       );
     }
 
-    // Guard: can only accept from pending or intro_sent
-    if (!['pending', 'intro_sent', 'estimate_sent'].includes(match.status)) {
+    // Guard: check valid transition
+    const allowedNext = VALID_TRANSITIONS[match.status] || [];
+    if (!allowedNext.includes(newStatus)) {
       return NextResponse.json(
-        { message: `Cannot accept job with status "${match.status}"` },
+        { message: `Cannot transition from "${match.status}" to "${newStatus}"` },
         { status: 400 }
       );
     }
 
-    // Update the match to accepted
+    const updates: Record<string, unknown> = { status: newStatus };
+
+    if (newStatus === 'completed') {
+      updates.job_completed = true;
+      updates.job_completed_at = new Date().toISOString();
+    }
+
     const { error: updateError } = await adminClient
       .from('request_vendor_matches')
-      .update({
-        vendor_accepted: true,
-        vendor_responded_at: new Date().toISOString(),
-        status: 'vendor_accepted',
-      })
+      .update(updates)
       .eq('id', id);
 
     if (updateError) {
-      console.error('Error accepting job:', updateError);
+      console.error('Error updating job status:', updateError);
       return NextResponse.json(
-        { message: 'Failed to accept job' },
+        { message: 'Failed to update job status' },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ message: 'Job accepted successfully' });
+    return NextResponse.json({ message: `Job status updated to ${newStatus}` });
   } catch (error) {
     console.error('API error:', error);
     return NextResponse.json(

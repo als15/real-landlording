@@ -1,52 +1,68 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { verifyVendor } from '@/lib/api/vendor';
 
 export async function GET() {
   try {
-    const supabase = await createClient();
-    const adminClient = createAdminClient();
+    const result = await verifyVendor();
+    if (!result.success) return result.response;
+    const { adminClient, vendorId } = result.context;
 
-    // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      return NextResponse.json(
-        { message: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    // Get vendor profile
+    // Get vendor performance data
     const { data: vendor } = await adminClient
       .from('vendors')
-      .select('id, performance_score, total_reviews')
-      .eq('email', user.email)
+      .select('performance_score, total_reviews')
+      .eq('id', vendorId)
       .single();
 
-    if (!vendor) {
-      return NextResponse.json(
-        { message: 'Vendor not found' },
-        { status: 404 }
-      );
-    }
-
-    // Get job stats
+    // Get all matches with request data for stats
     const { data: jobs } = await adminClient
       .from('request_vendor_matches')
-      .select('id, job_completed, vendor_accepted')
-      .eq('vendor_id', vendor.id);
+      .select(`
+        id, status, vendor_accepted, job_completed, created_at,
+        request:service_requests(service_type, property_location)
+      `)
+      .eq('vendor_id', vendorId)
+      .order('created_at', { ascending: false });
 
-    const totalJobs = jobs?.length || 0;
-    const completedJobs = jobs?.filter((j) => j.job_completed).length || 0;
-    const pendingJobs = jobs?.filter((j) => !j.vendor_accepted && !j.job_completed).length || 0;
+    const allJobs = jobs || [];
+    const totalJobs = allJobs.length;
+    const pendingJobs = allJobs.filter((j) => ['pending', 'intro_sent', 'estimate_sent'].includes(j.status)).length;
+    const acceptedJobs = allJobs.filter((j) => j.status === 'vendor_accepted').length;
+    const inProgressJobs = allJobs.filter((j) => j.status === 'in_progress').length;
+    const completedJobs = allJobs.filter((j) => j.status === 'completed' || j.job_completed).length;
+
+    // Status breakdown for chart
+    const statusCounts: Record<string, number> = {};
+    for (const job of allJobs) {
+      statusCounts[job.status] = (statusCounts[job.status] || 0) + 1;
+    }
+    const statusBreakdown = Object.entries(statusCounts).map(([status, count]) => ({
+      status,
+      count,
+    }));
+
+    // Recent jobs (last 5)
+    const recentJobs = allJobs.slice(0, 5).map((j) => {
+      const req = j.request as unknown as { service_type: string; property_location: string } | null;
+      return {
+        id: j.id,
+        status: j.status,
+        service_type: req?.service_type || '',
+        property_location: req?.property_location || '',
+        created_at: j.created_at,
+      };
+    });
 
     return NextResponse.json({
       totalJobs,
       pendingJobs,
+      acceptedJobs,
+      inProgressJobs,
       completedJobs,
-      averageRating: vendor.performance_score || 0,
-      totalReviews: vendor.total_reviews || 0,
+      averageRating: vendor?.performance_score || 0,
+      totalReviews: vendor?.total_reviews || 0,
+      statusBreakdown,
+      recentJobs,
     });
   } catch (error) {
     console.error('API error:', error);

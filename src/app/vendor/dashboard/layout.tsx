@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Layout, Menu, Typography, Space, Dropdown, Avatar } from 'antd';
 import {
   FileTextOutlined,
@@ -11,12 +11,21 @@ import {
 import type { MenuProps } from 'antd';
 import Link from 'next/link';
 import { brandColors } from '@/theme/config';
+import VendorNotificationBell from '@/components/vendor/VendorNotificationBell';
 
 const { Header, Content, Footer } = Layout;
 const { Text } = Typography;
 
+function getSelectedKey(pathname: string): string[] {
+  if (pathname.startsWith('/vendor/dashboard/jobs')) return ['jobs'];
+  if (pathname.startsWith('/vendor/dashboard/profile')) return ['profile'];
+  if (pathname === '/vendor/dashboard') return ['dashboard'];
+  return [];
+}
+
 export default function VendorDashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -82,7 +91,7 @@ export default function VendorDashboardLayout({ children }: { children: React.Re
           </a>
           <Menu
             mode="horizontal"
-            selectedKeys={[]}
+            selectedKeys={getSelectedKey(pathname)}
             style={{
               background: 'transparent',
               border: 'none',
@@ -97,25 +106,33 @@ export default function VendorDashboardLayout({ children }: { children: React.Re
               {
                 key: 'jobs',
                 icon: <FileTextOutlined />,
-                label: <Link href="/vendor/dashboard">My Jobs</Link>,
+                label: <Link href="/vendor/dashboard/jobs">My Jobs</Link>,
+              },
+              {
+                key: 'profile',
+                icon: <UserOutlined />,
+                label: <Link href="/vendor/dashboard/profile">Profile</Link>,
               },
             ]}
           />
         </Space>
 
-        <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenuClick }} placement="bottomRight">
-          <Space style={{ cursor: 'pointer' }}>
-            <Avatar
-              style={{
-                background: `linear-gradient(135deg, ${brandColors.accent} 0%, #c49a3d 100%)`,
-                color: brandColors.backgroundDark,
-              }}
-            >
-              V
-            </Avatar>
-            <Text style={{ color: brandColors.white }}>Vendor Portal</Text>
-          </Space>
-        </Dropdown>
+        <Space size="middle">
+          <VendorNotificationBell />
+          <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenuClick }} placement="bottomRight">
+            <Space style={{ cursor: 'pointer' }}>
+              <Avatar
+                style={{
+                  background: `linear-gradient(135deg, ${brandColors.accent} 0%, #c49a3d 100%)`,
+                  color: brandColors.backgroundDark,
+                }}
+              >
+                V
+              </Avatar>
+              <Text style={{ color: brandColors.white }}>Vendor Portal</Text>
+            </Space>
+          </Dropdown>
+        </Space>
       </Header>
 
       <Content style={{ padding: '24px 48px', maxWidth: 1200, margin: '0 auto', width: '100%' }}>

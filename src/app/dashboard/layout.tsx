@@ -1,9 +1,11 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Layout, Menu, Button, Space, Dropdown, Avatar } from 'antd';
 import {
+  DashboardOutlined,
   FileTextOutlined,
+  HeartOutlined,
   UserOutlined,
   LogoutOutlined,
   SettingOutlined,
@@ -12,17 +14,45 @@ import {
 import type { MenuProps } from 'antd';
 import Link from 'next/link';
 import { brandColors } from '@/theme/config';
+import NotificationBell from '@/components/dashboard/NotificationBell';
 
 const { Header, Content, Footer } = Layout;
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     router.push('https://www.reallandlording.com');
     router.refresh();
   };
+
+  // Map pathname to selected menu key
+  const getSelectedKey = () => {
+    if (pathname === '/dashboard') return 'dashboard';
+    if (pathname.startsWith('/dashboard/requests')) return 'requests';
+    if (pathname.startsWith('/dashboard/vendors')) return 'vendors';
+    return 'dashboard';
+  };
+
+  const navItems: MenuProps['items'] = [
+    {
+      key: 'dashboard',
+      icon: <DashboardOutlined />,
+      label: <Link href="/dashboard">Dashboard</Link>,
+    },
+    {
+      key: 'requests',
+      icon: <FileTextOutlined />,
+      label: <Link href="/dashboard/requests">My Requests</Link>,
+    },
+    {
+      key: 'vendors',
+      icon: <HeartOutlined />,
+      label: <Link href="/dashboard/vendors">Saved Vendors</Link>,
+    },
+  ];
 
   const userMenuItems: MenuProps['items'] = [
     {
@@ -84,15 +114,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </a>
           <Menu
             mode="horizontal"
-            selectedKeys={[]}
+            selectedKeys={[getSelectedKey()]}
             style={{ border: 'none', lineHeight: '68px' }}
-            items={[
-              {
-                key: 'dashboard',
-                icon: <FileTextOutlined />,
-                label: <Link href="/dashboard">My Requests</Link>,
-              },
-            ]}
+            items={navItems}
           />
         </Space>
 
@@ -102,6 +126,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               New Request
             </Button>
           </Link>
+          <NotificationBell />
           <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenuClick }} placement="bottomRight">
             <Space style={{ cursor: 'pointer' }}>
               <Avatar icon={<UserOutlined />} />

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { verifyLandlord } from '@/lib/api/landlord';
 
 export async function GET(
   request: NextRequest,
@@ -7,22 +7,11 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
+    const result = await verifyLandlord();
+    if (!result.success) return result.response;
+    const { adminClient, userEmail } = result.context;
 
-    // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      return NextResponse.json(
-        { message: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    // Use admin client to bypass RLS
-    const adminClient = createAdminClient();
-
-    // Get the request with matches
+    // Get the request with matches and follow-up data
     const { data: serviceRequest, error } = await adminClient
       .from('service_requests')
       .select(`
@@ -38,6 +27,9 @@ export async function GET(
             services,
             performance_score,
             total_reviews
+          ),
+          followup:match_followups(
+            stage
           )
         )
       `)
@@ -53,11 +45,21 @@ export async function GET(
     }
 
     // Verify the request belongs to this user (by email)
-    if (serviceRequest.landlord_email !== user.email) {
+    if (serviceRequest.landlord_email !== userEmail) {
       return NextResponse.json(
         { message: 'Unauthorized' },
         { status: 403 }
       );
+    }
+
+    // Flatten followup from array to single object per match
+    if (serviceRequest.matches) {
+      serviceRequest.matches = serviceRequest.matches.map((match: Record<string, unknown>) => ({
+        ...match,
+        followup: Array.isArray(match.followup) && match.followup.length > 0
+          ? match.followup[0]
+          : null,
+      }));
     }
 
     return NextResponse.json(serviceRequest);
