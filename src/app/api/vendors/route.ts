@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { verifyAdmin } from '@/lib/api/admin';
 import { VendorInput } from '@/types/database';
+import { getServiceCategories } from '@/lib/serviceTaxonomy';
 
 // Helper to extract zip code from location string
 function extractZipCode(location: string): string | null {
@@ -139,12 +140,29 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Server-side search across multiple fields
+    // Server-side search across multiple fields + service types
     if (search && search.trim()) {
       const searchTerm = `%${search.trim()}%`;
-      query = query.or(
-        `business_name.ilike.${searchTerm},contact_name.ilike.${searchTerm},email.ilike.${searchTerm},phone.ilike.${searchTerm}`
-      );
+      const searchLower = search.trim().toLowerCase();
+
+      // Find service category keys whose label or search_keywords match
+      const categories = await getServiceCategories();
+      const matchingServiceKeys = categories
+        .filter((cat) =>
+          cat.label.toLowerCase().includes(searchLower) ||
+          cat.search_keywords?.some((kw) => kw.toLowerCase().includes(searchLower))
+        )
+        .map((cat) => cat.key);
+
+      // Build OR conditions: text fields + service array containment
+      const orParts = [
+        `business_name.ilike.${searchTerm}`,
+        `contact_name.ilike.${searchTerm}`,
+        `email.ilike.${searchTerm}`,
+        `phone.ilike.${searchTerm}`,
+        ...matchingServiceKeys.map((key) => `services.cs.{"${key}"}`),
+      ];
+      query = query.or(orParts.join(','));
     }
 
     // Apply pagination after filters

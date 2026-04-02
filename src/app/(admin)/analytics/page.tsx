@@ -17,6 +17,8 @@ import {
   StarOutlined,
   AimOutlined,
   QuestionCircleOutlined,
+  TeamOutlined,
+  SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import {
   LineChart,
@@ -150,6 +152,19 @@ interface KpiData {
   repeatUsage: number;
 }
 
+interface VendorSegmentationData {
+  totalVendors: number;
+  statusDistribution: { status: string; count: number }[];
+  serviceCoverage: { service: string; count: number }[];
+  capabilities: { licensed: number; insured: number; rentalExperience: number; emergencyServices: number; total: number };
+  performanceTiers: { tier: string; count: number }[];
+  availabilityBreakdown: { label: string; count: number }[];
+  topServiceAreas: { area: string; count: number }[];
+  tenureBuckets: { bucket: string; count: number }[];
+  employeeSizeBuckets: { size: string; count: number }[];
+  onboardingTrend: { month: string; count: number }[];
+}
+
 // Color palette
 const COLORS = {
   primary: '#1677ff',
@@ -190,6 +205,29 @@ const URGENCY_LABELS: Record<string, string> = {
   emergency: 'Emergency',
 };
 
+const VENDOR_STATUS_COLORS: Record<string, string> = {
+  active: '#52c41a',
+  inactive: '#d9d9d9',
+  pending_review: '#faad14',
+  rejected: '#ff4d4f',
+};
+
+const VENDOR_STATUS_LABELS: Record<string, string> = {
+  active: 'Active',
+  inactive: 'Inactive',
+  pending_review: 'Pending Review',
+  rejected: 'Rejected',
+};
+
+const PERFORMANCE_TIER_COLORS: Record<string, string> = {
+  'Elite (80-100)': '#722ed1',
+  'Strong (60-79)': '#1677ff',
+  'Average (40-59)': '#52c41a',
+  'Developing (20-39)': '#faad14',
+  'New (0-19)': '#ff7a45',
+  'Unscored': '#d9d9d9',
+};
+
 export default function AnalyticsPage() {
   const { labels: SERVICE_TYPE_LABELS } = useServiceTaxonomy();
   const [data, setData] = useState<AnalyticsData | null>(null);
@@ -197,6 +235,8 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [conversionLoading, setConversionLoading] = useState(false);
   const [kpiData, setKpiData] = useState<KpiData | null>(null);
+  const [vendorSegData, setVendorSegData] = useState<VendorSegmentationData | null>(null);
+  const [vendorSegLoading, setVendorSegLoading] = useState(false);
   const [kpiLoading, setKpiLoading] = useState(false);
   const [trendView, setTrendView] = useState<'requests' | 'matched' | 'emergency'>('requests');
   const [activeTab, setActiveTab] = useState('overview');
@@ -251,6 +291,22 @@ export default function AnalyticsPage() {
     }
   }, [kpiData]);
 
+  const fetchVendorSegmentation = useCallback(async () => {
+    if (vendorSegData) return;
+    setVendorSegLoading(true);
+    try {
+      const res = await fetch('/api/admin/analytics/vendors');
+      if (res.ok) {
+        const data = await res.json();
+        setVendorSegData(data);
+      }
+    } catch (error) {
+      console.error('Error fetching vendor segmentation:', error);
+    } finally {
+      setVendorSegLoading(false);
+    }
+  }, [vendorSegData]);
+
   useEffect(() => {
     if (activeTab === 'conversions') {
       fetchConversions();
@@ -258,7 +314,10 @@ export default function AnalyticsPage() {
     if (activeTab === 'kpis') {
       fetchKpis();
     }
-  }, [activeTab, fetchConversions, fetchKpis]);
+    if (activeTab === 'vendors') {
+      fetchVendorSegmentation();
+    }
+  }, [activeTab, fetchConversions, fetchKpis, fetchVendorSegmentation]);
 
   const serviceTypeColumns: ColumnsType<{ service_type: string; count: number }> = [
     {
@@ -573,7 +632,7 @@ export default function AnalyticsPage() {
                     title={<MetricTitle label="Won" tip="Matches where a vendor was chosen by the landlord" />}
                     value={funnel.won}
                     suffix={<Text type="secondary" style={{ fontSize: 14 }}>({funnel.won_rate}%)</Text>}
-                    valueStyle={{ color: COLORS.purple }}
+                    styles={{ content: { color: COLORS.purple } }}
                   />
                 </Col>
                 <Col span={1} style={{ textAlign: 'center' }}>
@@ -584,7 +643,7 @@ export default function AnalyticsPage() {
                     title={<MetricTitle label="Completed" tip="Jobs confirmed finished by the landlord" />}
                     value={funnel.completed}
                     suffix={<Text type="secondary" style={{ fontSize: 14 }}>({funnel.completed_rate}%)</Text>}
-                    valueStyle={{ color: COLORS.success }}
+                    styles={{ content: { color: COLORS.success } }}
                   />
                 </Col>
               </Row>
@@ -895,6 +954,226 @@ export default function AnalyticsPage() {
     );
   };
 
+  const renderVendorsTab = () => {
+    if (vendorSegLoading) {
+      return (
+        <div style={{ textAlign: 'center', padding: '100px 0' }}>
+          <Spin size="large" />
+        </div>
+      );
+    }
+
+    if (!vendorSegData) {
+      return <Empty description="Unable to load vendor segmentation data" />;
+    }
+
+    const {
+      totalVendors,
+      statusDistribution,
+      serviceCoverage,
+      capabilities,
+      performanceTiers,
+      tenureBuckets,
+    } = vendorSegData;
+
+    const statusPie = statusDistribution.map((item) => ({
+      name: VENDOR_STATUS_LABELS[item.status] || item.status,
+      value: item.count,
+      color: VENDOR_STATUS_COLORS[item.status] || '#d9d9d9',
+    }));
+
+    const capabilityData = [
+      { name: 'Licensed', value: capabilities.licensed, pct: capabilities.total > 0 ? Math.round((capabilities.licensed / capabilities.total) * 100) : 0 },
+      { name: 'Insured', value: capabilities.insured, pct: capabilities.total > 0 ? Math.round((capabilities.insured / capabilities.total) * 100) : 0 },
+      { name: 'Rental Exp.', value: capabilities.rentalExperience, pct: capabilities.total > 0 ? Math.round((capabilities.rentalExperience / capabilities.total) * 100) : 0 },
+      { name: 'Emergency', value: capabilities.emergencyServices, pct: capabilities.total > 0 ? Math.round((capabilities.emergencyServices / capabilities.total) * 100) : 0 },
+    ];
+
+    const topServices = serviceCoverage.slice(0, 20).map((item) => ({
+      service: item.service,
+      label: SERVICE_TYPE_LABELS[item.service] || item.service,
+      count: item.count,
+    }));
+
+    const CAPABILITY_COLORS = ['#1677ff', '#52c41a', '#722ed1', '#ff4d4f'];
+
+    return (
+      <div>
+        {/* Summary Cards */}
+        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title={<MetricTitle label="Total Vendors" tip="All vendors in the system regardless of status" />}
+                value={totalVendors}
+                prefix={<TeamOutlined />}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title={<MetricTitle label="Active Vendors" tip="Vendors currently available for matching" />}
+                value={capabilities.total}
+                prefix={<CheckCircleOutlined />}
+                styles={{ content: { color: COLORS.success } }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title={<MetricTitle label="Service Types Covered" tip="Distinct service categories offered by active vendors" />}
+                value={serviceCoverage.length}
+                prefix={<SafetyCertificateOutlined />}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title={<MetricTitle label="Licensed & Insured" tip="Active vendors that are both licensed and insured" />}
+                value={capabilities.total > 0 ? Math.round((Math.min(capabilities.licensed, capabilities.insured) / capabilities.total) * 100) : 0}
+                suffix="%"
+                prefix={<SafetyCertificateOutlined />}
+                styles={{ content: { color: COLORS.success } }}
+              />
+            </Card>
+          </Col>
+        </Row>
+
+        {/* Status + Performance Tiers */}
+        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+          <Col xs={24} lg={8}>
+            <Card title="Vendor Status Distribution">
+              {statusPie.length > 0 ? (
+                <ResponsiveContainer width="100%" height={280}>
+                  <PieChart>
+                    <Pie
+                      data={statusPie}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={85}
+                      paddingAngle={2}
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                      labelLine={false}
+                    >
+                      {statusPie.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip formatter={(value) => [value ?? 0, 'Vendors']} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <Empty description="No vendor data" style={{ height: 280 }} />
+              )}
+            </Card>
+          </Col>
+          <Col xs={24} lg={8}>
+            <Card title="Performance Tiers (Active Vendors)">
+              {performanceTiers.length > 0 ? (
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={performanceTiers} layout="vertical" margin={{ left: 20, right: 30 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
+                    <YAxis dataKey="tier" type="category" tick={{ fontSize: 11 }} width={110} />
+                    <RechartsTooltip formatter={(value) => [value ?? 0, 'Vendors']} contentStyle={{ borderRadius: 8 }} />
+                    <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                      {performanceTiers.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={PERFORMANCE_TIER_COLORS[entry.tier] || COLORS.primary} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <Empty description="No performance data" style={{ height: 280 }} />
+              )}
+            </Card>
+          </Col>
+          <Col xs={24} lg={8}>
+            <Card title="Business Tenure (Active Vendors)">
+              {tenureBuckets.length > 0 ? (
+                <ResponsiveContainer width="100%" height={280}>
+                  <PieChart>
+                    <Pie
+                      data={tenureBuckets.map((t) => ({ name: t.bucket, value: t.count }))}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={85}
+                      paddingAngle={2}
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                      labelLine={false}
+                    >
+                      {tenureBuckets.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={[COLORS.purple, COLORS.primary, COLORS.success, COLORS.warning, '#d9d9d9'][index % 5]} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip formatter={(value) => [value ?? 0, 'Vendors']} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <Empty description="No tenure data" style={{ height: 280 }} />
+              )}
+            </Card>
+          </Col>
+        </Row>
+
+        {/* Service Coverage + Capabilities */}
+        <Row gutter={[16, 16]}>
+          <Col xs={24} lg={14}>
+            <Card title="Service Coverage (Top 20)">
+              {topServices.length > 0 ? (
+                <Table
+                  dataSource={topServices}
+                  rowKey="service"
+                  pagination={{ pageSize: 10, size: 'small' }}
+                  size="small"
+                  columns={[
+                    { title: 'Service Type', dataIndex: 'label', key: 'label' },
+                    {
+                      title: 'Vendors',
+                      dataIndex: 'count',
+                      key: 'count',
+                      width: 80,
+                      sorter: (a: { count: number }, b: { count: number }) => a.count - b.count,
+                      defaultSortOrder: 'descend' as const,
+                    },
+                  ]}
+                />
+              ) : (
+                <Empty description="No service data" />
+              )}
+            </Card>
+          </Col>
+          <Col xs={24} lg={10}>
+            <Card title="Vendor Capabilities (Active Vendors)">
+              <div style={{ padding: '8px 0' }}>
+                {capabilityData.map((cap, i) => (
+                  <div key={cap.name} style={{ marginBottom: 16 }}>
+                    <Row justify="space-between" style={{ marginBottom: 4 }}>
+                      <Text strong>{cap.name}</Text>
+                      <Text type="secondary">{cap.value} / {capabilities.total} ({cap.pct}%)</Text>
+                    </Row>
+                    <Progress
+                      percent={cap.pct}
+                      strokeColor={CAPABILITY_COLORS[i]}
+                      showInfo={false}
+                    />
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </Col>
+        </Row>
+      </div>
+    );
+  };
+
   const renderOverviewTab = () => (
     <div>
       {/* KPI Cards */}
@@ -937,7 +1216,7 @@ export default function AnalyticsPage() {
               value={data.matchSuccessRate}
               suffix="%"
               prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: data.matchSuccessRate >= 70 ? COLORS.success : data.matchSuccessRate >= 50 ? COLORS.warning : COLORS.danger }}
+              styles={{ content: { color: data.matchSuccessRate >= 70 ? COLORS.success : data.matchSuccessRate >= 50 ? COLORS.warning : COLORS.danger } }}
             />
           </Card>
         </Col>
@@ -948,7 +1227,7 @@ export default function AnalyticsPage() {
               value={data.avgTimeToMatch}
               suffix="hours"
               prefix={<ClockCircleOutlined />}
-              valueStyle={{ color: data.avgTimeToMatch <= 24 ? COLORS.success : data.avgTimeToMatch <= 48 ? COLORS.warning : COLORS.danger }}
+              styles={{ content: { color: data.avgTimeToMatch <= 24 ? COLORS.success : data.avgTimeToMatch <= 48 ? COLORS.warning : COLORS.danger } }}
             />
           </Card>
         </Col>
@@ -958,7 +1237,7 @@ export default function AnalyticsPage() {
               title={<MetricTitle label="Pending Vendors" tip="Vendor applications awaiting admin review" />}
               value={data.vendorApprovalWait.pendingCount}
               prefix={<ClockCircleOutlined />}
-              valueStyle={{ color: data.vendorApprovalWait.pendingCount > 0 ? COLORS.warning : COLORS.success }}
+              styles={{ content: { color: data.vendorApprovalWait.pendingCount > 0 ? COLORS.warning : COLORS.success } }}
             />
           </Card>
         </Col>
@@ -969,7 +1248,7 @@ export default function AnalyticsPage() {
               value={data.vendorApprovalWait.avgPendingWaitDays}
               suffix="days"
               prefix={<ClockCircleOutlined />}
-              valueStyle={{ color: data.vendorApprovalWait.avgPendingWaitDays <= 3 ? COLORS.success : data.vendorApprovalWait.avgPendingWaitDays <= 7 ? COLORS.warning : COLORS.danger }}
+              styles={{ content: { color: data.vendorApprovalWait.avgPendingWaitDays <= 3 ? COLORS.success : data.vendorApprovalWait.avgPendingWaitDays <= 7 ? COLORS.warning : COLORS.danger } }}
             />
           </Card>
         </Col>
@@ -1172,6 +1451,16 @@ export default function AnalyticsPage() {
               </span>
             ),
             children: renderConversionTab(),
+          },
+          {
+            key: 'vendors',
+            label: (
+              <span>
+                <TeamOutlined />
+                Vendors
+              </span>
+            ),
+            children: renderVendorsTab(),
           },
           {
             key: 'kpis',
