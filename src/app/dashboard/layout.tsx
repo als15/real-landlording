@@ -15,6 +15,7 @@ import type { MenuProps } from 'antd';
 import Link from 'next/link';
 import { brandColors } from '@/theme/config';
 import NotificationBell from '@/components/dashboard/NotificationBell';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const { Header, Content, Footer } = Layout;
 
@@ -126,6 +127,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               New Request
             </Button>
           </Link>
+          <ThemeToggle size="middle" />
           <NotificationBell />
           <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenuClick }} placement="bottomRight">
             <Space style={{ cursor: 'pointer' }}>

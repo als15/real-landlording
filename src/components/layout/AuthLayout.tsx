@@ -46,7 +46,7 @@ export default function AuthLayout({ children, title, subtitle }: AuthLayoutProp
 
           {/* Middle Content */}
           <div style={{ maxWidth: 400 }}>
-            <Title level={2} style={{ color: brandColors.white, marginBottom: 16 }}>
+            <Title level={2} style={{ color: brandColors.textOnDark, marginBottom: 16 }}>
               Philadelphia&apos;s Trusted Landlord Community
             </Title>
             <Paragraph style={{ color: 'rgba(255,255,255,0.7)', fontSize: 16, marginBottom: 32 }}>
@@ -69,7 +69,7 @@ export default function AuthLayout({ children, title, subtitle }: AuthLayoutProp
                     style={{
                       width: 24,
                       height: 24,
-                      background: `${brandColors.accent}20`,
+                      background: brandColors.accentAlpha20,
                       borderRadius: 6,
                       display: 'flex',
                       alignItems: 'center',

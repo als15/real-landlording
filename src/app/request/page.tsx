@@ -141,7 +141,7 @@ function ServiceRequestPageContent() {
           <Title
             className="request-hero-title"
             style={{
-              color: brandColors.white,
+              color: brandColors.textOnDark,
               fontSize: 28,
               marginBottom: 16,
               fontWeight: 600

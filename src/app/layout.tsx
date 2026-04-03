@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
-import { ConfigProvider, App } from "antd";
+import { App } from "antd";
 import { PostHogProvider } from "@/components/PostHogProvider";
-import theme from "@/theme/config";
+import ThemeProvider from "@/theme/ThemeProvider";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -55,15 +55,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={poppins.variable}>
+    <html lang="en" className={poppins.variable} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var m=localStorage.getItem('theme-mode');if(m==='dark')document.documentElement.setAttribute('data-theme','dark');else if(m==='system'&&matchMedia('(prefers-color-scheme:dark)').matches)document.documentElement.setAttribute('data-theme','dark')}catch(e){}})()`,
+          }}
+        />
+      </head>
       <body className={poppins.className}>
         <PostHogProvider>
           <AntdRegistry>
-            <ConfigProvider theme={theme}>
+            <ThemeProvider>
               <App>
                 {children}
               </App>
-            </ConfigProvider>
+            </ThemeProvider>
           </AntdRegistry>
         </PostHogProvider>
       </body>

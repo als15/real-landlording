@@ -12,6 +12,7 @@ import type { MenuProps } from 'antd';
 import Link from 'next/link';
 import { brandColors } from '@/theme/config';
 import VendorNotificationBell from '@/components/vendor/VendorNotificationBell';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const { Header, Content, Footer } = Layout;
 const { Text } = Typography;
@@ -118,6 +119,7 @@ export default function VendorDashboardLayout({ children }: { children: React.Re
         </Space>
 
         <Space size="middle">
+          <ThemeToggle size="middle" />
           <VendorNotificationBell />
           <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenuClick }} placement="bottomRight">
             <Space style={{ cursor: 'pointer' }}>
@@ -129,7 +131,7 @@ export default function VendorDashboardLayout({ children }: { children: React.Re
               >
                 V
               </Avatar>
-              <Text style={{ color: brandColors.white }}>Vendor Portal</Text>
+              <Text style={{ color: brandColors.textOnDark }}>Vendor Portal</Text>
             </Space>
           </Dropdown>
         </Space>

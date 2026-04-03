@@ -22,6 +22,7 @@ import {
 import type { MenuProps } from 'antd';
 import { brandColors } from '@/theme/config';
 import { NotificationDropdown } from '@/components/admin/notifications';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -234,6 +235,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             style={{ fontSize: 16 }}
           />
           <Space size="middle">
+            <ThemeToggle size="middle" />
             <NotificationDropdown />
             <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenuClick }} placement="bottomRight">
               <Space style={{ cursor: 'pointer' }}>

@@ -389,7 +389,7 @@ export default function VendorApplyPage() {
               style={{
                 marginBottom: 16,
                 padding: 16,
-                background: `${brandColors.accent}08`,
+                background: brandColors.accentAlpha08,
                 borderRadius: 8,
                 border: `1px solid ${brandColors.border}`
               }}
@@ -630,7 +630,7 @@ export default function VendorApplyPage() {
       <Paragraph type="secondary">Please review your information and accept the terms to submit your application.</Paragraph>
 
       <div style={{
-        background: `${brandColors.accent}08`,
+        background: brandColors.accentAlpha08,
         padding: 24,
         borderRadius: 12,
         marginBottom: 24,
@@ -757,7 +757,7 @@ export default function VendorApplyPage() {
           }
         `}</style>
         <div style={{ maxWidth: 700, margin: '0 auto' }}>
-          <Title className="vendor-hero-title" style={{ color: brandColors.white, fontSize: 26, marginBottom: 12 }}>Join Our Vendor Network</Title>
+          <Title className="vendor-hero-title" style={{ color: brandColors.textOnDark, fontSize: 26, marginBottom: 12 }}>Join Our Vendor Network</Title>
           <Paragraph className="vendor-hero-subtitle" style={{ color: 'rgba(255,255,255,0.8)', fontSize: 15 }}>Get connected with Philadelphia landlords who need your services — from repairs and compliance to financial and professional support.</Paragraph>
         </div>
       </div>
@@ -788,7 +788,7 @@ export default function VendorApplyPage() {
                         width: 48,
                         height: 48,
                         borderRadius: 10,
-                        background: `${brandColors.accent}15`,
+                        background: brandColors.accentAlpha15,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',

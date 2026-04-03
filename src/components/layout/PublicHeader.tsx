@@ -6,6 +6,7 @@ import { UserOutlined, FormOutlined, DashboardOutlined, LogoutOutlined } from '@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { brandColors } from '@/theme/config'
+import ThemeToggle from '@/components/ThemeToggle'
 import type { MenuProps } from 'antd'
 
 const { Header } = Layout
@@ -147,6 +148,7 @@ export default function PublicHeader({ showRequestButton = true, showSignIn = tr
       </a>
 
       <Space size="small">
+        <ThemeToggle size="middle" />
         {showRequestButton && (
           <Link href="/request">
             <Button
@@ -169,7 +171,7 @@ export default function PublicHeader({ showRequestButton = true, showSignIn = tr
         {!loading && user ? (
           <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenuClick }} placement="bottomRight">
             <Space style={{ cursor: 'pointer' }}>
-              <Avatar icon={<UserOutlined />} style={{ backgroundColor: brandColors.primary, color: brandColors.white }} size="default" />
+              <Avatar icon={<UserOutlined />} style={{ backgroundColor: brandColors.primary, color: brandColors.textOnDark }} size="default" />
               <Text className="header-user-name" style={{ color: brandColors.textPrimary, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name || user.email.split('@')[0]}</Text>
             </Space>
           </Dropdown>
