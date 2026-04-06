@@ -46,11 +46,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user is a vendor (bypass RLS)
+    // Check if user is a vendor (bypass RLS, case-insensitive email match)
     const { data: vendor } = await adminClient
       .from('vendors')
       .select('id, status, business_name')
-      .eq('email', email)
+      .ilike('email', email)
       .single();
 
     if (!vendor || vendor.status !== 'active') {
@@ -62,11 +62,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Link vendor to auth user if not already linked
-    await adminClient
+    // Link vendor to auth user and normalize email case to match Supabase Auth
+    const { error: linkError } = await adminClient
       .from('vendors')
-      .update({ auth_user_id: authData.user.id })
+      .update({
+        auth_user_id: authData.user.id,
+        email: authData.user.email?.toLowerCase() || email.toLowerCase(),
+      })
       .eq('id', vendor.id);
+
+    if (linkError) {
+      console.error('Failed to link vendor to auth user:', linkError);
+    }
 
     return NextResponse.json({
       message: 'Login successful',

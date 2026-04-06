@@ -74,14 +74,14 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    // Verify user is an active vendor
+    // Verify user is an active vendor (match by auth_user_id or email, like landlord check)
     const { data: vendor } = await supabase
       .from('vendors')
       .select('id, status')
-      .eq('email', user.email)
+      .or(`auth_user_id.eq.${user.id},email.eq.${user.email}`)
       .single();
 
-    if (!vendor) {
+if (!vendor) {
       // User is not a vendor, redirect to vendor login with error
       const loginUrl = new URL('/vendor/login', request.url);
       loginUrl.searchParams.set('error', 'not_vendor');
