@@ -35,7 +35,8 @@
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "recharts": "^3.7.0",
-    "resend": "^6.5.2"
+    "resend": "^6.5.2",
+    "telnyx": "^6.29.7"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",

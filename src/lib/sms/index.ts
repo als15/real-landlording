@@ -1,5 +1,5 @@
 // SMS service exports
-export { twilioClient, FROM_PHONE, isSmsEnabled, type SmsType } from './twilio';
+export { isSmsEnabled, sendSmsMessage, FROM_PHONE, type SmsType } from './telnyx';
 export {
   sendRequestReceivedSms,
   sendIntroSms,

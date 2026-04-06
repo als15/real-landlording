@@ -1,31 +1,37 @@
-// Check SMS status
-// Run with: npx tsx scripts/check-sms-status.ts SM69e71036453d87758f392f393b97a6f6
+// Check SMS delivery status (Telnyx)
+// Run with: npx tsx scripts/check-sms-status.ts <message-id>
 
 import { config } from 'dotenv';
 config({ path: '.env.local' });
 
-import twilio from 'twilio';
+import Telnyx from 'telnyx';
 
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const messageSid = process.argv[2] || 'SM69e71036453d87758f392f393b97a6f6';
+const apiKey = process.env.TELNYX_API_KEY;
+const messageId = process.argv[2];
 
-const client = twilio(accountSid, authToken);
+if (!messageId) {
+  console.error('Usage: npx tsx scripts/check-sms-status.ts <message-id>');
+  process.exit(1);
+}
+
+if (!apiKey) {
+  console.error('Missing TELNYX_API_KEY in .env.local');
+  process.exit(1);
+}
+
+const client = new Telnyx({ apiKey });
 
 async function checkStatus() {
   try {
-    const message = await client.messages(messageSid).fetch();
+    const message = await client.messages.retrieve(messageId);
 
     console.log('Message Details:');
-    console.log(`  SID: ${message.sid}`);
-    console.log(`  Status: ${message.status}`);
-    console.log(`  To: ${message.to}`);
-    console.log(`  From: ${message.from}`);
-    console.log(`  Date Sent: ${message.dateSent}`);
-    console.log(`  Error Code: ${message.errorCode || 'none'}`);
-    console.log(`  Error Message: ${message.errorMessage || 'none'}`);
-  } catch (error: any) {
-    console.error('Error:', error.message);
+    console.log(`  ID: ${message.data?.id}`);
+    console.log(`  To: ${message.data?.to?.[0]?.phone_number || 'unknown'}`);
+    console.log(`  From: ${message.data?.from?.phone_number || 'unknown'}`);
+    console.log(`  Completed At: ${message.data?.completed_at || 'pending'}`);
+  } catch (error: unknown) {
+    console.error('Error:', error instanceof Error ? error.message : String(error));
   }
 }
 

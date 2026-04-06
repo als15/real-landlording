@@ -1,4 +1,4 @@
-import { twilioClient, FROM_PHONE, isSmsEnabled } from './twilio';
+import { isSmsEnabled, sendSmsMessage } from './telnyx';
 import {
   requestReceivedSms,
   landlordIntroSms,
@@ -15,7 +15,7 @@ import { ServiceRequest, Vendor } from '@/types/database';
 // Helper to add delay between API calls to avoid rate limiting
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Format phone number to E.164 format for Twilio
+// Format phone number to E.164 format
 function formatPhoneNumber(phone: string): string | null {
   if (!phone) return null;
 
@@ -48,7 +48,7 @@ async function sendSms(to: string, message: string): Promise<boolean> {
   console.log(`[SMS] isSmsEnabled: ${isSmsEnabled}`);
 
   if (!isSmsEnabled) {
-    console.log(`[SMS] SKIPPED - Twilio credentials not configured in environment`);
+    console.log(`[SMS] SKIPPED - SMS not enabled (set SMS_ENABLED=true + Telnyx credentials)`);
     return false;
   }
 
@@ -59,15 +59,10 @@ async function sendSms(to: string, message: string): Promise<boolean> {
   }
 
   try {
-    console.log(`[SMS] Calling Twilio API...`);
-    const result = await twilioClient.messages.create({
-      body: message,
-      from: FROM_PHONE,
-      to: formattedPhone,
-    });
+    console.log(`[SMS] Calling Telnyx API...`);
+    const result = await sendSmsMessage(formattedPhone, message);
 
-    console.log(`[SMS] SUCCESS - Message SID: ${result.sid}`);
-    console.log(`[SMS] Status: ${result.status}`);
+    console.log(`[SMS] SUCCESS - Message ID: ${result.id}`);
     console.log(`[SMS] ====================================`);
     return true;
   } catch (error) {

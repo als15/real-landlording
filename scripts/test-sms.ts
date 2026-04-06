@@ -1,14 +1,13 @@
-// Quick SMS test script
+// Quick SMS test script (Telnyx)
 // Run with: npx tsx scripts/test-sms.ts +1234567890
 
 import { config } from 'dotenv';
 config({ path: '.env.local' });
 
-import twilio from 'twilio';
+import Telnyx from 'telnyx';
 
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+const apiKey = process.env.TELNYX_API_KEY;
+const fromNumber = process.env.TELNYX_PHONE_NUMBER;
 
 const phoneArg = process.argv[2];
 
@@ -18,39 +17,34 @@ if (!phoneArg) {
   process.exit(1);
 }
 
-if (!accountSid || !authToken || !fromNumber) {
-  console.error('Missing Twilio credentials in .env.local:');
-  console.error(`  TWILIO_ACCOUNT_SID: ${accountSid ? '✓' : '✗ missing'}`);
-  console.error(`  TWILIO_AUTH_TOKEN: ${authToken ? '✓' : '✗ missing'}`);
-  console.error(`  TWILIO_PHONE_NUMBER: ${fromNumber ? '✓' : '✗ missing'}`);
+if (!apiKey || !fromNumber) {
+  console.error('Missing Telnyx credentials in .env.local:');
+  console.error(`  TELNYX_API_KEY: ${apiKey ? 'set' : 'missing'}`);
+  console.error(`  TELNYX_PHONE_NUMBER: ${fromNumber ? 'set' : 'missing'}`);
   process.exit(1);
 }
 
-console.log('Twilio credentials found:');
-console.log(`  Account SID: ${accountSid.substring(0, 10)}...`);
+console.log('Telnyx credentials found:');
 console.log(`  From Number: ${fromNumber}`);
 console.log(`  To Number: ${phoneArg}`);
 console.log('');
 
-const client = twilio(accountSid, authToken);
+const client = new Telnyx({ apiKey });
 
 async function sendTestSms() {
   try {
-    const message = await client.messages.create({
-      body: 'Real Landlording: SMS test successful! Your notifications are now configured.',
+    const response = await client.messages.send({
       from: fromNumber,
       to: phoneArg,
+      text: 'Real Landlording: SMS test successful! Your notifications are now configured.',
+      type: 'SMS',
     });
 
-    console.log('✓ SMS sent successfully!');
-    console.log(`  Message SID: ${message.sid}`);
-    console.log(`  Status: ${message.status}`);
-  } catch (error: any) {
-    console.error('✗ SMS failed:');
-    console.error(`  Error: ${error.message}`);
-    if (error.code) {
-      console.error(`  Code: ${error.code}`);
-    }
+    console.log('SMS sent successfully!');
+    console.log(`  Message ID: ${response.data?.id}`);
+  } catch (error: unknown) {
+    console.error('SMS failed:');
+    console.error(`  Error: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
