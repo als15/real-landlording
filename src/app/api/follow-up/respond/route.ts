@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyFollowupToken } from '@/lib/followup/tokens';
 import { handleFollowupResponse } from '@/lib/followup/handler';
-import { sendFeedbackRequest } from '@/lib/followup/processor';
 import { isFollowUpSystemEnabled } from '@/lib/followup/config';
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -70,11 +69,6 @@ export async function GET(request: NextRequest) {
   if (!result.success) {
     console.error(`[FollowUp] Response handling failed: ${result.message}`);
     return NextResponse.redirect(`${appUrl}/follow-up/invalid`);
-  }
-
-  // If job was completed, send feedback request to landlord
-  if (action === 'completed') {
-    await sendFeedbackRequest(supabase, verification.followupId);
   }
 
   return NextResponse.redirect(`${appUrl}/follow-up/thanks?action=${encodeURIComponent(action)}`);

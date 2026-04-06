@@ -14,8 +14,10 @@ export type DueDiligenceStatus = 'pending' | 'running' | 'completed' | 'failed';
 // Follow-up system stages
 export type FollowupStage =
   | 'pending'
+  | 'intro_sent'
   | 'vendor_check_sent'
   | 'vendor_booked'
+  | 'timeline_requested'
   | 'vendor_discussing'
   | 'vendor_cant_reach'
   | 'vendor_no_deal'
@@ -26,8 +28,11 @@ export type FollowupStage =
   | 'awaiting_completion'
   | 'completion_check_sent'
   | 'job_completed'
+  | 'invoice_requested'
   | 'job_in_progress'
   | 'job_cancelled'
+  | 'cancellation_reason_requested'
+  | 'feedback_requested'
   | 'closed';
 
 // Job outcome reasons for CRM tracking
@@ -1135,6 +1140,8 @@ export interface MatchFollowup {
   vendor_response_token: string | null;
   landlord_response_token: string | null;
   expected_completion_date: string | null;
+  invoice_value: number | null;
+  cancellation_reason: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -1166,8 +1173,10 @@ export interface LandlordSavedVendor {
 // Follow-up stage display labels
 export const FOLLOWUP_STAGE_LABELS: Record<FollowupStage, string> = {
   pending: 'Pending',
+  intro_sent: 'Intro Sent',
   vendor_check_sent: 'Vendor Check Sent',
   vendor_booked: 'Vendor Booked',
+  timeline_requested: 'Timeline Requested',
   vendor_discussing: 'Discussing',
   vendor_cant_reach: "Can't Reach",
   vendor_no_deal: 'No Deal',
@@ -1178,8 +1187,11 @@ export const FOLLOWUP_STAGE_LABELS: Record<FollowupStage, string> = {
   awaiting_completion: 'Awaiting Completion',
   completion_check_sent: 'Completion Check Sent',
   job_completed: 'Completed',
+  invoice_requested: 'Invoice Requested',
   job_in_progress: 'In Progress',
   job_cancelled: 'Cancelled',
+  cancellation_reason_requested: 'Reason Requested',
+  feedback_requested: 'Feedback Requested',
   closed: 'Closed',
 };
 

@@ -55,10 +55,12 @@ export async function PATCH(
   const { matchId } = await params;
 
   const body = await request.json();
-  const { stage, response, expected_completion_date, notes } = body as {
+  const { stage, response, expected_completion_date, invoice_value, cancellation_reason, notes } = body as {
     stage?: FollowupStage;
     response?: string;
     expected_completion_date?: string;
+    invoice_value?: number;
+    cancellation_reason?: string;
     notes?: string;
   };
 
@@ -105,6 +107,14 @@ export async function PATCH(
 
   if (expected_completion_date !== undefined) {
     updates.expected_completion_date = expected_completion_date;
+  }
+
+  if (invoice_value !== undefined) {
+    updates.invoice_value = invoice_value;
+  }
+
+  if (cancellation_reason !== undefined) {
+    updates.cancellation_reason = cancellation_reason;
   }
 
   if (Object.keys(updates).length > 0) {

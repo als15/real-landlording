@@ -12,13 +12,8 @@ jest.mock('@/lib/email/resend', () => ({
   isEmailEnabled: true,
 }));
 
-jest.mock('@/lib/sms/twilio', () => ({
-  twilioClient: {
-    messages: {
-      create: jest.fn().mockResolvedValue({ sid: 'test-sid' }),
-    },
-  },
-  FROM_PHONE: '+1234567890',
+jest.mock('@/lib/sms/telnyx', () => ({
+  sendSmsMessage: jest.fn().mockResolvedValue({ id: 'test-msg-id' }),
   isSmsEnabled: false, // Disable SMS in tests
 }));
 
@@ -111,13 +106,33 @@ describe('processAllFollowups', () => {
     expect(result.errors).toBe(0);
   });
 
-  it('processes pending followups and sends Day 3 vendor check', async () => {
+  it('processes pending followups and sends Day 0 landlord expectation', async () => {
     const followups = [
       {
         id: 'followup-1',
         match_id: 'match-1',
         request_id: 'request-1',
         stage: 'pending',
+        next_action_at: new Date().toISOString(),
+      },
+    ];
+    const supabase = createMockSupabase(followups);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await processAllFollowups(supabase as any);
+
+    expect(result.processed).toBe(1);
+    expect(result.sent).toBe(1);
+    expect(result.errors).toBe(0);
+  });
+
+  it('processes intro_sent followups and sends Day 3 vendor check', async () => {
+    const followups = [
+      {
+        id: 'followup-1',
+        match_id: 'match-1',
+        request_id: 'request-1',
+        stage: 'intro_sent',
         next_action_at: new Date().toISOString(),
       },
     ];

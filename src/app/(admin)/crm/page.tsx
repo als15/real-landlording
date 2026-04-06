@@ -846,7 +846,7 @@ export default function CRMPage() {
                 title="Intro / Estimate"
                 value={pipeline.pipeline.intro_sent + pipeline.pipeline.estimate_sent}
                 prefix={<SendOutlined />}
-                valueStyle={{ color: '#1890ff' }}
+                styles={{ content: { color: '#1890ff' } }}
               />
             </Card>
           </Col>
@@ -856,7 +856,7 @@ export default function CRMPage() {
                 title="Awaiting Outcome"
                 value={pipeline.pipeline.vendor_accepted}
                 prefix={<ClockCircleOutlined />}
-                valueStyle={{ color: '#13c2c2' }}
+                styles={{ content: { color: '#13c2c2' } }}
               />
             </Card>
           </Col>
@@ -866,7 +866,7 @@ export default function CRMPage() {
                 title="Jobs Won"
                 value={pipeline.pipeline.job_won + pipeline.pipeline.in_progress}
                 prefix={<TrophyOutlined />}
-                valueStyle={{ color: '#722ed1' }}
+                styles={{ content: { color: '#722ed1' } }}
               />
             </Card>
           </Col>
@@ -876,7 +876,7 @@ export default function CRMPage() {
                 title="Completed"
                 value={pipeline.pipeline.completed}
                 prefix={<CheckCircleOutlined />}
-                valueStyle={{ color: '#52c41a' }}
+                styles={{ content: { color: '#52c41a' } }}
               />
             </Card>
           </Col>
@@ -887,7 +887,7 @@ export default function CRMPage() {
                 value={pipeline.payments.pending_count}
                 prefix={<DollarOutlined />}
                 suffix={<Text type="secondary" style={{ fontSize: 12 }}>${pipeline.payments.pending_amount}</Text>}
-                valueStyle={{ color: '#faad14' }}
+                styles={{ content: { color: '#faad14' } }}
               />
             </Card>
           </Col>
@@ -897,7 +897,7 @@ export default function CRMPage() {
                 title="Paid"
                 value={pipeline.payments.paid_count}
                 prefix={<CheckCircleOutlined />}
-                valueStyle={{ color: '#52c41a' }}
+                styles={{ content: { color: '#52c41a' } }}
               />
             </Card>
           </Col>
@@ -969,7 +969,7 @@ export default function CRMPage() {
           </Space>
         }
         placement="right"
-        width={600}
+        size="large"
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
       >

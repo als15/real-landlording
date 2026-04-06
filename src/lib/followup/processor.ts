@@ -2,22 +2,28 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { FollowupStage, ServiceRequest, Vendor } from '@/types/database';
 import { generateFollowupToken } from './tokens';
 import {
+  landlordDay0ExpectationEmail,
   vendorDay3CheckEmail,
   vendorDay7RecheckEmail,
   landlordContactCheckEmail,
   vendorCompletionCheckEmail,
+  vendorTimelineRequestEmail,
+  vendorInvoiceRequestEmail,
+  vendorCancellationReasonEmail,
   landlordFeedbackRequestEmail,
 } from '@/lib/email/followup-templates';
 import {
+  landlordDay0ExpectationSms,
   vendorDay3CheckSms,
   vendorDay7RecheckSms,
   landlordContactCheckSms,
   vendorCompletionCheckSms,
+  landlordFeedbackRequestSms,
 } from '@/lib/sms/followup-templates';
 
 // Helpers for email/SMS sending — import from existing modules
 import { resend, FROM_EMAIL, NOTIFICATION_BCC_EMAIL, isEmailEnabled } from '@/lib/email/resend';
-import { twilioClient, FROM_PHONE, isSmsEnabled } from '@/lib/sms/twilio';
+import { isSmsEnabled, sendSmsMessage } from '@/lib/sms/telnyx';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -55,7 +61,7 @@ async function sendSms(to: string, message: string): Promise<boolean> {
   const formatted = formatPhoneNumber(to);
   if (!formatted) return false;
   try {
-    await twilioClient.messages.create({ body: message, from: FROM_PHONE, to: formatted });
+    await sendSmsMessage(formatted, message);
     return true;
   } catch (err) {
     console.error(`[FollowUp] SMS error to ${to}:`, err);
@@ -133,8 +139,31 @@ export async function processAllFollowups(supabase: SupabaseClient): Promise<Pro
       const stage: FollowupStage = followup.stage;
 
       switch (stage) {
-        // Day 3: Send vendor check email
+        // Step 0: Send Day 0 landlord expectation email, then schedule Day 3 vendor check
         case 'pending': {
+          const { subject, html } = landlordDay0ExpectationEmail(request, vendor.business_name);
+          const emailSent = await sendEmail(request.landlord_email, subject, html);
+
+          if (request.landlord_phone) {
+            const sms = landlordDay0ExpectationSms(request, vendor.business_name);
+            await sendSms(request.landlord_phone, sms);
+          }
+
+          await supabase
+            .from('match_followups')
+            .update({
+              stage: 'intro_sent',
+              next_action_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+            })
+            .eq('id', followup.id);
+
+          await logEvent(supabase, followup.id, 'email_sent', stage, 'intro_sent', 'email');
+          if (emailSent) result.sent++;
+          break;
+        }
+
+        // Step 1: Day 3 vendor check email
+        case 'intro_sent': {
           const token = generateFollowupToken(followup.id, 'vendor');
           const responseBaseUrl = `${appUrl}/api/follow-up/respond?token=${encodeURIComponent(token)}`;
 
@@ -156,6 +185,27 @@ export async function processAllFollowups(supabase: SupabaseClient): Promise<Pro
             .eq('id', followup.id);
 
           await logEvent(supabase, followup.id, 'email_sent', stage, 'vendor_check_sent', 'email');
+          if (emailSent) result.sent++;
+          break;
+        }
+
+        // Step 1.1 / 5B: Send vendor timeline request email
+        case 'timeline_requested': {
+          const token = generateFollowupToken(followup.id, 'vendor');
+          const responseBaseUrl = `${appUrl}/api/follow-up/respond?token=${encodeURIComponent(token)}`;
+
+          const { subject, html } = vendorTimelineRequestEmail(request, vendor, responseBaseUrl);
+          const emailSent = await sendEmail(vendor.email, subject, html);
+
+          await supabase
+            .from('match_followups')
+            .update({
+              vendor_response_token: token,
+              next_action_at: null, // Wait for response
+            })
+            .eq('id', followup.id);
+
+          await logEvent(supabase, followup.id, 'email_sent', stage, stage, 'email');
           if (emailSent) result.sent++;
           break;
         }
@@ -251,6 +301,74 @@ export async function processAllFollowups(supabase: SupabaseClient): Promise<Pro
           break;
         }
 
+        // Step 5A: Send vendor invoice collection email
+        case 'invoice_requested': {
+          const token = generateFollowupToken(followup.id, 'vendor');
+          const responseBaseUrl = `${appUrl}/api/follow-up/respond?token=${encodeURIComponent(token)}`;
+
+          const { subject, html } = vendorInvoiceRequestEmail(request, vendor, responseBaseUrl);
+          const emailSent = await sendEmail(vendor.email, subject, html);
+
+          await supabase
+            .from('match_followups')
+            .update({
+              vendor_response_token: token,
+              next_action_at: null, // Wait for response
+            })
+            .eq('id', followup.id);
+
+          await logEvent(supabase, followup.id, 'email_sent', stage, stage, 'email');
+          if (emailSent) result.sent++;
+          break;
+        }
+
+        // Step 5C: Send vendor cancellation reason email
+        case 'cancellation_reason_requested': {
+          const token = generateFollowupToken(followup.id, 'vendor');
+          const responseBaseUrl = `${appUrl}/api/follow-up/respond?token=${encodeURIComponent(token)}`;
+
+          const { subject, html } = vendorCancellationReasonEmail(request, vendor, responseBaseUrl);
+          const emailSent = await sendEmail(vendor.email, subject, html);
+
+          await supabase
+            .from('match_followups')
+            .update({
+              vendor_response_token: token,
+              next_action_at: null, // Wait for response
+            })
+            .eq('id', followup.id);
+
+          await logEvent(supabase, followup.id, 'email_sent', stage, stage, 'email');
+          if (emailSent) result.sent++;
+          break;
+        }
+
+        // Step 6: Send landlord feedback request email
+        case 'feedback_requested': {
+          const token = generateFollowupToken(followup.id, 'landlord');
+          const responseBaseUrl = `${appUrl}/api/follow-up/respond?token=${encodeURIComponent(token)}`;
+
+          const { subject, html } = landlordFeedbackRequestEmail(request, vendor.business_name, responseBaseUrl);
+          const emailSent = await sendEmail(request.landlord_email, subject, html);
+
+          if (request.landlord_phone) {
+            const sms = landlordFeedbackRequestSms(request, vendor.business_name);
+            await sendSms(request.landlord_phone, sms);
+          }
+
+          await supabase
+            .from('match_followups')
+            .update({
+              landlord_response_token: token,
+              next_action_at: null, // Wait for response
+            })
+            .eq('id', followup.id);
+
+          await logEvent(supabase, followup.id, 'email_sent', stage, stage, 'email');
+          if (emailSent) result.sent++;
+          break;
+        }
+
         default:
           console.log(`[FollowUp] No action for stage: ${stage} (followup ${followup.id})`);
           break;
@@ -267,38 +385,5 @@ export async function processAllFollowups(supabase: SupabaseClient): Promise<Pro
   return result;
 }
 
-/**
- * After a "completed" response, send feedback request to landlord.
- * Called by the response handler or cron.
- */
-export async function sendFeedbackRequest(
-  supabase: SupabaseClient,
-  followupId: string
-): Promise<boolean> {
-  const { data: followup } = await supabase
-    .from('match_followups')
-    .select('*, match:request_vendor_matches(*, vendor:vendors(*), request:service_requests(*))')
-    .eq('id', followupId)
-    .single();
-
-  if (!followup?.match?.request || !followup?.match?.vendor) return false;
-
-  const request = followup.match.request as ServiceRequest;
-  const vendor = followup.match.vendor as Vendor;
-
-  const { subject, html } = landlordFeedbackRequestEmail(request, vendor.business_name);
-  const sent = await sendEmail(request.landlord_email, subject, html);
-
-  if (sent) {
-    await supabase.from('followup_events').insert({
-      followup_id: followupId,
-      event_type: 'email_sent',
-      from_stage: followup.stage,
-      to_stage: followup.stage,
-      channel: 'email',
-      notes: 'Landlord feedback request sent',
-    });
-  }
-
-  return sent;
-}
+// sendFeedbackRequest removed — feedback is now handled by the processor
+// via the 'feedback_requested' stage (Step 6 of the enhanced flow)

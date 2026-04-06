@@ -130,30 +130,146 @@ export function vendorCompletionCheckEmail(
 }
 
 /**
- * Landlord feedback request: "How did it go? Leave a review."
+ * Step 0 Day 0: Landlord expectation message sent immediately after intro.
+ * Informational only — no response buttons.
  */
-export function landlordFeedbackRequestEmail(
+export function landlordDay0ExpectationEmail(
   request: ServiceRequest,
   vendorName: string
 ): { subject: string; html: string } {
   const serviceLabel = getServiceDisplayLabel(request.service_type, request.service_details as Record<string, string> | undefined, SERVICE_TYPE_LABELS);
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
+  return {
+    subject: `We matched you with a vendor for your ${serviceLabel.toLowerCase()} project`,
+    html: emailWrapper(`
+      <h2>You've Been Matched!</h2>
+      <p>Hi ${e(request.landlord_name) || 'there'},</p>
+      <p>We've connected you with <strong>${e(vendorName)}</strong> for your <strong>${e(serviceLabel.toLowerCase())}</strong> project at ${e(request.property_address || request.property_location)}.</p>
+      <p>They should reach out to you shortly. If you haven't heard from them in a few days, don't worry — we'll follow up and make sure you're taken care of.</p>
+      <p>Thanks for using Real Landlording!</p>
+    `),
+  };
+}
+
+/**
+ * Step 1.1: Vendor completion timeline request after booking.
+ * 4 buttons: 1–2 days, 3–5 days, 1–2 weeks, Longer
+ */
+export function vendorTimelineRequestEmail(
+  request: ServiceRequest,
+  vendor: Vendor,
+  responseBaseUrl: string
+): { subject: string; html: string } {
+  const serviceLabel = getServiceDisplayLabel(request.service_type, request.service_details as Record<string, string> | undefined, SERVICE_TYPE_LABELS);
+  const landlordName = request.landlord_name || 'the landlord';
+
+  return {
+    subject: `Timeline: ${serviceLabel} project with ${landlordName}`,
+    html: emailWrapper(`
+      <h2>Great — Job Booked!</h2>
+      <p>Hi ${e(vendor.contact_name)},</p>
+      <p>Thanks for confirming the <strong>${e(serviceLabel)}</strong> project with <strong>${e(landlordName)}</strong>. When do you expect the job to be completed?</p>
+
+      <div style="text-align:center;margin:24px 0;">
+        ${responseButton('1–2 Days', `${responseBaseUrl}&action=timeline_1_2_days`, '#52c41a')}
+        ${responseButton('3–5 Days', `${responseBaseUrl}&action=timeline_3_5_days`, '#1890ff')}
+        ${responseButton('1–2 Weeks', `${responseBaseUrl}&action=timeline_1_2_weeks`, '#722ed1')}
+        ${responseButton('Longer', `${responseBaseUrl}&action=timeline_longer`, '#faad14')}
+      </div>
+
+      <p style="color:#888;font-size:13px;">This helps us check in at the right time without bothering you.</p>
+    `),
+  };
+}
+
+/**
+ * Step 5A: Vendor invoice value collection after job completion.
+ * Links to a form page instead of buttons.
+ */
+export function vendorInvoiceRequestEmail(
+  request: ServiceRequest,
+  vendor: Vendor,
+  responseBaseUrl: string
+): { subject: string; html: string } {
+  const serviceLabel = getServiceDisplayLabel(request.service_type, request.service_details as Record<string, string> | undefined, SERVICE_TYPE_LABELS);
+  const landlordName = request.landlord_name || 'the landlord';
+
+  return {
+    subject: `Invoice details: ${serviceLabel} project with ${landlordName}`,
+    html: emailWrapper(`
+      <h2>Job Completed — Nice Work!</h2>
+      <p>Hi ${e(vendor.contact_name)},</p>
+      <p>Glad to hear the <strong>${e(serviceLabel)}</strong> project with <strong>${e(landlordName)}</strong> is done. What was the total invoice value?</p>
+
+      <div style="text-align:center;margin:24px 0;">
+        ${responseButton('Under $500', `${responseBaseUrl}&action=invoice_under_500`, '#52c41a')}
+        ${responseButton('$500–$1,000', `${responseBaseUrl}&action=invoice_500_1000`, '#1890ff')}
+        ${responseButton('$1,000–$2,500', `${responseBaseUrl}&action=invoice_1000_2500`, '#722ed1')}
+        ${responseButton('$2,500–$5,000', `${responseBaseUrl}&action=invoice_2500_5000`, '#faad14')}
+        ${responseButton('$5,000+', `${responseBaseUrl}&action=invoice_5000_plus`, '#ff4d4f')}
+      </div>
+
+      <p style="color:#888;font-size:13px;">This helps us track the value we're bringing to your business.</p>
+    `),
+  };
+}
+
+/**
+ * Step 5C: Vendor cancellation reason collection.
+ * 4 buttons: Price, Scope, Chose Another Vendor, Other
+ */
+export function vendorCancellationReasonEmail(
+  request: ServiceRequest,
+  vendor: Vendor,
+  responseBaseUrl: string
+): { subject: string; html: string } {
+  const serviceLabel = getServiceDisplayLabel(request.service_type, request.service_details as Record<string, string> | undefined, SERVICE_TYPE_LABELS);
+  const landlordName = request.landlord_name || 'the landlord';
+
+  return {
+    subject: `Cancelled: ${serviceLabel} project with ${landlordName}`,
+    html: emailWrapper(`
+      <h2>Sorry to Hear That</h2>
+      <p>Hi ${e(vendor.contact_name)},</p>
+      <p>We understand the <strong>${e(serviceLabel)}</strong> project with <strong>${e(landlordName)}</strong> didn't work out. Can you let us know what happened?</p>
+
+      <div style="text-align:center;margin:24px 0;">
+        ${responseButton('Price', `${responseBaseUrl}&action=cancel_reason_price`, '#faad14')}
+        ${responseButton('Scope', `${responseBaseUrl}&action=cancel_reason_scope`, '#1890ff')}
+        ${responseButton('Chose Another Vendor', `${responseBaseUrl}&action=cancel_reason_other_vendor`, '#722ed1')}
+        ${responseButton('Other', `${responseBaseUrl}&action=cancel_reason_other`, '#ff4d4f')}
+      </div>
+
+      <p style="color:#888;font-size:13px;">Your feedback helps us improve our matching and send you better referrals.</p>
+    `),
+  };
+}
+
+/**
+ * Step 6: Landlord feedback request with 3 simple options.
+ * 3 buttons: Great, OK, Not Good
+ */
+export function landlordFeedbackRequestEmail(
+  request: ServiceRequest,
+  vendorName: string,
+  responseBaseUrl: string
+): { subject: string; html: string } {
+  const serviceLabel = getServiceDisplayLabel(request.service_type, request.service_details as Record<string, string> | undefined, SERVICE_TYPE_LABELS);
 
   return {
     subject: `How was your experience with ${vendorName}?`,
     html: emailWrapper(`
       <h2>How Did It Go?</h2>
       <p>Hi ${e(request.landlord_name) || 'there'},</p>
-      <p>We heard that <strong>${e(vendorName)}</strong> completed your <strong>${e(serviceLabel.toLowerCase())}</strong> project. We'd love to hear how it went!</p>
-      <p>Your review helps other landlords find great vendors and helps us improve our matching.</p>
+      <p>We heard that <strong>${e(vendorName)}</strong> completed your <strong>${e(serviceLabel.toLowerCase())}</strong> project. How was the experience?</p>
 
       <div style="text-align:center;margin:24px 0;">
-        <a href="${appUrl}/dashboard" class="button" style="display:inline-block;background:#1890ff;color:white;padding:14px 28px;text-decoration:none;border-radius:4px;font-weight:bold;">
-          Leave a Review
-        </a>
+        ${responseButton('Great', `${responseBaseUrl}&action=feedback_great`, '#52c41a')}
+        ${responseButton('OK', `${responseBaseUrl}&action=feedback_ok`, '#1890ff')}
+        ${responseButton('Not Good', `${responseBaseUrl}&action=feedback_not_good`, '#ff4d4f')}
       </div>
 
-      <p>Thanks for being part of the Real Landlording community!</p>
+      <p style="color:#888;font-size:13px;">Your feedback helps other landlords find great vendors.</p>
     `),
   };
 }

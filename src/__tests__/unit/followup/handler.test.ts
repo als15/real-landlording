@@ -76,7 +76,7 @@ const baseFollowup = {
 
 describe('handleFollowupResponse', () => {
   describe('vendor: booked', () => {
-    it('transitions from vendor_check_sent to awaiting_completion', async () => {
+    it('transitions from vendor_check_sent to timeline_requested', async () => {
       const followup = { ...baseFollowup, stage: 'vendor_check_sent' };
       const supabase = createMockSupabase(followup);
 
@@ -84,7 +84,7 @@ describe('handleFollowupResponse', () => {
       const result = await handleFollowupResponse(supabase as any, 'followup-1', 'booked', 'vendor');
 
       expect(result.success).toBe(true);
-      expect(result.newStage).toBe('awaiting_completion');
+      expect(result.newStage).toBe('timeline_requested');
       expect(result.message).toContain('booked');
     });
 
@@ -127,7 +127,7 @@ describe('handleFollowupResponse', () => {
   });
 
   describe('vendor: no_deal', () => {
-    it('transitions to closed and creates admin notification', async () => {
+    it('transitions to needs_rematch and creates admin notification', async () => {
       const followup = { ...baseFollowup, stage: 'vendor_check_sent' };
       const supabase = createMockSupabase(followup);
 
@@ -135,7 +135,7 @@ describe('handleFollowupResponse', () => {
       const result = await handleFollowupResponse(supabase as any, 'followup-1', 'no_deal', 'vendor');
 
       expect(result.success).toBe(true);
-      expect(result.newStage).toBe('closed');
+      expect(result.newStage).toBe('needs_rematch');
     });
   });
 
@@ -153,7 +153,7 @@ describe('handleFollowupResponse', () => {
   });
 
   describe('landlord: no_contact', () => {
-    it('transitions to closed', async () => {
+    it('transitions to needs_rematch', async () => {
       const followup = { ...baseFollowup, stage: 'landlord_check_sent' };
       const supabase = createMockSupabase(followup);
 
@@ -161,12 +161,12 @@ describe('handleFollowupResponse', () => {
       const result = await handleFollowupResponse(supabase as any, 'followup-1', 'no_contact', 'landlord');
 
       expect(result.success).toBe(true);
-      expect(result.newStage).toBe('closed');
+      expect(result.newStage).toBe('needs_rematch');
     });
   });
 
   describe('completion: completed', () => {
-    it('transitions from completion_check_sent to closed', async () => {
+    it('transitions from completion_check_sent to invoice_requested', async () => {
       const followup = { ...baseFollowup, stage: 'completion_check_sent' };
       const supabase = createMockSupabase(followup);
 
@@ -174,12 +174,12 @@ describe('handleFollowupResponse', () => {
       const result = await handleFollowupResponse(supabase as any, 'followup-1', 'completed', 'vendor');
 
       expect(result.success).toBe(true);
-      expect(result.newStage).toBe('closed');
+      expect(result.newStage).toBe('invoice_requested');
     });
   });
 
   describe('completion: in_progress', () => {
-    it('transitions to awaiting_completion with new next_action_at', async () => {
+    it('transitions to timeline_requested for new timeline', async () => {
       const followup = { ...baseFollowup, stage: 'completion_check_sent' };
       const supabase = createMockSupabase(followup);
 
@@ -187,17 +187,79 @@ describe('handleFollowupResponse', () => {
       const result = await handleFollowupResponse(supabase as any, 'followup-1', 'in_progress', 'vendor');
 
       expect(result.success).toBe(true);
-      expect(result.newStage).toBe('awaiting_completion');
+      expect(result.newStage).toBe('timeline_requested');
     });
   });
 
   describe('completion: cancelled', () => {
-    it('transitions to closed', async () => {
+    it('transitions to cancellation_reason_requested', async () => {
       const followup = { ...baseFollowup, stage: 'completion_check_sent' };
       const supabase = createMockSupabase(followup);
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = await handleFollowupResponse(supabase as any, 'followup-1', 'cancelled', 'vendor');
+
+      expect(result.success).toBe(true);
+      expect(result.newStage).toBe('cancellation_reason_requested');
+    });
+  });
+
+  describe('timeline responses', () => {
+    it('transitions from timeline_requested to awaiting_completion', async () => {
+      const followup = { ...baseFollowup, stage: 'timeline_requested' };
+      const supabase = createMockSupabase(followup);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await handleFollowupResponse(supabase as any, 'followup-1', 'timeline_3_5_days', 'vendor');
+
+      expect(result.success).toBe(true);
+      expect(result.newStage).toBe('awaiting_completion');
+    });
+
+    it('rejects unknown timeline action', async () => {
+      const followup = { ...baseFollowup, stage: 'timeline_requested' };
+      const supabase = createMockSupabase(followup);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await handleFollowupResponse(supabase as any, 'followup-1', 'timeline_invalid', 'vendor');
+
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('invoice responses', () => {
+    it('transitions from invoice_requested to feedback_requested', async () => {
+      const followup = { ...baseFollowup, stage: 'invoice_requested' };
+      const supabase = createMockSupabase(followup);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await handleFollowupResponse(supabase as any, 'followup-1', 'invoice_1000_2500', 'vendor');
+
+      expect(result.success).toBe(true);
+      expect(result.newStage).toBe('feedback_requested');
+    });
+  });
+
+  describe('cancellation reason responses', () => {
+    it('transitions from cancellation_reason_requested to needs_rematch', async () => {
+      const followup = { ...baseFollowup, stage: 'cancellation_reason_requested' };
+      const supabase = createMockSupabase(followup);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await handleFollowupResponse(supabase as any, 'followup-1', 'cancel_reason_price', 'vendor');
+
+      expect(result.success).toBe(true);
+      expect(result.newStage).toBe('needs_rematch');
+    });
+  });
+
+  describe('feedback responses', () => {
+    it('transitions from feedback_requested to closed', async () => {
+      const followup = { ...baseFollowup, stage: 'feedback_requested' };
+      const supabase = createMockSupabase(followup);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await handleFollowupResponse(supabase as any, 'followup-1', 'feedback_great', 'landlord');
 
       expect(result.success).toBe(true);
       expect(result.newStage).toBe('closed');
@@ -239,7 +301,7 @@ describe('handleFollowupResponse', () => {
       const result = await handleFollowupResponse(supabase as any, 'followup-1', 'booked', 'admin', 'admin-user-1');
 
       expect(result.success).toBe(true);
-      expect(result.newStage).toBe('awaiting_completion');
+      expect(result.newStage).toBe('timeline_requested');
     });
   });
 });

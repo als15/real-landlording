@@ -46,29 +46,44 @@ Every stage transition, email send, response, and admin override is logged to th
 ## Stage Flowchart
 
 ```
-Day 0: Intro Sent
+Day 0: Intro Sent → Landlord Day 0 Expectation Email (Step 0)
   |
   | (3 days)
   v
-Day 3: Vendor Check Email
+Day 3: Vendor Check Email (Step 1)
   |
-  |-- [Booked] ---------> Awaiting Completion (14 days) --> Completion Check
+  |-- [Booked] ---------> Timeline Request (Step 1.1) --> Awaiting Completion
   |-- [Discussing] -----> Day 7 Recheck (4 days)
   |-- [Can't Reach] ----> Landlord Contact Check
   |-- [No Deal] ---------> CLOSED (admin notified for rematch)
 
-Day 7 Recheck:
-  |-- [Booked] ---------> Awaiting Completion
+Timeline Request (Step 1.1):
+  |-- [1-2 days] --------> Awaiting Completion (check 9 days out)
+  |-- [3-5 days] --------> Awaiting Completion (check 12 days out)
+  |-- [1-2 weeks] -------> Awaiting Completion (check 21 days out)
+  |-- [Longer] ----------> Awaiting Completion (check 37 days out)
+
+Day 7 Recheck (Step 3):
+  |-- [Booked] ---------> Timeline Request (Step 1.1)
   |-- [Not Moving Fwd] -> CLOSED (admin notified for rematch)
 
-Landlord Contact Check:
+Landlord Contact Check (Step 2):
   |-- [Contact OK] -----> Day 7 Recheck (4 days)
   |-- [No Contact] ------> CLOSED (high-priority admin notification)
 
-Completion Check:
-  |-- [Completed] -------> CLOSED (feedback email to landlord)
-  |-- [In Progress] -----> Awaiting Completion (7 days, loops back)
-  |-- [Cancelled] -------> CLOSED
+Completion Check (Step 5):
+  |-- [Completed] -------> Invoice Request (Step 5A) --> Feedback Request (Step 6) --> CLOSED
+  |-- [In Progress] -----> Timeline Request (Step 5B, same as 1.1) --> loops back
+  |-- [Cancelled] -------> Cancellation Reason (Step 5C) --> CLOSED + rematch
+
+Invoice Request (Step 5A):
+  |-- [Under $500 / $500-1k / $1-2.5k / $2.5-5k / $5k+] --> Feedback Request
+
+Cancellation Reason (Step 5C):
+  |-- [Price / Scope / Other Vendor / Other] --> CLOSED + admin notified
+
+Feedback Request (Step 6):
+  |-- [Great / OK / Not Good] --> CLOSED
 ```
 
 ---
@@ -77,14 +92,19 @@ Completion Check:
 
 | Stage | Description | Who Responds | Next Action Timer | Possible Transitions |
 |---|---|---|---|---|
-| `pending` | Follow-up created, waiting for Day 3 | System (cron) | 3 days | `vendor_check_sent` |
-| `vendor_check_sent` | Day 3 email sent to vendor | Vendor | None (waiting) | `awaiting_completion`, `vendor_discussing`, `landlord_check_sent`, `closed` |
+| `pending` | Follow-up created, Day 0 landlord msg pending | System (cron) | Immediate | `intro_sent` |
+| `intro_sent` | Day 0 landlord expectation sent, waiting for Day 3 | System (cron) | 3 days | `vendor_check_sent` |
+| `vendor_check_sent` | Day 3 email sent to vendor | Vendor | None (waiting) | `timeline_requested`, `vendor_discussing`, `landlord_check_sent`, `closed` |
+| `timeline_requested` | Waiting for vendor to provide completion timeline | Vendor | None (waiting) | `awaiting_completion` |
 | `vendor_discussing` | Vendor said "still discussing" | System (cron) | 4 days | `day7_recheck_sent` |
 | `landlord_check_sent` | Vendor couldn't reach landlord; landlord email sent | Landlord | None (waiting) | `landlord_contact_ok`, `closed` |
 | `landlord_contact_ok` | Landlord confirmed vendor contact | System (cron) | 4 days | `day7_recheck_sent` |
-| `day7_recheck_sent` | Day 7 recheck email sent to vendor | Vendor | None (waiting) | `awaiting_completion`, `closed` |
-| `awaiting_completion` | Job booked, waiting for completion date | System (cron) | 14 days (first), 7 days (subsequent) | `completion_check_sent` |
-| `completion_check_sent` | Completion check email sent to vendor | Vendor | None (waiting) | `closed` (completed/cancelled), `awaiting_completion` (in progress) |
+| `day7_recheck_sent` | Day 7 recheck email sent to vendor | Vendor | None (waiting) | `timeline_requested`, `closed` |
+| `awaiting_completion` | Job booked, waiting for completion + 7 day buffer | System (cron) | Dynamic (vendor estimate + 7 days) | `completion_check_sent` |
+| `completion_check_sent` | Completion check email sent to vendor | Vendor | None (waiting) | `invoice_requested`, `timeline_requested`, `cancellation_reason_requested` |
+| `invoice_requested` | Vendor invoice collection email sent | Vendor | None (waiting) | `feedback_requested` |
+| `cancellation_reason_requested` | Vendor cancellation reason email sent | Vendor | None (waiting) | `closed` |
+| `feedback_requested` | Landlord feedback email sent | Landlord | None (waiting) | `closed` |
 | `closed` | Terminal state | N/A | None | N/A |
 | `needs_rematch` | Terminal state indicating admin should rematch | N/A | None | N/A |
 
@@ -92,40 +112,64 @@ Completion Check:
 
 ## Email Templates
 
-Five email templates are defined in `src/lib/email/followup-templates.ts`. Each is accompanied by a short SMS companion in `src/lib/sms/followup-templates.ts`.
+Ten email templates are defined in `src/lib/email/followup-templates.ts`. SMS companions are in `src/lib/sms/followup-templates.ts`.
 
-### 1. Vendor Day 3 Check
+### 1. Landlord Day 0 Expectation (Step 0)
+- **Sent to:** Landlord
+- **When:** Immediately after intro sent
+- **Subject:** `We matched you with a vendor for your {service} project`
+- **Content:** Informational only — no response buttons
+
+### 2. Vendor Day 3 Check (Step 1)
 - **Sent to:** Vendor
 - **When:** 3 days after intro
 - **Subject:** `Quick check: {Service} project with {Landlord}`
 - **Buttons:** Booked the Job (green) | Still Discussing (blue) | Can't Reach Client (yellow) | Not Moving Forward (red)
 
-### 2. Vendor Day 7 Recheck
+### 3. Vendor Timeline Request (Step 1.1 / 5B)
+- **Sent to:** Vendor
+- **When:** Immediately after "booked" or "in progress" response
+- **Subject:** `Timeline: {Service} project with {Landlord}`
+- **Buttons:** 1–2 Days (green) | 3–5 Days (blue) | 1–2 Weeks (purple) | Longer (yellow)
+
+### 4. Vendor Day 7 Recheck (Step 3)
 - **Sent to:** Vendor
 - **When:** 4 days after "discussing" or "contact OK" response
 - **Subject:** `Following up: {Service} project with {Landlord}`
 - **Buttons:** Booked the Job (green) | Not Moving Forward (red)
 
-### 3. Landlord Contact Check
+### 5. Landlord Contact Check (Step 2)
 - **Sent to:** Landlord
 - **When:** Vendor reports "can't reach"
 - **Subject:** `Did {Vendor} reach out about your {service} project?`
 - **Buttons:** Yes, They Contacted Me (green) | No, Haven't Heard From Them (red)
 
-### 4. Vendor Completion Check
+### 6. Vendor Completion Check (Step 5)
 - **Sent to:** Vendor
-- **When:** 14 days after "booked" (or 7 days after "in progress")
+- **When:** 7 days after expected completion date
 - **Subject:** `Job update: {Service} project with {Landlord}`
 - **Buttons:** Job Completed (green) | Still In Progress (blue) | Job Cancelled (red)
 
-### 5. Landlord Feedback Request
+### 7. Vendor Invoice Request (Step 5A)
+- **Sent to:** Vendor
+- **When:** Immediately after "completed" response
+- **Subject:** `Invoice details: {Service} project with {Landlord}`
+- **Buttons:** Under $500 | $500–$1,000 | $1,000–$2,500 | $2,500–$5,000 | $5,000+
+
+### 8. Vendor Cancellation Reason (Step 5C)
+- **Sent to:** Vendor
+- **When:** Immediately after "cancelled" response
+- **Subject:** `Cancelled: {Service} project with {Landlord}`
+- **Buttons:** Price (yellow) | Scope (blue) | Chose Another Vendor (purple) | Other (red)
+
+### 9. Landlord Feedback Request (Step 6)
 - **Sent to:** Landlord
-- **When:** Immediately after vendor reports "completed"
+- **When:** Immediately after vendor provides invoice value
 - **Subject:** `How was your experience with {Vendor}?`
-- **CTA:** Leave a Review (links to dashboard)
+- **Buttons:** Great (green) | OK (blue) | Not Good (red)
 
 ### SMS Companions
-Each of the first 4 emails has a short SMS companion that says "check your email for a follow-up about your {service} project." SMS is sent alongside the email when the recipient has a phone number on file.
+Emails #1, #2, #4, #5, #6, and #9 have SMS companions directing recipients to check their email. SMS is sent alongside the email when the recipient has a phone number on file.
 
 ---
 
@@ -226,8 +270,12 @@ Public (no auth). Token-based response endpoint for email links.
 | `action` | string | Response action (see actions below) |
 
 **Vendor actions:** `booked`, `discussing`, `cant_reach`, `no_deal`
+**Timeline actions:** `timeline_1_2_days`, `timeline_3_5_days`, `timeline_1_2_weeks`, `timeline_longer`
 **Landlord actions:** `contact_ok`, `no_contact`
 **Completion actions:** `completed`, `in_progress`, `cancelled`
+**Invoice actions:** `invoice_under_500`, `invoice_500_1000`, `invoice_1000_2500`, `invoice_2500_5000`, `invoice_5000_plus`
+**Cancellation reason actions:** `cancel_reason_price`, `cancel_reason_scope`, `cancel_reason_other_vendor`, `cancel_reason_other`
+**Feedback actions:** `feedback_great`, `feedback_ok`, `feedback_not_good`
 
 **Redirects to:**
 - `/follow-up/thanks?action={action}` on success
@@ -314,7 +362,9 @@ One row per match. Created automatically by a DB trigger when `intro_sent` flips
 | `next_action_at` | timestamptz | When the cron should process this record next |
 | `vendor_response_token` | text | Active HMAC token for vendor response |
 | `landlord_response_token` | text | Active HMAC token for landlord response |
-| `expected_completion_date` | date | When the vendor expects to finish (set on "booked") |
+| `expected_completion_date` | date | When the vendor expects to finish (set via timeline response) |
+| `invoice_value` | numeric | Invoice value reported by vendor on completion (midpoint of selected range) |
+| `cancellation_reason` | text | Why the job was cancelled: `price`, `scope`, `chose_another_vendor`, `other` |
 | `created_at` | timestamptz | |
 | `updated_at` | timestamptz | Auto-updated by trigger |
 
@@ -398,7 +448,9 @@ The cron starts processing pending follow-ups and sending emails. Response links
 | `FOLLOWUP_TOKEN_SECRET` | When enabled | None | Random string (32+ characters) used to sign response tokens |
 | `CRON_SECRET` | Yes | None | Existing cron auth (shared with other cron routes) |
 | `RESEND_API_KEY` | For emails | None | Existing Resend config (emails skip when absent) |
-| `TELNYX_API_KEY` | For SMS | None | Existing Telnyx config (SMS skips when absent) |
+| `SMS_ENABLED` | For SMS | `false` | Must be `true` along with Telnyx credentials to send SMS |
+| `TELNYX_API_KEY` | For SMS | None | Telnyx API key (SMS skips when absent) |
+| `TELNYX_PHONE_NUMBER` | For SMS | None | Telnyx sending number in E.164 format |
 
 ---
 
@@ -455,7 +507,7 @@ src/__tests__/unit/followup/
 
 ### Unit Tests
 
-31 tests across 3 test files:
+37 tests across 3 test files:
 
 ```bash
 npx jest src/__tests__/unit/followup/ --no-coverage
