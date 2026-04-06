@@ -200,7 +200,7 @@ function ReportDisplay({ report }: { report: DueDiligenceReport }) {
   }
 
   if (!report.results) {
-    return <Alert type="warning" message="No results available" />
+    return <Alert type="warning" title="No results available" />
   }
 
   const results = report.results
@@ -220,7 +220,7 @@ function ReportDisplay({ report }: { report: DueDiligenceReport }) {
         type={confidenceAlertType}
         showIcon
         icon={results.confidence_level === 'high' ? <CheckCircleOutlined /> : <WarningOutlined />}
-        message={
+        title={
           <Space>
             <span>Due Diligence Summary</span>
             <Tag color={confidenceColor}>{results.confidence_level.toUpperCase()} Confidence</Tag>

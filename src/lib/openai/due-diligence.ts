@@ -415,8 +415,10 @@ function formatSearchDataForPrompt(searchData: VendorSearchData): string {
   if (searchData.googlePlaces) {
     const gp = searchData.googlePlaces;
     sections.push(`== GOOGLE BUSINESS PROFILE ==
-Rating: ${gp.rating ?? 'Not found'}
-Review Count: ${gp.ratingCount ?? 'Not found'}
+Places Result Name: ${gp.title ?? 'Not found'}
+Name Match Confidence: ${gp.nameMatchConfidence} (if "none", this result is for a DIFFERENT business — ignore its data)
+Rating: ${gp.nameMatchConfidence !== 'none' ? (gp.rating ?? 'Not found') : 'N/A — wrong business'}
+Review Count: ${gp.nameMatchConfidence !== 'none' ? (gp.ratingCount ?? 'Not found') : 'N/A — wrong business'}
 Address: ${gp.address ?? 'Not found'}`);
   }
 
@@ -512,21 +514,113 @@ ${formattedData}
 ANALYSIS INSTRUCTIONS:
 You have been provided with raw search results from 8 different Google searches. Your job is to ANALYZE this data — do NOT attempt to search the web yourself.
 
-1. Extract review ratings and counts from the search results. Google Places data is provided directly above. For Yelp, BBB, Facebook, and Angi, look at the organic search result snippets for rating/review information.
-2. Identify the business website and social media presence from the search results.
-3. Look for any red flags in the legal/complaints search results.
-4. Assess community sentiment from Reddit/Nextdoor mentions.
-5. Cross-reference information across sources for consistency.
+1. Extract review ratings and counts ONLY from the search results provided above. Google Places data is provided directly — if it says "Not found", the rating is null.
+2. For Yelp, BBB, Facebook, and Angi, ONLY report ratings/review counts if they appear explicitly in the organic search result snippets (e.g., "4.5 stars", "127 reviews"). If the search returned no results or the snippets don't contain rating numbers, return null.
+3. Identify the business website and social media presence from the search results.
+4. Look for any red flags in the legal/complaints search results.
+5. Assess community sentiment from Reddit/Nextdoor mentions.
+6. Cross-reference information across sources for consistency.
 
-IMPORTANT RULES:
-- Return null for any field where the search data doesn't contain relevant information. NEVER fabricate or guess.
-- Be specific with review counts and ratings — only report what's actually in the search data.
-- Include direct URLs from the search results whenever possible.
+CRITICAL ANTI-HALLUCINATION RULES:
+- You are ONLY allowed to report data that appears verbatim in the search results above. If a rating, review count, URL, or fact is not explicitly present in the search data, you MUST return null for that field.
+- Do NOT infer, estimate, or generate plausible-sounding data. A 5-star rating with 92 reviews that doesn't appear in the search data is fabrication.
+- If the search results show "No organic results found" or "No results" for a platform, that platform's rating MUST be null and review_count MUST be null.
+- If Google Places shows "Rating: Not found" and "Review Count: Not found", the google rating and review_count MUST be null.
+- When in doubt, return null. A null value is always better than a fabricated one.
+- Include direct URLs ONLY from the actual search results — never construct or guess URLs.
 - Risk flags should be specific and actionable.
-- Positive signals should cite actual evidence from the data.
-- The summary should be 2-3 sentences giving an honest overall assessment.
-- Set confidence_level based on data quality: "high" if Google Places + multiple review sources found, "medium" if some data, "low" if very little found.
-- Include all source URLs in the sources array.`;
+- Positive signals should cite actual evidence from the data with specific quotes or numbers from the search results.
+- The summary should be 2-3 sentences giving an honest overall assessment. If very little data was found, say so clearly.
+- Set confidence_level based on data quality: "high" ONLY if Google Places has actual ratings + multiple review sources found with real data, "medium" if some real data found, "low" if very little or nothing found.
+- If most searches returned no relevant results, confidence MUST be "low" and the summary must reflect the lack of online presence.
+- Include all source URLs in the sources array — only real URLs from the search results.`;
+}
+
+/**
+ * Validate and sanitize AI results against actual Serper search data.
+ * Forces null for any ratings/review counts that can't be verified in raw data.
+ */
+function validateResultsAgainstSearchData(
+  results: DueDiligenceResults,
+  searchData: VendorSearchData
+): DueDiligenceResults {
+  const validated = structuredClone(results);
+
+  // Validate Google ratings against actual Places data
+  if (validated.reviews_ratings.google) {
+    const gp = searchData.googlePlaces;
+    if (!gp?.rating || gp.nameMatchConfidence === 'none') {
+      validated.reviews_ratings.google.rating = null;
+      validated.reviews_ratings.google.review_count = null;
+      if (!gp) {
+        validated.reviews_ratings.google.summary = 'No Google Business Profile found in search results';
+      } else if (gp.nameMatchConfidence === 'none') {
+        validated.reviews_ratings.google.summary = `Google Places returned "${gp.title}" which does not match the vendor name — data discarded`;
+      } else {
+        validated.reviews_ratings.google.summary = 'Google Business Profile found but no ratings data available';
+      }
+    } else {
+      // Use the actual Serper data, not what OpenAI claimed
+      validated.reviews_ratings.google.rating = gp.rating;
+      validated.reviews_ratings.google.review_count = gp.ratingCount;
+      if (gp.nameMatchConfidence === 'partial') {
+        validated.reviews_ratings.google.summary =
+          `${validated.reviews_ratings.google.summary || ''} (Note: Google Places result "${gp.title}" is a partial name match — verify manually)`.trim();
+      }
+    }
+  }
+
+  // For each platform search, check if organic results actually exist
+  const platformSearchMap: Array<{ key: 'yelp' | 'facebook' | 'angi'; label: string }> = [
+    { key: 'yelp', label: 'yelp' },
+    { key: 'facebook', label: 'facebook' },
+    { key: 'angi', label: 'angi_homeadvisor' },
+  ];
+
+  for (const { key, label } of platformSearchMap) {
+    const search = searchData.searches.find((s) => s.label === label);
+    const hasResults = search?.response?.organic && search.response.organic.length > 0;
+
+    if (validated.reviews_ratings[key] && !hasResults) {
+      // No search results for this platform — null out any claimed ratings
+      validated.reviews_ratings[key] = {
+        rating: null,
+        review_count: null,
+        url: null,
+        summary: `No ${key} listing found in search results`,
+      };
+    }
+  }
+
+  // Validate BBB
+  const bbbSearch = searchData.searches.find((s) => s.label === 'bbb');
+  const hasBbbResults = bbbSearch?.response?.organic && bbbSearch.response.organic.length > 0;
+  if (validated.reviews_ratings.bbb && !hasBbbResults) {
+    validated.reviews_ratings.bbb = {
+      rating: null,
+      accredited: null,
+      url: null,
+      summary: 'No BBB listing found in search results',
+    };
+  }
+
+  // Downgrade confidence if most searches returned nothing
+  const searchesWithResults = searchData.searches.filter(
+    (s) => s.response?.organic && s.response.organic.length > 0
+  ).length;
+
+  if (searchesWithResults <= 1) {
+    validated.confidence_level = 'low';
+  } else if (searchesWithResults <= 3 && validated.confidence_level === 'high') {
+    validated.confidence_level = 'medium';
+  }
+
+  // If no Google Places rating and confidence was high, downgrade
+  if (!searchData.googlePlaces?.rating && validated.confidence_level === 'high') {
+    validated.confidence_level = 'medium';
+  }
+
+  return validated;
 }
 
 /**
@@ -577,13 +671,16 @@ async function runSerperEnhancedAnalysis(vendor: Vendor): Promise<DueDiligenceAn
     };
   }
 
+  // Step 3: Validate AI output against actual search data to prevent hallucination
+  const validatedResults = validateResultsAgainstSearchData(parsed.results, searchData);
+
   console.log(
-    `[DueDiligence] OpenAI analysis complete — tokens: ${parsed.tokensUsed ?? 'unknown'}, confidence: ${parsed.results.confidence_level}`
+    `[DueDiligence] OpenAI analysis complete — tokens: ${parsed.tokensUsed ?? 'unknown'}, confidence: ${validatedResults.confidence_level} (pre-validation: ${parsed.results.confidence_level})`
   );
 
   return {
     success: true,
-    results: parsed.results,
+    results: validatedResults,
     rawResponse: parsed.rawResponse,
     model: MODEL,
     tokensUsed: parsed.tokensUsed,
@@ -618,15 +715,17 @@ SEARCH STRATEGY — Follow these steps IN ORDER. Perform SEPARATE web searches f
 
 IMPORTANT: You MUST perform multiple separate web searches. Do NOT try to answer everything from a single search. Each platform check should be its own search query.
 
-IMPORTANT RULES:
+CRITICAL ANTI-HALLUCINATION RULES:
 - Return null for any field where you genuinely cannot find data after searching. NEVER fabricate or guess information.
-- Be specific with review counts and ratings — only report what you actually find.
-- Include direct URLs to sources whenever possible.
+- If a web search returns no relevant results for a platform, that platform's rating MUST be null and review_count MUST be null. Do NOT invent plausible-sounding numbers.
+- Be specific with review counts and ratings — only report what you actually find in real web pages.
+- Include direct URLs to sources whenever possible — only real URLs you visited, never constructed ones.
 - When Google shows a business with ratings/reviews in search results, extract that data even if you can't access the full Google Maps page.
 - Risk flags should be specific and actionable (e.g., "No Google Reviews found despite claiming 5 years in business").
-- Positive signals should highlight real evidence (e.g., "4.8 stars on Google with 127 reviews").
-- The summary should be 2-3 sentences giving an honest overall assessment.
-- Set confidence_level based on how much data you found: "high" if multiple review sources + verified web presence, "medium" if some data found, "low" if very little found.`;
+- Positive signals should highlight real evidence with specific quotes from actual pages found.
+- The summary should be 2-3 sentences giving an honest overall assessment. If the business has minimal or no online presence, say so clearly — do not present lack of data as positive.
+- Set confidence_level based on how much REAL data you found: "high" ONLY if multiple review sources with actual ratings + verified web presence, "medium" if some data found, "low" if very little found.
+- A vendor with no online presence should get confidence "low", not "high" — lack of data is not evidence of quality.`;
 }
 
 /**

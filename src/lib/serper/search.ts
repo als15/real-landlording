@@ -23,13 +23,53 @@ export interface VendorSearchData {
   location: string;
   searches: SearchResult[];
   googlePlaces: {
+    title: string | null;
     rating: number | null;
     ratingCount: number | null;
     address: string | null;
+    nameMatchConfidence: 'exact' | 'partial' | 'none';
   } | null;
   totalSearches: number;
   successfulSearches: number;
   failedSearches: number;
+}
+
+// ============================================================================
+// Name Matching
+// ============================================================================
+
+/**
+ * Assess whether a Google Places result title matches the vendor business name.
+ * Returns 'exact' for close matches, 'partial' for some overlap, 'none' for no match.
+ * Prevents using ratings from a completely different business.
+ */
+function assessNameMatch(
+  vendorName: string,
+  placesTitle: string
+): 'exact' | 'partial' | 'none' {
+  const normalize = (s: string) =>
+    s.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
+
+  const vendor = normalize(vendorName);
+  const places = normalize(placesTitle);
+
+  // Exact or near-exact match
+  if (vendor === places || places.includes(vendor) || vendor.includes(places)) {
+    return 'exact';
+  }
+
+  // Check significant word overlap (ignore common words)
+  const stopWords = new Set(['the', 'and', 'of', 'llc', 'inc', 'co', 'corp', 'services', 'service', 'company']);
+  const vendorWords = vendor.split(' ').filter((w) => w.length > 1 && !stopWords.has(w));
+  const placesWords = new Set(places.split(' ').filter((w) => w.length > 1 && !stopWords.has(w)));
+
+  if (vendorWords.length === 0) return 'none';
+
+  const matchingWords = vendorWords.filter((w) => placesWords.has(w));
+  const matchRatio = matchingWords.length / vendorWords.length;
+
+  if (matchRatio >= 0.5) return 'partial';
+  return 'none';
 }
 
 // ============================================================================
@@ -112,15 +152,19 @@ export async function gatherVendorSearchData(params: {
     };
   });
 
-  // Extract Google Places data from the places search
+  // Extract Google Places data — verify the result actually matches the vendor
   let googlePlaces: VendorSearchData['googlePlaces'] = null;
   const placesSearch = searches.find((s) => s.label === 'google_places');
   if (placesSearch?.response?.places?.[0]) {
     const place = placesSearch.response.places[0];
+    const nameMatchConfidence = assessNameMatch(businessName, place.title);
+
     googlePlaces = {
-      rating: place.rating ?? null,
-      ratingCount: place.ratingCount ?? null,
+      title: place.title ?? null,
+      rating: nameMatchConfidence !== 'none' ? (place.rating ?? null) : null,
+      ratingCount: nameMatchConfidence !== 'none' ? (place.ratingCount ?? null) : null,
       address: place.address ?? null,
+      nameMatchConfidence,
     };
   }
 
