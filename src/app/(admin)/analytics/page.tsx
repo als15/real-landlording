@@ -764,6 +764,18 @@ export default function AnalyticsPage() {
       q4Target: number;
     }
 
+    const requestsQ2 = Math.max(Math.round(kpiData.requestsPerMonth * 1.2), 1);
+    const requestsQ3 = Math.max(Math.round(requestsQ2 * 1.3), 1);
+    const requestsQ4 = Math.max(Math.round(requestsQ3 * 1.5), 1);
+
+    // Match success: close the gap to 75% ceiling gradually; maintain if already above
+    const matchCeiling = 75;
+    const matchBase = kpiData.matchSuccessRate;
+    const matchGap = Math.max(0, matchCeiling - matchBase);
+    const matchQ2 = Math.max(60, Math.round(matchBase + matchGap * 0.4));
+    const matchQ3 = Math.max(70, Math.round(matchBase + matchGap * 0.7));
+    const matchQ4 = Math.max(75, Math.round(matchBase + matchGap));
+
     const rows: KpiRow[] = [
       {
         key: 'requests',
@@ -771,9 +783,9 @@ export default function AnalyticsPage() {
         tip: 'Average monthly request volume',
         actual: kpiData.requestsPerMonth,
         format: 'number',
-        q2Target: Math.max(Math.round(kpiData.requestsPerMonth * 1.2), 1),
-        q3Target: Math.max(Math.round(kpiData.requestsPerMonth * 1.3), 1),
-        q4Target: Math.max(Math.round(kpiData.requestsPerMonth * 1.5), 1),
+        q2Target: requestsQ2,
+        q3Target: requestsQ3,
+        q4Target: requestsQ4,
       },
       {
         key: 'vendors',
@@ -783,7 +795,7 @@ export default function AnalyticsPage() {
         format: 'number',
         q2Target: kpiData.activeVendors + 10,
         q3Target: kpiData.activeVendors + 20,
-        q4Target: kpiData.activeVendors + 25,
+        q4Target: kpiData.activeVendors + 30,
       },
       {
         key: 'matchSuccess',
@@ -791,9 +803,9 @@ export default function AnalyticsPage() {
         tip: 'Percentage of matched requests reaching completion',
         actual: kpiData.matchSuccessRate,
         format: 'percent',
-        q2Target: 50,
-        q3Target: 60,
-        q4Target: 70,
+        q2Target: matchQ2,
+        q3Target: matchQ3,
+        q4Target: matchQ4,
       },
       {
         key: 'timeToMatch',
@@ -801,9 +813,9 @@ export default function AnalyticsPage() {
         tip: 'Hours from request submission to first vendor assignment',
         actual: kpiData.avgTimeToMatch,
         format: 'hours',
-        q2Target: 48,
-        q3Target: 36,
-        q4Target: 24,
+        q2Target: kpiData.avgTimeToMatch > 0 ? Math.min(8, kpiData.avgTimeToMatch) : 8,
+        q3Target: kpiData.avgTimeToMatch > 0 ? Math.min(4, kpiData.avgTimeToMatch) : 4,
+        q4Target: kpiData.avgTimeToMatch > 0 ? Math.min(4, kpiData.avgTimeToMatch) : 4,
       },
       {
         key: 'revenue',
@@ -812,8 +824,8 @@ export default function AnalyticsPage() {
         actual: kpiData.revenuePerMonth,
         format: 'currency',
         q2Target: 1,
-        q3Target: 500,
-        q4Target: 2000,
+        q3Target: 2000,
+        q4Target: 4000,
       },
       {
         key: 'collection',
@@ -821,9 +833,9 @@ export default function AnalyticsPage() {
         tip: 'Percentage of invoiced referral fees collected',
         actual: kpiData.paymentCollectionRate,
         format: 'percent',
-        q2Target: 50,
-        q3Target: 70,
-        q4Target: 85,
+        q2Target: Math.max(50, kpiData.paymentCollectionRate),
+        q3Target: Math.max(70, kpiData.paymentCollectionRate),
+        q4Target: Math.max(80, kpiData.paymentCollectionRate),
       },
       {
         key: 'signup',
@@ -831,9 +843,9 @@ export default function AnalyticsPage() {
         tip: 'Percentage of request submitters who create accounts',
         actual: kpiData.signupConversion,
         format: 'percent',
-        q2Target: 20,
-        q3Target: 30,
-        q4Target: 40,
+        q2Target: Math.max(20, kpiData.signupConversion),
+        q3Target: Math.max(30, kpiData.signupConversion),
+        q4Target: Math.max(35, kpiData.signupConversion),
       },
       {
         key: 'repeat',
@@ -841,9 +853,9 @@ export default function AnalyticsPage() {
         tip: 'Percentage of landlords who submit more than one request',
         actual: kpiData.repeatUsage,
         format: 'percent',
-        q2Target: 15,
-        q3Target: 25,
-        q4Target: 35,
+        q2Target: Math.max(25, kpiData.repeatUsage),
+        q3Target: Math.max(35, kpiData.repeatUsage),
+        q4Target: Math.max(40, kpiData.repeatUsage),
       },
     ];
 
@@ -911,12 +923,26 @@ export default function AnalyticsPage() {
       {
         title: <span>Q2 Target<br /><Text type="secondary" style={{ fontSize: 11, fontWeight: 'normal' }}>Apr – Jun</Text></span>,
         key: 'q2',
-        width: 110,
-        render: (_, row) => (
-          row.key === 'revenue' && row.q2Target === 1
-            ? <Text type="secondary">{'>$0'}</Text>
-            : <Text type="secondary">{formatValue(row.q2Target, row.format)}</Text>
-        ),
+        width: 140,
+        render: (_, row) => {
+          const progress = getProgress(row);
+          const status = getStatus(row);
+          const strokeColor = status.color === 'green' ? '#52c41a' : status.color === 'orange' ? '#fa8c16' : '#ff4d4f';
+          return (
+            <div>
+              <div>{row.key === 'revenue' && row.q2Target === 1
+                ? <Text type="secondary">{'>$0'}</Text>
+                : <Text type="secondary">{formatValue(row.q2Target, row.format)}</Text>
+              }</div>
+              <Progress
+                percent={progress}
+                size="small"
+                strokeColor={strokeColor}
+                showInfo={false}
+              />
+            </div>
+          );
+        },
       },
       {
         title: <span>Q3 Target<br /><Text type="secondary" style={{ fontSize: 11, fontWeight: 'normal' }}>Jul – Sep</Text></span>,

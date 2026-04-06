@@ -184,7 +184,7 @@ export default function DashboardPage() {
                 title="Active Requests"
                 value={data?.activeRequests || 0}
                 prefix={<ThunderboltOutlined style={{ color: brandColors.secondary }} />}
-                valueStyle={{ color: brandColors.secondary }}
+                styles={{ content: { color: brandColors.secondary } }}
               />
             )}
           </Card>
@@ -198,7 +198,7 @@ export default function DashboardPage() {
                 title="Completed Jobs"
                 value={data?.completedRequests || 0}
                 prefix={<CheckCircleOutlined style={{ color: brandColors.primary }} />}
-                valueStyle={{ color: brandColors.primary }}
+                styles={{ content: { color: brandColors.primary } }}
               />
             )}
           </Card>
@@ -213,7 +213,7 @@ export default function DashboardPage() {
                   title="Pending Reviews"
                   value={data?.pendingReviews || 0}
                   prefix={<ClockCircleOutlined style={{ color: brandColors.accent }} />}
-                  valueStyle={{ color: brandColors.accent, cursor: 'pointer' }}
+                  styles={{ content: { color: brandColors.accent, cursor: 'pointer' } }}
                 />
               </Link>
             )}
@@ -228,7 +228,7 @@ export default function DashboardPage() {
                 title="Avg Vendor Rating"
                 value={data?.avgRating || '-'}
                 prefix={<StarOutlined style={{ color: brandColors.accent }} />}
-                valueStyle={{ color: brandColors.accent }}
+                styles={{ content: { color: brandColors.accent } }}
                 suffix={data?.avgRating ? '/ 5' : ''}
               />
             )}

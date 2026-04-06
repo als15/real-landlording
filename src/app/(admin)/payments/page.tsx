@@ -491,7 +491,7 @@ export default function PaymentsPage() {
                 value={summary.pending}
                 prefix={<ClockCircleOutlined style={{ color: '#faad14' }} />}
                 suffix={<Text type="secondary" style={{ fontSize: 12 }}>${summary.pendingAmount.toFixed(2)}</Text>}
-                valueStyle={{ color: '#faad14' }}
+                styles={{ content: { color: '#faad14' } }}
               />
             </Card>
           </Col>
@@ -502,7 +502,7 @@ export default function PaymentsPage() {
                 value={summary.thisMonth}
                 prefix={<DollarOutlined style={{ color: '#52c41a' }} />}
                 suffix={<Text type="secondary" style={{ fontSize: 12 }}>${summary.thisMonthAmount.toFixed(2)}</Text>}
-                valueStyle={{ color: '#52c41a' }}
+                styles={{ content: { color: '#52c41a' } }}
               />
             </Card>
           </Col>
@@ -523,7 +523,7 @@ export default function PaymentsPage() {
                 value={summary.overdue}
                 prefix={<ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />}
                 suffix={<Text type="secondary" style={{ fontSize: 12 }}>${summary.overdueAmount.toFixed(2)}</Text>}
-                valueStyle={{ color: '#ff4d4f' }}
+                styles={{ content: { color: '#ff4d4f' } }}
               />
             </Card>
           </Col>

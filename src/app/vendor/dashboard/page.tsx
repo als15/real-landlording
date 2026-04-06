@@ -203,7 +203,7 @@ export default function VendorDashboardPage() {
                 title="Total Jobs"
                 value={data?.totalJobs || 0}
                 prefix={<FileTextOutlined style={{ color: brandColors.secondary }} />}
-                valueStyle={{ color: brandColors.secondary }}
+                styles={{ content: { color: brandColors.secondary } }}
               />
             )}
           </Card>
@@ -218,7 +218,7 @@ export default function VendorDashboardPage() {
                   title="Pending"
                   value={data?.pendingJobs || 0}
                   prefix={<ClockCircleOutlined style={{ color: '#faad14' }} />}
-                  valueStyle={{ color: '#faad14', cursor: 'pointer' }}
+                  styles={{ content: { color: '#faad14', cursor: 'pointer' } }}
                 />
               </Link>
             )}
@@ -233,7 +233,7 @@ export default function VendorDashboardPage() {
                 title="Accepted"
                 value={data?.acceptedJobs || 0}
                 prefix={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
-                valueStyle={{ color: '#52c41a' }}
+                styles={{ content: { color: '#52c41a' } }}
               />
             )}
           </Card>
@@ -247,7 +247,7 @@ export default function VendorDashboardPage() {
                 title="In Progress"
                 value={data?.inProgressJobs || 0}
                 prefix={<PlayCircleOutlined style={{ color: '#2f54eb' }} />}
-                valueStyle={{ color: '#2f54eb' }}
+                styles={{ content: { color: '#2f54eb' } }}
               />
             )}
           </Card>
@@ -261,7 +261,7 @@ export default function VendorDashboardPage() {
                 title="Completed"
                 value={data?.completedJobs || 0}
                 prefix={<CheckCircleOutlined style={{ color: brandColors.primary }} />}
-                valueStyle={{ color: brandColors.primary }}
+                styles={{ content: { color: brandColors.primary } }}
               />
             )}
           </Card>
@@ -275,7 +275,7 @@ export default function VendorDashboardPage() {
                 title="Avg Rating"
                 value={data?.averageRating ? data.averageRating.toFixed(1) : '-'}
                 prefix={<StarOutlined style={{ color: brandColors.accent }} />}
-                valueStyle={{ color: brandColors.accent }}
+                styles={{ content: { color: brandColors.accent } }}
                 suffix={data?.averageRating ? `/ 5 (${data.totalReviews})` : ''}
               />
             )}
