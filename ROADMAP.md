@@ -79,7 +79,7 @@ A B2B vendor matching platform connecting Philadelphia landlords with vetted ser
 | 3-4   | Homepage redesign                                   | P1       | Pending     |
 | 5-6   | Vendor performance scoring (response time, reviews) | P1       | Pending     |
 | 7-8   | AI-assisted match suggestions                       | P2       | Pending     |
-| 9-10  | SMS notifications (Twilio)                          | P2       | Pending     |
+| 9-10  | SMS notifications (Telnyx)                          | P2       | Ready       |
 | 11-12 | Vendor self-service improvements                    | P2       | Pending     |
 
 #### Business Operations (Michael)
@@ -198,13 +198,16 @@ A B2B vendor matching platform connecting Philadelphia landlords with vetted ser
 
 ### Primary KPIs
 
-| KPI                  | Definition                          | Target Q1 | Target Q4 |
-| -------------------- | ----------------------------------- | --------- | --------- |
-| Match Request Volume | Total requests submitted            | 100       | 500       |
-| Match Success Rate   | Requests → Completed matches        | 60%       | 70%       |
-| Fee Collection Rate  | Successful matches → Fees collected | 50%       | 90%       |
-| Vendor Response Time | Avg time to first vendor response   | <24h      | <12h      |
-| Client Satisfaction  | Post-match NPS                      | 35        | 50        |
+| Metric                   | Q1 Actual     | Q2 Target             | Q3 Target | Q4 Target |
+| ------------------------ | ------------- | --------------------- | --------- | --------- |
+| Requests / month         | Baseline TBD  | +20%                  | +30%      | +50%      |
+| Active vendors           | Current count | +10 new               | +10 new   | +10 new   |
+| Match success rate       | Baseline TBD  | > 60%                 | > 70%     | > 75%     |
+| Avg time to match        | Baseline TBD  | < 8 hrs               | < 4 hrs   | < 4 hrs   |
+| Referral revenue / month | $0            | First digital payment | $2k       | $4k       |
+| Payment collection rate  | N/A           | > 50%                 | > 70%     | > 80%     |
+| Signup conversion        | Baseline TBD  | > 20%                 | > 30%     | > 35%     |
+| Landlord repeat usage    | Baseline TBD  | > 25%                 | > 35%     | > 40%     |
 
 ### Secondary KPIs
 

@@ -47,7 +47,7 @@ Real Landlording is a B2B marketplace platform that connects Philadelphia-area l
 - Frontend: Next.js 16 (React 19) with Ant Design
 - Backend: Supabase (PostgreSQL + Auth + Realtime)
 - Email: Resend
-- SMS: Twilio
+- SMS: Telnyx
 - Contracts: PandaDoc
 - Hosting: Vercel + Supabase Cloud
 
@@ -228,7 +228,7 @@ Real Landlording serves as a **trusted intermediary** that:
 ┌─────────────────────────────────────────────────────────────────────┐
 │                        DATA & SERVICES                              │
 ├─────────────────┬─────────────────┬─────────────────────────────────┤
-│  Supabase       │  Resend         │   Twilio          │  PandaDoc   │
+│  Supabase       │  Resend         │   Telnyx          │  PandaDoc   │
 │  - PostgreSQL   │  - Emails       │   - SMS           │  - Contracts│
 │  - Auth         │  - Templates    │   - Notifications │  - SLAs     │
 │  - Storage      │                 │                   │             │
@@ -245,7 +245,7 @@ Real Landlording serves as a **trusted intermediary** that:
 | **Database** | Supabase (PostgreSQL) | Relational data, RLS security, real-time capabilities |
 | **Auth** | Supabase Auth | Built-in, secure, handles all auth flows |
 | **Email** | Resend | Modern API, excellent deliverability, email history |
-| **SMS** | Twilio | Industry standard, reliable delivery |
+| **SMS** | Telnyx | 10DLC compliant, competitive pricing, reliable delivery |
 | **Contracts** | PandaDoc | Simple API, lower cost than alternatives |
 | **Hosting** | Vercel | Automatic deployments, edge network, analytics |
 
@@ -1057,7 +1057,7 @@ Returns ranked vendor suggestions with full scoring details.
 
 ### SMS System
 
-**Provider:** Twilio
+**Provider:** Telnyx
 
 #### SMS Triggers
 
@@ -1197,7 +1197,7 @@ All tables have RLS enabled as defense-in-depth:
 |--------|---------|--------|
 | **Supabase** | Database, Auth, Storage | Active |
 | **Resend** | Transactional email | Active |
-| **Twilio** | SMS notifications | Active |
+| **Telnyx** | SMS notifications | Ready (not yet activated) |
 | **PandaDoc** | Contract/SLA signing | Active |
 | **Vercel** | Hosting, CDN, Analytics | Active |
 

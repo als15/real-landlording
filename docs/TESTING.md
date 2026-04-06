@@ -247,7 +247,7 @@ Thresholds are intentionally low to start and should be increased as coverage im
 ### What NOT to Test (with unit tests)
 
 1. Framework behavior (Next.js routing, React rendering)
-2. External services (Supabase, Resend, Twilio) - mock these
+2. External services (Supabase, Resend, Telnyx) - mock these
 3. Simple UI components without logic
 4. Database schema (use E2E or integration tests)
 

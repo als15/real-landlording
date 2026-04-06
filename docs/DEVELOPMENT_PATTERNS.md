@@ -77,7 +77,7 @@ See `.env.local.example` for all required variables. Key ones:
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public anon key (safe for browser) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Service role key (server-only, bypasses RLS) |
 | `RESEND_API_KEY` | Email service API key |
-| `SKIP_SMS` | Set to `true` in dev to skip Twilio SMS |
+| `SMS_ENABLED` | Set to `true` to enable Telnyx SMS (also requires `TELNYX_API_KEY` + `TELNYX_PHONE_NUMBER`) |
 
 ### Database Migrations
 

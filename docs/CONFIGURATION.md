@@ -47,26 +47,27 @@ This document tracks all external URLs, configuration values, and integrations u
 | `FROM_EMAIL` | Email sender address | Set in `src/lib/email/resend.ts` |
 | `ADMIN_EMAIL` | Admin notification email address | `admin@reallandlording.com` |
 
-### Twilio SMS Integration
+### Telnyx SMS Integration
 
 | Variable | Purpose | How to Get |
 |----------|---------|------------|
-| `TWILIO_ACCOUNT_SID` | Twilio Account SID | [console.twilio.com](https://console.twilio.com) - Dashboard |
-| `TWILIO_AUTH_TOKEN` | Twilio Auth Token | [console.twilio.com](https://console.twilio.com) - Dashboard |
-| `TWILIO_PHONE_NUMBER` | Twilio Phone Number (E.164 format) | Purchase in Twilio Console → Phone Numbers |
+| `SMS_ENABLED` | Master switch — must be `true` to send SMS | Set manually when ready to activate |
+| `TELNYX_API_KEY` | Telnyx API Key | [portal.telnyx.com](https://portal.telnyx.com) → API Keys |
+| `TELNYX_PHONE_NUMBER` | Telnyx Phone Number (E.164 format) | [portal.telnyx.com](https://portal.telnyx.com) → Numbers |
 
-**SMS is automatically sent alongside emails when Twilio credentials are configured.**
+**SMS requires all three: `SMS_ENABLED=true` + `TELNYX_API_KEY` + `TELNYX_PHONE_NUMBER`.**
 
-**Twilio Setup Steps:**
+**Telnyx Setup Steps:**
 
-1. Create account at [twilio.com](https://www.twilio.com)
-2. Copy Account SID and Auth Token from the dashboard
-3. Purchase a phone number with SMS capability
-4. Add environment variables to your `.env` file:
+1. Create account at [telnyx.com](https://telnyx.com)
+2. Register a 10DLC campaign (required for A2P messaging)
+3. Purchase a phone number and assign it to a messaging profile
+4. Copy API Key from portal → API Keys
+5. Add environment variables to your `.env` file:
    ```
-   TWILIO_ACCOUNT_SID=ACxxxxxxxxx
-   TWILIO_AUTH_TOKEN=your_auth_token
-   TWILIO_PHONE_NUMBER=+1234567890
+   SMS_ENABLED=true
+   TELNYX_API_KEY=KEYxxxxxxxxx
+   TELNYX_PHONE_NUMBER=+1234567890
    ```
 
 **SMS Trigger Points:**
@@ -77,6 +78,7 @@ This document tracks all external URLs, configuration values, and integrations u
 - Vendor rejected → Vendor receives rejection SMS
 - Vendor application submitted → Vendor receives confirmation SMS
 - Interview scheduled → Vendor receives Calendly link SMS
+- Follow-up system stages → Day 3/7 vendor checks, landlord contact check, completion check
 
 ### PandaDoc Integration (SLA Signing)
 
@@ -218,9 +220,9 @@ Located in `src/lib/email/resend.ts`
 
 ## SMS Configuration
 
-Located in `src/lib/sms/twilio.ts`
+Located in `src/lib/sms/telnyx.ts`
 
-- SMS provider: **Twilio**
+- SMS provider: **Telnyx**
 - Templates in `src/lib/sms/templates.ts`
 - Send functions in `src/lib/sms/send.ts`
 
@@ -263,7 +265,7 @@ Located in `src/lib/sms/twilio.ts`
 | 2026-03-28 | Added Serper.dev hybrid due diligence (parallel search + OpenAI analysis, with web_search_preview fallback) | lib/serper/*, lib/openai/due-diligence.ts |
 | 2026-03-27 | Added OpenAI vendor due diligence analysis (web search + structured report) | lib/openai/*, api/admin/applications/[id]/due-diligence, components/admin/applications/ApplicationDueDiligenceTab |
 | 2026-03-25 | Added Mailchimp newsletter integration for syncing opt-in subscribers with tags | lib/mailchimp/*, api/requests, api/vendor/apply |
-| 2026-01-27 | Added Twilio SMS notifications alongside email at all trigger points | lib/sms/*, api/requests, api/requests/[id]/match, api/cron/follow-up, api/admin/applications/[id]/approve, api/admin/applications/[id]/reject, api/vendor/apply |
+| 2026-01-27 | Added SMS notifications alongside email at all trigger points (migrated from Twilio to Telnyx) | lib/sms/*, api/requests, api/requests/[id]/match, api/cron/follow-up, api/admin/applications/[id]/approve, api/admin/applications/[id]/reject, api/vendor/apply |
 | 2026-01-21 | Migrated from DocuSign to PandaDoc for SLA signing (simpler API, lower cost) | lib/pandadoc/*, api/webhooks/pandadoc, approve route, send-sla route, resend-sla route |
 | 2026-01-07 | Added DocuSign integration for vendor SLA signing | lib/docusign/*, api routes, vendors page |
 | 2026-01-06 | Vendor apply form terms link now points to internal `/terms/vendor` page | vendor/apply/page.tsx |
