@@ -14,6 +14,7 @@ import {
   REFERRAL_SOURCE_OPTIONS
 } from '@/types/database'
 import { useServiceTaxonomy } from '@/hooks/useServiceTaxonomy'
+import { usePostHog } from 'posthog-js/react'
 import Link from 'next/link'
 import PublicHeader from '@/components/layout/PublicHeader'
 import PublicFooter from '@/components/layout/PublicFooter'
@@ -73,6 +74,7 @@ export default function VendorApplyPage() {
   const [notCurrentlyLicensed, setNotCurrentlyLicensed] = useState(false)
   const [newsletterOptIn, setNewsletterOptIn] = useState(false)
   const { message } = useNotify()
+  const posthog = usePostHog()
 
   const groupedCategories = serviceGroupsRaw.map(g => ({
     group: g.key,
@@ -154,6 +156,11 @@ export default function VendorApplyPage() {
   const handleNext = async () => {
     const isValid = await validateStep(currentStep)
     if (isValid) {
+      posthog?.capture('vendor_application_step_completed', {
+        step: currentStep + 1,
+        step_name: STEPS[currentStep].title.toLowerCase(),
+        ...(currentStep === 1 ? { services_count: selectedServices.length, services: selectedServices } : {}),
+      })
       setCurrentStep(prev => Math.min(prev + 1, STEPS.length - 1))
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
@@ -215,8 +222,20 @@ export default function VendorApplyPage() {
         throw new Error(error.message || 'Failed to submit application')
       }
 
+      posthog?.capture('vendor_application_submitted', {
+        services_count: selectedServices.length,
+        services: selectedServices,
+        referral_source: values.referral_source,
+        has_website: !!values.website,
+        has_insurance: !!values.insured,
+        years_in_business: values.years_in_business,
+        email: values.email,
+      })
       setSubmitted(true)
     } catch (error) {
+      posthog?.capture('vendor_application_failed', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      })
       message.error(error instanceof Error ? error.message : 'Something went wrong')
     } finally {
       setLoading(false)

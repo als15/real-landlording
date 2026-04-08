@@ -2,8 +2,9 @@
 
 import posthog from 'posthog-js'
 import { PostHogProvider as PHProvider, usePostHog } from 'posthog-js/react'
-import { useEffect, Suspense } from 'react'
+import { useEffect, Suspense, useRef } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 
 if (typeof window !== 'undefined') {
   const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY
@@ -43,6 +44,27 @@ function PostHogPageView() {
   return null
 }
 
+function PostHogIdentify() {
+  const posthog = usePostHog()
+  const identified = useRef(false)
+
+  useEffect(() => {
+    if (!posthog || identified.current) return
+
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        posthog.identify(user.id, {
+          email: user.email,
+        })
+        identified.current = true
+      }
+    })
+  }, [posthog])
+
+  return null
+}
+
 function SuspendedPostHogPageView() {
   return (
     <Suspense fallback={null}>
@@ -55,6 +77,7 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
   return (
     <PHProvider client={posthog}>
       <SuspendedPostHogPageView />
+      <PostHogIdentify />
       {children}
     </PHProvider>
   )

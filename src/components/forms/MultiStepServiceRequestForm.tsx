@@ -32,6 +32,7 @@ import {
   ServiceRequestInput,
 } from '@/types/database';
 import { useServiceTaxonomy } from '@/hooks/useServiceTaxonomy';
+import { usePostHog } from 'posthog-js/react';
 import AddressAutocomplete, { AddressData } from '@/components/AddressAutocomplete';
 import UrgencyToggle from '@/components/forms/UrgencyToggle';
 import MediaUpload from '@/components/MediaUpload';
@@ -60,6 +61,7 @@ export default function MultiStepServiceRequestForm({ onSuccess, preSelectedCate
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
   const { message } = useNotify();
+  const posthog = usePostHog();
 
   // Check if user is logged in and pre-fill their info
   useEffect(() => {
@@ -157,10 +159,26 @@ export default function MultiStepServiceRequestForm({ onSuccess, preSelectedCate
   const handleNext = async () => {
     if (currentStep === 0) {
       const isValid = await validateStep1();
-      if (isValid) setCurrentStep(1);
+      if (isValid) {
+        posthog?.capture('service_request_step_completed', {
+          step: 1,
+          step_name: 'service_selection',
+          service_type: form.getFieldValue('service_type'),
+          is_custom_service: isCustomService,
+        });
+        setCurrentStep(1);
+      }
     } else if (currentStep === 1) {
       const isValid = await validateStep2();
-      if (isValid) setCurrentStep(2);
+      if (isValid) {
+        posthog?.capture('service_request_step_completed', {
+          step: 2,
+          step_name: 'job_details',
+          has_media: mediaUrls.length > 0,
+          urgency: form.getFieldValue('urgency'),
+        });
+        setCurrentStep(2);
+      }
     }
   };
 
@@ -244,6 +262,15 @@ export default function MultiStepServiceRequestForm({ onSuccess, preSelectedCate
       }
 
       const data = await response.json();
+      posthog?.capture('service_request_submitted', {
+        service_type: values.service_type,
+        is_custom_service: isCustomService,
+        urgency: values.urgency,
+        has_media: mediaUrls.length > 0,
+        is_logged_in: isLoggedIn,
+        zip_code: values.zip_code,
+        email: values.landlord_email,
+      });
       message.success('Request submitted successfully! We\'ll match you with vendors soon.');
       form.resetFields();
       setCurrentStep(0);
@@ -257,6 +284,10 @@ export default function MultiStepServiceRequestForm({ onSuccess, preSelectedCate
         onSuccess(data.id, requestData.landlord_email, isLoggedIn, data.requestCount || 1);
       }
     } catch (error) {
+      posthog?.capture('service_request_failed', {
+        service_type: values.service_type,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
       message.error(error instanceof Error ? error.message : 'Something went wrong');
     } finally {
       setLoading(false);
