@@ -87,7 +87,7 @@ export async function PATCH(
       .from('request_vendor_matches')
       .update(updates)
       .eq('id', id)
-      .select('*, vendor:vendors(id, business_name, default_fee_amount, default_fee_type)')
+      .select('*, vendor:vendors(id, business_name)')
       .single();
 
     if (matchError) {
@@ -108,7 +108,7 @@ export async function PATCH(
           vendor_id: matchData.vendor_id,
           request_id: matchData.request_id,
           amount: payment_amount,
-          fee_type: payment_fee_type || matchData.vendor?.default_fee_type || 'fixed',
+          fee_type: payment_fee_type || 'fixed',
           job_cost: job_cost,
           status: 'pending',
         })
@@ -165,8 +165,7 @@ export async function GET(
       .select(`
         *,
         vendor:vendors(
-          id, business_name, contact_name, email, phone,
-          default_fee_type, default_fee_amount, default_fee_percentage
+          id, business_name, contact_name, email, phone
         ),
         request:service_requests(
           id, service_type, property_address, zip_code,
